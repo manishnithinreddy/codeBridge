@@ -1,88 +1,28 @@
-package com.codebridge.apitest.model;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+package com.codebridge.apitest.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Entity for API tests.
+ * Response DTO for API test operations.
  */
-@Entity
-@Table(name = "api_tests")
-public class ApiTest {
+public class ApiTestResponse {
 
-    @Id
     private UUID id;
-
-    @Column(nullable = false)
     private String name;
-
-    @Column
     private String description;
-
-    @Column(nullable = false)
-    private UUID userId;
-
-    @Column
-    private UUID teamId;
-
-    @Column(nullable = false)
     private String url;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private HttpMethod method;
-
-    @Column
-    @Lob
-    private String headers;
-
-    @Column
-    @Lob
+    private String method;
+    private Map<String, String> headers;
     private String requestBody;
-
-    @Column
     private Integer expectedStatusCode;
-
-    @Column
-    @Lob
     private String expectedResponseBody;
-
-    @Column
-    @Lob
     private String validationScript;
-
-    @Column(nullable = false)
     private Integer timeoutMs;
-
-    @Column(nullable = false)
     private boolean active;
-
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(nullable = false)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     public UUID getId() {
         return id;
@@ -108,22 +48,6 @@ public class ApiTest {
         this.description = description;
     }
 
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public UUID getTeamId() {
-        return teamId;
-    }
-
-    public void setTeamId(UUID teamId) {
-        this.teamId = teamId;
-    }
-
     public String getUrl() {
         return url;
     }
@@ -132,19 +56,19 @@ public class ApiTest {
         this.url = url;
     }
 
-    public HttpMethod getMethod() {
+    public String getMethod() {
         return method;
     }
 
-    public void setMethod(HttpMethod method) {
+    public void setMethod(String method) {
         this.method = method;
     }
 
-    public String getHeaders() {
+    public Map<String, String> getHeaders() {
         return headers;
     }
 
-    public void setHeaders(String headers) {
+    public void setHeaders(Map<String, String> headers) {
         this.headers = headers;
     }
 

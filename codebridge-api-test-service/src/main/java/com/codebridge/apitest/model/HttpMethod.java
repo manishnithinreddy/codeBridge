@@ -1,7 +1,7 @@
 package com.codebridge.apitest.model;
 
 /**
- * Enum representing HTTP methods.
+ * Enum for HTTP methods.
  */
 public enum HttpMethod {
     GET,

@@ -1,84 +1,47 @@
 # CodeBridge Microservices Platform
 
-CodeBridge is a comprehensive microservices platform designed to streamline software development workflows. It provides a set of integrated services for team management, authentication, GitLab integration, Docker container management, server infrastructure management, and API testing.
+CodeBridge is a comprehensive microservices platform for managing development environments, API testing, and team collaboration.
 
-## Architecture Overview
+## Architecture
 
-The platform follows a microservices architecture with the following components:
+The platform consists of the following microservices:
 
 ### Core Services
 
 1. **Auth Gateway Service**
-   - Central authentication and authorization service
-   - JWT token management
+   - API Gateway with routing and load balancing
+   - Authentication and authorization with JWT
    - Role-based access control
-   - API routing and gateway functionality
+   - Team-based resource isolation
 
-2. **Teams Service**
-   - Team and user management
-   - Permission management
+2. **Docker Service**
+   - Container management (create, start, stop, remove)
+   - Resource limits (CPU, memory)
    - Team-based access control
-
-3. **Audit Service**
-   - Immutable audit logging
-   - Activity tracking
-   - Compliance reporting
-
-### Integration Services
-
-4. **GitLab Integration Service**
-   - GitLab API integration
-   - Repository management
-   - CI/CD pipeline integration
-   - Token management
-
-5. **Docker Management Service**
-   - Container lifecycle management
-   - Image management
    - Container monitoring
-   - Resource allocation
 
-6. **Server Management Service**
-   - Server provisioning
-   - SSH key management
-   - Server monitoring
-   - Infrastructure management
+3. **API Testing Service**
+   - HTTP request testing
+   - Response validation
+   - Test scripting
+   - Test results tracking
 
-7. **API Testing Service**
-   - API endpoint testing
-   - Test automation
-   - Test reporting
-   - Validation scripting
-
-## Security Features
+### Security Features
 
 - JWT-based authentication
 - Role-based access control
-- Team-based permissions
-- Secure credential storage
-- Comprehensive audit logging
-- Stateless session management
-
-## Technology Stack
-
-- **Framework**: Spring Boot 3.1.x
-- **Service Discovery**: Spring Cloud Netflix Eureka
-- **Configuration**: Spring Cloud Config
-- **Circuit Breaker**: Resilience4j
-- **Database**: PostgreSQL
-- **Migration**: Flyway
-- **Documentation**: SpringDoc OpenAPI
-- **Build Tool**: Maven
-- **Java Version**: 17
+- Team resource isolation
+- Service-to-service authentication
+- Audit logging
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 17 or higher
-- Maven 3.8 or higher
-- PostgreSQL 14 or higher
-- Docker (for containerized deployment)
+- Java 17+
+- Maven 3.8+
+- Docker
+- PostgreSQL (optional, can use H2 for development)
 
 ### Building the Project
 
@@ -86,30 +49,71 @@ The platform follows a microservices architecture with the following components:
 mvn clean install
 ```
 
-### Running Services
+### Running the Services
 
-Each service can be run independently:
+1. Start the Auth Gateway:
 
 ```bash
 cd codebridge-auth-gateway
 mvn spring-boot:run
 ```
 
-### Docker Deployment
+2. Start the Docker Service:
 
 ```bash
-docker-compose up -d
+cd codebridge-docker-service
+mvn spring-boot:run
 ```
 
-## Development Guidelines
+3. Start the API Testing Service:
 
-- Follow standard Spring Boot practices
-- Use DTOs for API requests/responses
-- Implement proper exception handling
-- Write comprehensive unit and integration tests
-- Document APIs using OpenAPI annotations
+```bash
+cd codebridge-api-test-service
+mvn spring-boot:run
+```
+
+## API Documentation
+
+### Auth Gateway API
+
+- `POST /api/login` - Authenticate user
+- `POST /api/register` - Register new user
+- `POST /api/refresh-token` - Refresh JWT token
+
+### Docker Service API
+
+- `POST /api/containers` - Create container
+- `GET /api/containers` - List containers
+- `GET /api/containers/{id}` - Get container
+- `PUT /api/containers/{id}/start` - Start container
+- `PUT /api/containers/{id}/stop` - Stop container
+- `DELETE /api/containers/{id}` - Remove container
+
+### API Testing Service
+
+- `POST /api/tests` - Create API test
+- `GET /api/tests` - List API tests
+- `GET /api/tests/{id}` - Get API test
+- `PUT /api/tests/{id}` - Update API test
+- `DELETE /api/tests/{id}` - Delete API test
+- `POST /api/tests/{id}/execute` - Execute API test
+- `GET /api/tests/{id}/results` - Get test results
+
+## Security
+
+The platform implements multiple layers of security:
+
+1. **Authentication** - JWT-based authentication for all services
+2. **Authorization** - Role-based access control for API endpoints
+3. **Resource Isolation** - Team-based resource isolation
+4. **Service Security** - Service-to-service authentication
+5. **Audit Logging** - Comprehensive audit logging for all operations
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

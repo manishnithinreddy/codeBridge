@@ -5,8 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
- * Main application class for the API Testing service.
- * Handles API testing and validation.
+ * Main application class for the API testing service.
+ * Handles API testing operations.
  */
 @SpringBootApplication
 @EnableDiscoveryClient
