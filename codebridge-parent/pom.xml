@@ -17,11 +17,15 @@
     <packaging>pom</packaging>
 
     <name>CodeBridge Parent</name>
-    <description>CodeBridge - A cross-platform developer tool</description>
+    <description>CodeBridge - A comprehensive platform for code management and deployment</description>
 
     <modules>
         <module>codebridge-common</module>
         <module>codebridge-core</module>
+        <module>codebridge-git-service</module>
+        <module>codebridge-docker-service</module>
+        <module>codebridge-server-access-service</module>
+        <module>codebridge-api-test-service</module>
     </modules>
 
     <properties>
@@ -31,6 +35,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <!-- Spring Cloud -->
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        
         <!-- Dependency versions -->
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <lombok.version>1.18.30</lombok.version>
@@ -40,10 +47,31 @@
         <junit-jupiter.version>5.10.0</junit-jupiter.version>
         <mockito.version>5.6.0</mockito.version>
         <testcontainers.version>1.19.1</testcontainers.version>
+        <keycloak.version>22.0.5</keycloak.version>
+        <resilience4j.version>2.1.0</resilience4j.version>
+        <caffeine.version>3.1.8</caffeine.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Cloud -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <!-- Keycloak BOM -->
+            <dependency>
+                <groupId>org.keycloak.bom</groupId>
+                <artifactId>keycloak-adapter-bom</artifactId>
+                <version>${keycloak.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
             <!-- Internal modules -->
             <dependency>
                 <groupId>com.codebridge</groupId>
@@ -53,6 +81,26 @@
             <dependency>
                 <groupId>com.codebridge</groupId>
                 <artifactId>codebridge-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.codebridge</groupId>
+                <artifactId>codebridge-git-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.codebridge</groupId>
+                <artifactId>codebridge-docker-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.codebridge</groupId>
+                <artifactId>codebridge-server-access-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.codebridge</groupId>
+                <artifactId>codebridge-api-test-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -82,6 +130,20 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate.version}</version>
+            </dependency>
+            
+            <!-- Resilience4j -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            
+            <!-- Caffeine Cache -->
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
 
             <!-- Testing -->
