@@ -1,58 +1,23 @@
-package com.codebridge.apitest.model;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+package com.codebridge.apitest.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Entity for test results.
+ * Response DTO for test result operations.
  */
-@Entity
-@Table(name = "test_results")
-public class TestResult {
+public class TestResultResponse {
 
-    @Id
     private UUID id;
-
-    @Column(nullable = false)
     private UUID testId;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private TestStatus status;
-
-    @Column
+    private String status;
     private Integer responseStatusCode;
-
-    @Column
-    @Lob
-    private String responseHeaders;
-
-    @Column
-    @Lob
+    private Map<String, String> responseHeaders;
     private String responseBody;
-
-    @Column
     private String errorMessage;
-
-    @Column(nullable = false)
     private Long executionTimeMs;
-
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 
     public UUID getId() {
         return id;
@@ -70,11 +35,11 @@ public class TestResult {
         this.testId = testId;
     }
 
-    public TestStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(TestStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -86,11 +51,11 @@ public class TestResult {
         this.responseStatusCode = responseStatusCode;
     }
 
-    public String getResponseHeaders() {
+    public Map<String, String> getResponseHeaders() {
         return responseHeaders;
     }
 
-    public void setResponseHeaders(String responseHeaders) {
+    public void setResponseHeaders(Map<String, String> responseHeaders) {
         this.responseHeaders = responseHeaders;
     }
 

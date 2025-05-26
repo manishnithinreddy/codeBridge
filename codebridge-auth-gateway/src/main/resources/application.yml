@@ -1,0 +1,77 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: auth-gateway
+  datasource:
+    url: jdbc:h2:mem:authdb
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  cloud:
+    gateway:
+      routes:
+        - id: docker-service
+          uri: lb://docker-service
+          predicates:
+            - Path=/api/containers/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: dockerServiceCircuitBreaker
+                fallbackUri: forward:/fallback/docker-service
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+        - id: api-test-service
+          uri: lb://api-test-service
+          predicates:
+            - Path=/api/tests/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: apiTestServiceCircuitBreaker
+                fallbackUri: forward:/fallback/api-test-service
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+jwt:
+  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+  expiration: 86400000 # 24 hours
+  refresh-expiration: 604800000 # 7 days
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    com.codebridge: DEBUG
+

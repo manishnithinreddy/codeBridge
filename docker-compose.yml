@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Database
+  # PostgreSQL Database
   postgres:
     image: postgres:14-alpine
     container_name: codebridge-postgres
@@ -16,29 +16,31 @@ services:
     networks:
       - codebridge-network
 
-  # Service Discovery
-  eureka-server:
-    build:
-      context: ./codebridge-eureka-server
-    container_name: codebridge-eureka
-    ports:
-      - "8761:8761"
-    networks:
-      - codebridge-network
-
   # Config Server
   config-server:
     build:
       context: ./codebridge-config-server
-    container_name: codebridge-config
+    container_name: codebridge-config-server
     ports:
       - "8888:8888"
     networks:
       - codebridge-network
     depends_on:
-      - eureka-server
+      - postgres
 
-  # Auth Gateway
+  # Eureka Service Discovery
+  eureka-server:
+    build:
+      context: ./codebridge-eureka-server
+    container_name: codebridge-eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - codebridge-network
+    depends_on:
+      - config-server
+
+  # Auth Gateway Service
   auth-gateway:
     build:
       context: ./codebridge-auth-gateway
@@ -47,74 +49,11 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
       SPRING_DATASOURCE_USERNAME: codebridge
       SPRING_DATASOURCE_PASSWORD: codebridge
-    networks:
-      - codebridge-network
-    depends_on:
-      - postgres
-      - eureka-server
-      - config-server
-
-  # Teams Service
-  teams-service:
-    build:
-      context: ./codebridge-teams-service
-    container_name: codebridge-teams-service
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
-      SPRING_DATASOURCE_USERNAME: codebridge
-      SPRING_DATASOURCE_PASSWORD: codebridge
-    networks:
-      - codebridge-network
-    depends_on:
-      - postgres
-      - eureka-server
-      - config-server
-
-  # Audit Service
-  audit-service:
-    build:
-      context: ./codebridge-audit-service
-    container_name: codebridge-audit-service
-    ports:
-      - "8082:8082"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONFIG_URI: http://config-server:8888
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
-      SPRING_DATASOURCE_USERNAME: codebridge
-      SPRING_DATASOURCE_PASSWORD: codebridge
-    networks:
-      - codebridge-network
-    depends_on:
-      - postgres
-      - eureka-server
-      - config-server
-
-  # GitLab Service
-  gitlab-service:
-    build:
-      context: ./codebridge-gitlab-service
-    container_name: codebridge-gitlab-service
-    ports:
-      - "8083:8083"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
-      SPRING_DATASOURCE_USERNAME: codebridge
-      SPRING_DATASOURCE_PASSWORD: codebridge
     networks:
       - codebridge-network
     depends_on:
@@ -128,14 +67,15 @@ services:
       context: ./codebridge-docker-service
     container_name: codebridge-docker-service
     ports:
-      - "8084:8084"
+      - "8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
       SPRING_DATASOURCE_USERNAME: codebridge
       SPRING_DATASOURCE_PASSWORD: codebridge
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -145,41 +85,20 @@ services:
       - eureka-server
       - config-server
 
-  # Server Service
-  server-service:
-    build:
-      context: ./codebridge-server-service
-    container_name: codebridge-server-service
-    ports:
-      - "8085:8085"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
-      SPRING_DATASOURCE_USERNAME: codebridge
-      SPRING_DATASOURCE_PASSWORD: codebridge
-    networks:
-      - codebridge-network
-    depends_on:
-      - postgres
-      - eureka-server
-      - config-server
-
-  # API Test Service
+  # API Testing Service
   api-test-service:
     build:
       context: ./codebridge-api-test-service
     container_name: codebridge-api-test-service
     ports:
-      - "8086:8086"
+      - "8082:8082"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codebridge
       SPRING_DATASOURCE_USERNAME: codebridge
       SPRING_DATASOURCE_PASSWORD: codebridge
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
     networks:
       - codebridge-network
     depends_on:

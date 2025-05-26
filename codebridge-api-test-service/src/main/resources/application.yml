@@ -1,11 +1,11 @@
 server:
-  port: 8081
+  port: 8082
 
 spring:
   application:
-    name: docker-service
+    name: api-test-service
   datasource:
-    url: jdbc:h2:mem:dockerdb
+    url: jdbc:h2:mem:apitestdb
     username: sa
     password: password
     driver-class-name: org.h2.Driver
@@ -33,14 +33,6 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
-
-docker:
-  host: unix:///var/run/docker.sock
-  registry:
-    url: https://index.docker.io/v1/
-    username: 
-    password: 
-    email: 
 
 logging:
   level:
