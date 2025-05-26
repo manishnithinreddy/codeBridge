@@ -1,19 +1,19 @@
-package com.codebridge.server;
+package com.codebridge.gitlab;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
- * Main application class for the Server Management service.
- * Handles server infrastructure management and SSH key management.
+ * Main application class for the GitLab Integration service.
+ * Handles GitLab API interactions and token management.
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-public class ServerServiceApplication {
+public class GitLabServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ServerServiceApplication.class, args);
+        SpringApplication.run(GitLabServiceApplication.class, args);
     }
 }
 

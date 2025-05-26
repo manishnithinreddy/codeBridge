@@ -11,9 +11,9 @@
         <relativePath>../codebridge-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>codebridge-server-service</artifactId>
-    <name>CodeBridge Server Management Service</name>
-    <description>Server infrastructure management service for the CodeBridge platform</description>
+    <artifactId>codebridge-gitlab-service</artifactId>
+    <name>CodeBridge GitLab Integration Service</name>
+    <description>GitLab integration service for the CodeBridge platform</description>
 
     <dependencies>
         <!-- Spring Boot Starters -->
@@ -41,10 +41,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
-        </dependency>
 
         <!-- Spring Cloud -->
         <dependency>
@@ -71,18 +67,11 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
-        <!-- SSH Client -->
+        <!-- GitLab API Client -->
         <dependency>
-            <groupId>com.hierynomus</groupId>
-            <artifactId>sshj</artifactId>
-            <version>0.35.0</version>
-        </dependency>
-
-        <!-- AWS SDK -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>ec2</artifactId>
-            <version>2.20.56</version>
+            <groupId>org.gitlab4j</groupId>
+            <artifactId>gitlab4j-api</artifactId>
+            <version>5.4.0</version>
         </dependency>
 
         <!-- API Documentation -->
