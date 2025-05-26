@@ -1,94 +1,99 @@
-# CodeBridge
+# CodeBridge Platform
 
-CodeBridge is a cross-platform developer tool designed to streamline development workflows and enhance team collaboration.
+CodeBridge is a comprehensive platform for code management, deployment, and testing. It provides a set of microservices that work together to streamline the development workflow.
+
+## Microservices Architecture
+
+The platform consists of the following microservices:
+
+1. **Git Service** - Manages Git repositories, providers, webhooks, and credentials
+2. **Docker Service** - Handles Docker container management and orchestration
+3. **Server Access Service** - Provides secure access to remote servers via SSH
+4. **API Testing Service** - Automates API testing and monitoring
 
 ## Technology Stack
 
-- **Backend**: Java 21, Spring Boot 3.2.0
-- **Database**: PostgreSQL
-- **Authentication**: OAuth2 / JWT
-- **API Documentation**: SpringDoc OpenAPI
-- **Build Tool**: Maven
-- **Testing**: JUnit 5, Mockito, Testcontainers
-
-## Project Structure
-
-The project follows a multi-module Maven structure:
-
-- **codebridge-parent**: Parent module with dependency management
-  - **codebridge-common**: Common utilities and base components
-  - **codebridge-core**: Core service implementation
-
-## Features
-
-- **Team Management**: Create and manage teams with hierarchical structure
-- **User Management**: User registration, authentication, and profile management
-- **Role-Based Access Control**: Fine-grained permissions system
-- **Service Integration**: Connect and configure external services
-- **Audit Logging**: Comprehensive activity tracking
-- **Token Management**: Secure token-based authentication
+- Java 21
+- Spring Boot 3.2.0
+- Spring Cloud
+- PostgreSQL
+- Flyway
+- Docker & Docker Compose
+- JGit, Docker Java, JSch, REST Assured
+- OAuth2 / JWT Authentication
+- Service Discovery with Eureka
+- API Documentation with SpringDoc OpenAPI
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 21
-- Maven 3.8+
-- PostgreSQL 14+
+- Java 21 or higher
+- Maven
+- Docker and Docker Compose
+- PostgreSQL
 
-### Setup
+### Building the Project
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/codebridge.git
-   cd codebridge
-   ```
+To build all microservices:
 
-2. Configure the database:
-   ```bash
-   # Create a PostgreSQL database
-   createdb codebridge
-   ```
+```bash
+mvn clean install
+```
 
-3. Build the project:
-   ```bash
-   mvn clean install
-   ```
+### Running the Services
 
-4. Run the application:
-   ```bash
-   cd codebridge-parent/codebridge-core
-   mvn spring-boot:run
-   ```
+Each service can be run independently:
 
-5. Access the API documentation:
-   ```
-   http://localhost:8081/api/swagger-ui.html
-   ```
+```bash
+cd codebridge-git-service
+./mvnw spring-boot:run
+```
 
-## Development Guidelines
+Or using Docker Compose:
 
-### Code Style
+```bash
+cd codebridge-git-service
+docker-compose up
+```
 
-- Follow standard Java coding conventions
-- Use meaningful variable and method names
-- Write comprehensive JavaDoc comments
-- Keep methods small and focused on a single responsibility
+## Service Endpoints
 
-### Testing
+- Git Service: http://localhost:8081/api/git
+- Docker Service: http://localhost:8082/api/docker
+- Server Access Service: http://localhost:8083/api/server
+- API Testing Service: http://localhost:8084/api/testing
 
-- Write unit tests for all business logic
-- Use integration tests for repository and controller layers
-- Aim for high test coverage, especially for critical components
+## API Documentation
 
-### Git Workflow
+Each service provides its own Swagger UI for API documentation:
 
-- Use feature branches for all new features and bug fixes
-- Submit pull requests for review before merging to main
-- Keep commits small and focused
-- Write clear commit messages
+- Git Service: http://localhost:8081/api/git/swagger-ui/index.html
+- Docker Service: http://localhost:8082/api/docker/swagger-ui/index.html
+- Server Access Service: http://localhost:8083/api/server/swagger-ui/index.html
+- API Testing Service: http://localhost:8084/api/testing/swagger-ui/index.html
+
+## Development
+
+### Project Structure
+
+```
+codebridge/
+├── codebridge-git-service/
+├── codebridge-docker-service/
+├── codebridge-server-service/
+├── codebridge-api-testing-service/
+└── pom.xml
+```
+
+### Adding a New Service
+
+1. Create a new directory for your service
+2. Add a pom.xml file with the necessary dependencies
+3. Implement the service using Spring Boot
+4. Add the new module to the parent pom.xml
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
 
