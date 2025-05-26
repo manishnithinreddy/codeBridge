@@ -5,67 +5,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.codebridge</groupId>
-    <artifactId>codebridge-parent</artifactId>
+    <artifactId>codebridge</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>CodeBridge Platform</name>
-    <description>CodeBridge - A comprehensive platform for code management and deployment</description>
+
+    <name>CodeBridge</name>
+    <description>CodeBridge Microservices Platform</description>
 
     <modules>
-        <module>codebridge-git-service</module>
+        <module>codebridge-parent</module>
+        <module>codebridge-teams-service</module>
+        <module>codebridge-audit-service</module>
+        <module>codebridge-auth-gateway</module>
+        <module>codebridge-gitlab-service</module>
         <module>codebridge-docker-service</module>
         <module>codebridge-server-service</module>
-        <module>codebridge-api-testing-service</module>
+        <module>codebridge-api-test-service</module>
     </modules>
-
-    <properties>
-        <java.version>21</java.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>3.2.0</spring-boot.version>
-        <spring-cloud.version>2023.0.0</spring-cloud.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>${spring-boot.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
-                    <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 </project>
 
