@@ -20,7 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +34,11 @@ public class JwtTokenProvider {
     private static final String AUTHORITIES_KEY = "roles";
     private static final String USER_ID_KEY = "userId";
     private static final String TEAM_ID_KEY = "teamId";
+    private static final String TOKEN_TYPE_KEY = "tokenType";
+    private static final String EMAIL_KEY = "email";
+    private static final String NAME_KEY = "name";
+    private static final String PERMISSIONS_KEY = "permissions";
+    private static final String TOKEN_ID_KEY = "jti";
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -58,11 +65,32 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
         
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(USER_ID_KEY, userPrincipal.getId());
+        claims.put(AUTHORITIES_KEY, authorities);
+        claims.put(TOKEN_TYPE_KEY, "access");
+        claims.put(TOKEN_ID_KEY, java.util.UUID.randomUUID().toString());
+        
+        if (userPrincipal.getTeamId() != null) {
+            claims.put(TEAM_ID_KEY, userPrincipal.getTeamId());
+        }
+        
+        // Add additional claims if available
+        if (userPrincipal.getEmail() != null) {
+            claims.put(EMAIL_KEY, userPrincipal.getEmail());
+        }
+        
+        if (userPrincipal.getName() != null) {
+            claims.put(NAME_KEY, userPrincipal.getName());
+        }
+        
+        if (userPrincipal.getPermissions() != null && !userPrincipal.getPermissions().isEmpty()) {
+            claims.put(PERMISSIONS_KEY, String.join(",", userPrincipal.getPermissions()));
+        }
+        
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userPrincipal.getUsername())
-                .claim(USER_ID_KEY, userPrincipal.getId())
-                .claim(TEAM_ID_KEY, userPrincipal.getTeamId())
-                .claim(AUTHORITIES_KEY, authorities)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
@@ -81,9 +109,14 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpiration);
         
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(USER_ID_KEY, userPrincipal.getId());
+        claims.put(TOKEN_TYPE_KEY, "refresh");
+        claims.put(TOKEN_ID_KEY, java.util.UUID.randomUUID().toString());
+        
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userPrincipal.getUsername())
-                .claim(USER_ID_KEY, userPrincipal.getId())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
@@ -132,16 +165,39 @@ public class JwtTokenProvider {
         
         String username = claims.getSubject();
         String userId = claims.get(USER_ID_KEY, String.class);
-        String teamId = claims.get(TEAM_ID_KEY, String.class);
         
-        Collection<? extends GrantedAuthority> authorities = Arrays
-                .stream(claims.get(AUTHORITIES_KEY, String.class).split(","))
-                .filter(auth -> !auth.trim().isEmpty())
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        Collection<? extends GrantedAuthority> authorities = null;
+        if (claims.containsKey(AUTHORITIES_KEY)) {
+            authorities = Arrays
+                    .stream(claims.get(AUTHORITIES_KEY, String.class).split(","))
+                    .filter(auth -> !auth.trim().isEmpty())
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        } else {
+            authorities = List.of();
+        }
         
         UserPrincipal principal = new UserPrincipal(userId, username, "", authorities);
-        principal.setTeamId(teamId);
+        
+        if (claims.containsKey(TEAM_ID_KEY)) {
+            principal.setTeamId(claims.get(TEAM_ID_KEY, String.class));
+        }
+        
+        if (claims.containsKey(EMAIL_KEY)) {
+            principal.setEmail(claims.get(EMAIL_KEY, String.class));
+        }
+        
+        if (claims.containsKey(NAME_KEY)) {
+            principal.setName(claims.get(NAME_KEY, String.class));
+        }
+        
+        if (claims.containsKey(PERMISSIONS_KEY)) {
+            String permissionsStr = claims.get(PERMISSIONS_KEY, String.class);
+            List<String> permissions = Arrays.stream(permissionsStr.split(","))
+                    .filter(perm -> !perm.trim().isEmpty())
+                    .collect(Collectors.toList());
+            principal.setPermissions(permissions);
+        }
         
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
@@ -156,4 +212,3 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
-
