@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: events-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:codebridge_events}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  cloud:
+    discovery:
+      enabled: true
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 25
+      thread-name-prefix: events-task-
+
+server:
+  port: ${SERVER_PORT:8083}
+  servlet:
+    context-path: /api/events
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+webhook:
+  retry:
+    max-attempts: 5
+    initial-interval: 1000
+    multiplier: 2.0
+    max-interval: 60000
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+
