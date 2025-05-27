@@ -1,5 +1,6 @@
-package com.codebridge.auth.security;
+package com.codebridge.security.service;
 
+import com.codebridge.core.security.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -8,6 +9,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,14 +26,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Provider for JWT token generation and validation.
+ * Provider for JWT token operations.
  */
 @Component
 public class JwtTokenProvider {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
     private static final String AUTHORITIES_KEY = "roles";
     private static final String USER_ID_KEY = "userId";
     private static final String TEAM_ID_KEY = "teamId";
@@ -50,10 +55,10 @@ public class JwtTokenProvider {
     private long refreshExpiration;
 
     /**
-     * Generates a JWT token for the given authentication.
+     * Generates a JWT token for authentication.
      *
      * @param authentication the authentication object
-     * @return the generated JWT token
+     * @return the generated token
      */
     public String generateToken(Authentication authentication) {
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
@@ -69,7 +74,7 @@ public class JwtTokenProvider {
         claims.put(USER_ID_KEY, userPrincipal.getId());
         claims.put(AUTHORITIES_KEY, authorities);
         claims.put(TOKEN_TYPE_KEY, "access");
-        claims.put(TOKEN_ID_KEY, java.util.UUID.randomUUID().toString());
+        claims.put(TOKEN_ID_KEY, UUID.randomUUID().toString());
         
         if (userPrincipal.getTeamId() != null) {
             claims.put(TEAM_ID_KEY, userPrincipal.getTeamId());
@@ -98,7 +103,7 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Generates a refresh token for the given authentication.
+     * Generates a refresh token for authentication.
      *
      * @param authentication the authentication object
      * @return the generated refresh token
@@ -112,7 +117,7 @@ public class JwtTokenProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put(USER_ID_KEY, userPrincipal.getId());
         claims.put(TOKEN_TYPE_KEY, "refresh");
-        claims.put(TOKEN_ID_KEY, java.util.UUID.randomUUID().toString());
+        claims.put(TOKEN_ID_KEY, UUID.randomUUID().toString());
         
         return Jwts.builder()
                 .setClaims(claims)
@@ -126,26 +131,26 @@ public class JwtTokenProvider {
     /**
      * Validates a JWT token.
      *
-     * @param token the JWT token to validate
+     * @param token the token to validate
      * @return true if the token is valid, false otherwise
      */
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token);
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (SignatureException ex) {
-            // Invalid JWT signature
+            logger.error("Invalid JWT signature");
         } catch (MalformedJwtException ex) {
-            // Invalid JWT token
+            logger.error("Invalid JWT token");
         } catch (ExpiredJwtException ex) {
-            // Expired JWT token
+            logger.error("Expired JWT token");
         } catch (UnsupportedJwtException ex) {
-            // Unsupported JWT token
+            logger.error("Unsupported JWT token");
         } catch (IllegalArgumentException ex) {
-            // JWT claims string is empty
+            logger.error("JWT claims string is empty");
         }
         return false;
     }
@@ -156,7 +161,7 @@ public class JwtTokenProvider {
      * @param token the JWT token
      * @return the authentication object
      */
-    public Authentication getAuthentication(String token) {
+    public UsernamePasswordAuthenticationToken getAuthentication(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
@@ -203,7 +208,7 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Gets the signing key for JWT token generation and validation.
+     * Gets the signing key for JWT tokens.
      *
      * @return the signing key
      */
@@ -212,3 +217,4 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
+
