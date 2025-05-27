@@ -1,98 +1,157 @@
-# CodeBridge
+# CodeBridge Platform
 
-CodeBridge is a comprehensive microservices platform for managing and integrating various development tools and services.
+## Overview
 
-## Project Structure
+CodeBridge is a comprehensive platform for managing development workflows, integrating with various tools and services, and streamlining the development process.
 
-The CodeBridge platform consists of the following microservices:
+## Architecture
 
-- **codebridge-user-service**: User management, authentication, and authorization
-- **codebridge-docker-service**: Docker registry and container management
-- **codebridge-server-service**: Server management with time-based access expiry
-- **codebridge-api-testing-service**: API testing, scheduling, and reporting
-- **codebridge-gateway**: API Gateway for routing and security
+The CodeBridge platform follows a microservices architecture, with each service responsible for a specific domain. The architecture has been optimized to balance modularity with operational simplicity.
 
-## Features
+### Services
 
-### Docker Integration Features
+#### Core Services (Remain Separate)
 
-- **Registry Management**:
-  - Registry browser with authentication and SSL settings
-  - Image listing and tag management
-  - Connection testing
+1. **GitLab Service**
+   - Version control integration
+   - Repository management
+   - Git provider configuration
+   - Webhook management
+   - Issue tracking and management
+   - Repository access control
+   - Git credentials management
+   - Provider type support (GitLab, GitHub, etc.)
+   - Issue comments and management
+   - Multiple provider support
 
-- **Container Management**:
-  - Context management for multiple Docker environments
-  - Container lifecycle operations (start, stop, restart)
-  - Resource monitoring
-  - Volume and network management
+2. **Docker Service**
+   - Docker registry management
+   - Container lifecycle management (start, stop, restart)
+   - Image management and tagging
+   - Registry connection testing
+   - Container logs streaming
+   - Container monitoring
+   - Multi-registry support
+   - Access control and security
+   - Docker context management
 
-- **Advanced Logging**:
-  - Log streaming and management
-  - Log filtering and search
-  - Log retention policies
+3. **Server Service**
+   - Server infrastructure management
+   - SSH key management
+   - Server monitoring
+   - Infrastructure configuration
+   - Access control
+   - Server provisioning
+   - Security management
+   - Multiple provider support (AWS, Azure, GCP, Digital Ocean, On-Premise)
+   - Team-based server access
 
-### Server Management Features
+4. **API Test Service**
+   - API endpoint testing and validation
+   - Test case management with name, description, and validation scripts
+   - HTTP method support (GET, POST, PUT, DELETE, etc.)
+   - Request/response validation with expected status codes and response bodies
+   - Custom validation scripts for complex validations
+   - Team-based test management
+   - Timeout configuration
+   - Test execution and results tracking
+   - User-specific test management
 
-- **Server Access Control**:
-  - Time-based access expiry
-  - Role-based permissions
-  - Access audit logging
+#### Consolidated Services
 
-- **Multi-Server UI**:
-  - Unified dashboard for multiple servers
-  - Server health monitoring
-  - Resource utilization tracking
+5. **Identity Service** (Consolidation of Auth Gateway and Security Service)
+   - User authentication and authorization
+   - JWT token generation and validation
+   - Session management
+   - Role-based access control
+   - Multi-device session support
+   - Token refresh mechanism
+   - Complete and device-specific logout
+   - Security auditing
 
-- **Advanced Log Streaming**:
-  - Real-time log aggregation
-  - Log analysis and alerting
-  - Custom log parsers
+6. **Organization Service** (Consolidation of User Management Service and Teams Service)
+   - User profile management
+   - Team management
+   - Team hierarchy (parent/child teams)
+   - Team membership
+   - Role assignment
+   - User preferences and settings
+   - Feature flag management
+   - GitLab issue integration
+   - Team-based access control
+   - Team collaboration features
 
-### API Testing Features
+7. **Events Service** (Consolidation of Webhook Service and Audit Service)
+   - Webhook event handling
+   - Event processing and routing
+   - Event status tracking
+   - Retry mechanism
+   - Event type filtering
+   - Signature validation
+   - IP filtering
+   - Audit logging
+   - Security monitoring
+   - User activity tracking
+   - Service activity logging
+   - Error tracking
+   - Request/response logging
+   - IP and user agent tracking
+   - Metadata capture
 
-- **Test Scheduling**:
-  - Cron-based test scheduling
-  - Parallel test execution
-  - Conditional test execution
+## Service Communication
 
-- **Reporting Dashboard**:
-  - Test result visualization
-  - Historical trend analysis
-  - Performance metrics
+Services communicate with each other through:
 
-- **CI/CD Integration**:
-  - Webhook triggers
-  - Pipeline integration
-  - Automated deployment testing
+1. **REST APIs**: Synchronous communication between services
+2. **Service Discovery**: Using Eureka for service registration and discovery
+3. **Event-Based Communication**: Asynchronous communication for certain operations
 
-### General Features
+## Benefits of Consolidation
 
-- **Enhanced Role-Based Access Controls**:
-  - Fine-grained permission management
-  - Dynamic role assignment
-  - Permission inheritance
+The consolidation of services provides several benefits:
 
-- **Webhook Management UI**:
-  - Webhook creation and configuration
-  - Event filtering
-  - Delivery monitoring and retry
+1. **Reduced Operational Overhead**
+   - Fewer services to deploy, monitor, and maintain
+   - Simplified infrastructure requirements
 
-- **JetBrains Plugin Integration**:
-  - Direct IDE integration
-  - Code navigation
-  - Remote debugging
+2. **Improved Data Consistency**
+   - Fewer distributed transactions across service boundaries
+   - Reduced need for complex data synchronization
+
+3. **Simplified Development**
+   - Clearer boundaries for developers
+   - Fewer inter-service dependencies to manage
+
+4. **Lower Latency**
+   - Fewer network hops for common operations
+   - Reduced communication overhead
+
+## Technologies
+
+- **Spring Boot**: Framework for building microservices
+- **Spring Cloud**: Tools for building cloud-native applications
+- **Spring Data JPA**: Data access layer
+- **Spring Security**: Security framework
+- **PostgreSQL**: Relational database
+- **Eureka**: Service discovery
+- **Feign**: Declarative REST client
+- **JWT**: JSON Web Tokens for authentication
+- **Flyway**: Database migration
+- **Lombok**: Reduces boilerplate code
+- **Maven**: Build tool
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 17 or higher
-- Maven 3.8 or higher
-- PostgreSQL 13 or higher
-- Docker (for containerization)
+- Java 17
+- Maven
+- PostgreSQL
+- Docker (optional)
 
-### Building the Project
+### Building the Services
+
+To build all services:
 
 ```bash
 mvn clean install
@@ -103,34 +162,19 @@ mvn clean install
 Each service can be run independently:
 
 ```bash
-java -jar codebridge-user-service/target/codebridge-user-service-1.0.0-SNAPSHOT.jar
-java -jar codebridge-docker-service/target/codebridge-docker-service-1.0.0-SNAPSHOT.jar
-java -jar codebridge-server-service/target/codebridge-server-service-1.0.0-SNAPSHOT.jar
-java -jar codebridge-api-testing-service/target/codebridge-api-testing-service-1.0.0-SNAPSHOT.jar
-java -jar codebridge-gateway/target/codebridge-gateway-1.0.0-SNAPSHOT.jar
+cd codebridge-identity-service
+mvn spring-boot:run
 ```
 
-### Docker Deployment
+### Docker Compose
+
+A Docker Compose file is provided to run all services together:
 
 ```bash
 docker-compose up -d
 ```
 
-## API Documentation
+## Configuration
 
-Each service provides Swagger/OpenAPI documentation at:
-
-- User Service: http://localhost:8081/swagger-ui.html
-- Docker Service: http://localhost:8084/swagger-ui.html
-- Server Service: http://localhost:8085/swagger-ui.html
-- API Testing Service: http://localhost:8086/swagger-ui.html
-- Gateway: http://localhost:8080/swagger-ui.html
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Each service can be configured using environment variables or application.yml files. See the README.md file in each service directory for specific configuration options.
 
