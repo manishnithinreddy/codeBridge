@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # Discovery Service
+  discovery-service:
+    image: codebridge/discovery-service:latest
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  # API Gateway
+  api-gateway:
+    image: codebridge/api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-service
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+
+  # Databases
+  postgres:
+    image: postgres:14-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - codebridge-network
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=codebridge_identity,codebridge_organization,codebridge_events,codebridge_gitlab,codebridge_docker,codebridge_server,codebridge_api_test
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
+
+  # Core Services
+  gitlab-service:
+    image: codebridge/gitlab-service:latest
+    container_name: gitlab-service
+    depends_on:
+      - discovery-service
+      - postgres
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_gitlab
+
+  docker-service:
+    image: codebridge/docker-service:latest
+    container_name: docker-service
+    depends_on:
+      - discovery-service
+      - postgres
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_docker
+
+  server-service:
+    image: codebridge/server-service:latest
+    container_name: server-service
+    depends_on:
+      - discovery-service
+      - postgres
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_server
+
+  api-test-service:
+    image: codebridge/api-test-service:latest
+    container_name: api-test-service
+    depends_on:
+      - discovery-service
+      - postgres
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_api_test
+
+  # Consolidated Services
+  identity-service:
+    image: codebridge/identity-service:latest
+    container_name: identity-service
+    depends_on:
+      - discovery-service
+      - postgres
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_identity
+      - JWT_SECRET=your-secret-key
+
+  organization-service:
+    image: codebridge/organization-service:latest
+    container_name: organization-service
+    depends_on:
+      - discovery-service
+      - postgres
+      - identity-service
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_organization
+
+  events-service:
+    image: codebridge/events-service:latest
+    container_name: events-service
+    depends_on:
+      - discovery-service
+      - postgres
+    networks:
+      - codebridge-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_URI=http://discovery-service:8761/eureka
+      - DB_HOST=postgres
+      - DB_NAME=codebridge_events
+
+networks:
+  codebridge-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+

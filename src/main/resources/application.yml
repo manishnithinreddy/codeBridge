@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: user-management-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/codebridge_user_management
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+jwt:
+  secret: ${JWT_SECRET:codebridge-user-management-service-secret-key-for-jwt-token-generation}
+  expiration: 86400000 # 24 hours in milliseconds
+
+session:
+  expiration: 1440 # 24 hours in minutes
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.hibernate: INFO
+
