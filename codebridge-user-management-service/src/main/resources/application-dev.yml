@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/codebridge_user_management
+    username: postgres
+    password: postgres
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    com.codebridge: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate: INFO
+
+# Development-specific settings
+jwt:
+  secret: dev-secret-key-for-jwt-token-generation-should-be-replaced-in-production
+  expiration: 86400000 # 24 hours
+
+# Rate limiting - relaxed for development
+rate-limiting:
+  enabled: true
+  default-limit: 1000
+  ip-limit: 500
+
+# Cache settings - shorter TTL for development
+cache:
+  enabled: true
+  ttl: 300 # 5 minutes
+

@@ -1,5 +1,8 @@
 package com.codebridge.usermanagement.common.config;
 
+import com.codebridge.usermanagement.common.filter.CorrelationIdFilter;
+import com.codebridge.usermanagement.common.filter.RateLimitingFilter;
+import com.codebridge.usermanagement.common.filter.SecurityHeadersFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -26,12 +29,21 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CorrelationIdFilter correlationIdFilter;
+    private final RateLimitingFilter rateLimitingFilter;
+    private final SecurityHeadersFilter securityHeadersFilter;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            CorrelationIdFilter correlationIdFilter,
+            RateLimitingFilter rateLimitingFilter,
+            SecurityHeadersFilter securityHeadersFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+        this.correlationIdFilter = correlationIdFilter;
+        this.rateLimitingFilter = rateLimitingFilter;
+        this.securityHeadersFilter = securityHeadersFilter;
     }
 
     @Bean
@@ -47,11 +59,15 @@ public class SecurityConfig {
                 .and()
             .authorizeHttpRequests()
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/validate").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated();
 
+        // Add our custom filters
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(correlationIdFilter, jwtAuthenticationFilter.getClass());
+        http.addFilterAfter(rateLimitingFilter, correlationIdFilter.getClass());
+        http.addFilterAfter(securityHeadersFilter, rateLimitingFilter.getClass());
 
         return http.build();
     }
@@ -73,4 +89,3 @@ public class SecurityConfig {
         return source;
     }
 }
-
