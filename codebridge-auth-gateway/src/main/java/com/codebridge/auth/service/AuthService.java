@@ -3,9 +3,11 @@ package com.codebridge.auth.service;
 import com.codebridge.auth.dto.SignUpRequest;
 import com.codebridge.auth.exception.AuthenticationException;
 import com.codebridge.auth.exception.ResourceNotFoundException;
+import com.codebridge.auth.model.RefreshToken;
 import com.codebridge.auth.model.Role;
 import com.codebridge.auth.model.User;
 import com.codebridge.auth.model.UserRole;
+import com.codebridge.auth.repository.RefreshTokenRepository;
 import com.codebridge.auth.repository.RoleRepository;
 import com.codebridge.auth.repository.UserRepository;
 import com.codebridge.auth.repository.UserRoleRepository;
@@ -34,19 +36,25 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        UserRoleRepository userRoleRepository,
+                       RefreshTokenRepository refreshTokenRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtTokenProvider tokenProvider) {
+                       JwtTokenProvider tokenProvider,
+                       RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.refreshTokenService = refreshTokenService;
     }
 
     /**
@@ -111,47 +119,66 @@ public class AuthService {
      * @return the authentication object
      */
     public Mono<Authentication> refreshToken(String refreshToken) {
-        if (!tokenProvider.validateToken(refreshToken)) {
-            return Mono.error(new AuthenticationException("Invalid refresh token"));
-        }
-        
-        Authentication authentication = tokenProvider.getAuthentication(refreshToken);
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        
-        return Mono.fromCallable(() -> userRepository.findById(UUID.fromString(userPrincipal.getId()))
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId())))
-                .flatMap(user -> {
-                    return Mono.fromCallable(() -> userRoleRepository.findByUserId(user.getId()))
-                            .flatMap(userRoles -> {
-                                List<UUID> roleIds = userRoles.stream()
-                                        .map(UserRole::getRoleId)
-                                        .collect(Collectors.toList());
-                                
-                                return Mono.fromCallable(() -> roleRepository.findAllById(roleIds))
-                                        .map(roles -> {
-                                            List<GrantedAuthority> authorities = roles.stream()
-                                                    .map(role -> new SimpleGrantedAuthority(role.getName()))
+        return refreshTokenService.verifyExpiration(refreshToken)
+                .flatMap(validRefreshToken -> {
+                    UUID userId = validRefreshToken.getUserId();
+                    
+                    return Mono.fromCallable(() -> userRepository.findById(userId)
+                            .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId.toString())))
+                            .flatMap(user -> {
+                                return Mono.fromCallable(() -> userRoleRepository.findByUserId(user.getId()))
+                                        .flatMap(userRoles -> {
+                                            List<UUID> roleIds = userRoles.stream()
+                                                    .map(UserRole::getRoleId)
                                                     .collect(Collectors.toList());
                                             
-                                            UserPrincipal principal = new UserPrincipal(
-                                                    user.getId().toString(),
-                                                    user.getUsername(),
-                                                    user.getPassword(),
-                                                    authorities
-                                            );
-                                            
-                                            if (user.getTeamId() != null) {
-                                                principal.setTeamId(user.getTeamId().toString());
-                                            }
-                                            
-                                            return new UsernamePasswordAuthenticationToken(
-                                                    principal,
-                                                    null,
-                                                    authorities
-                                            );
+                                            return Mono.fromCallable(() -> roleRepository.findAllById(roleIds))
+                                                    .map(roles -> {
+                                                        List<GrantedAuthority> authorities = roles.stream()
+                                                                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                                                                .collect(Collectors.toList());
+                                                        
+                                                        UserPrincipal principal = new UserPrincipal(
+                                                                user.getId().toString(),
+                                                                user.getUsername(),
+                                                                user.getPassword(),
+                                                                authorities
+                                                        );
+                                                        
+                                                        if (user.getTeamId() != null) {
+                                                            principal.setTeamId(user.getTeamId().toString());
+                                                        }
+                                                        
+                                                        return new UsernamePasswordAuthenticationToken(
+                                                                principal,
+                                                                null,
+                                                                authorities
+                                                        );
+                                                    });
                                         });
                             });
                 });
     }
-}
 
+    /**
+     * Logs out a user by revoking their refresh token.
+     *
+     * @param refreshToken the refresh token to revoke
+     * @return true if the token was revoked, false otherwise
+     */
+    @Transactional
+    public Mono<Boolean> logout(String refreshToken) {
+        return Mono.fromCallable(() -> refreshTokenService.revokeToken(refreshToken));
+    }
+
+    /**
+     * Logs out a user from all devices by revoking all their refresh tokens.
+     *
+     * @param userId the user ID
+     * @return the number of revoked tokens
+     */
+    @Transactional
+    public Mono<Integer> logoutFromAllDevices(UUID userId) {
+        return Mono.fromCallable(() -> refreshTokenService.revokeAllUserTokens(userId));
+    }
+}

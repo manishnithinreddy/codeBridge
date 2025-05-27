@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: INFO
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate: WARN
+  file:
+    max-size: 50MB
+    max-history: 30
+
+# Production-specific settings
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000 # 24 hours
+
+# Rate limiting - stricter for production
+rate-limiting:
+  enabled: true
+  default-limit: 100
+  ip-limit: 50
+
+# Cache settings - longer TTL for production
+cache:
+  enabled: true
+  ttl: 3600 # 1 hour
+
+# Security headers - enforced in production
+security:
+  headers:
+    content-security-policy: default-src 'self'; frame-ancestors 'none'; form-action 'self'
+    strict-transport-security: max-age=31536000; includeSubDomains; preload
+    x-content-type-options: nosniff
+    x-frame-options: DENY
+    x-xss-protection: 1; mode=block
+

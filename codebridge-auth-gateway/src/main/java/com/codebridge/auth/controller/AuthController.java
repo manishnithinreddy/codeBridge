@@ -2,6 +2,7 @@ package com.codebridge.auth.controller;
 
 import com.codebridge.auth.dto.JwtAuthenticationResponse;
 import com.codebridge.auth.dto.LoginRequest;
+import com.codebridge.auth.dto.LogoutRequest;
 import com.codebridge.auth.dto.RefreshTokenRequest;
 import com.codebridge.auth.dto.SignUpRequest;
 import com.codebridge.auth.exception.AuthenticationException;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -114,5 +117,34 @@ public class AuthController {
                     ));
                 });
     }
-}
 
+    /**
+     * Logs out a user by revoking their refresh token.
+     *
+     * @param logoutRequest the logout request
+     * @return the response entity
+     */
+    @PostMapping("/logout")
+    public Mono<ResponseEntity<?>> logout(@Valid @RequestBody LogoutRequest logoutRequest) {
+        return authService.logout(logoutRequest.getRefreshToken())
+                .map(success -> {
+                    if (success) {
+                        return ResponseEntity.ok().body("Logged out successfully");
+                    } else {
+                        return ResponseEntity.badRequest().body("Invalid refresh token");
+                    }
+                });
+    }
+
+    /**
+     * Logs out a user from all devices by revoking all their refresh tokens.
+     *
+     * @param userPrincipal the authenticated user
+     * @return the response entity
+     */
+    @PostMapping("/logout-all")
+    public Mono<ResponseEntity<?>> logoutFromAllDevices(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return authService.logoutFromAllDevices(UUID.fromString(userPrincipal.getId()))
+                .map(count -> ResponseEntity.ok().body("Logged out from " + count + " devices"));
+    }
+}

@@ -1,4 +1,4 @@
-package com.codebridge.auth.security;
+package com.codebridge.core.security;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -112,3 +112,4 @@ public class UserPrincipal extends User {
         this.permissions = permissions;
     }
 }
+
