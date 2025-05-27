@@ -19,6 +19,11 @@
     <name>CodeBridge Parent</name>
     <description>Parent POM for CodeBridge microservices</description>
 
+    <modules>
+        <module>codebridge-common</module>
+        <module>codebridge-core</module>
+    </modules>
+
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2022.0.4</spring-cloud.version>
