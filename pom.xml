@@ -1,38 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
+    
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.1.0</version>
-        <relativePath/>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
-
+    
     <groupId>com.codebridge</groupId>
-    <artifactId>codebridge</artifactId>
+    <artifactId>codebridge-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>CodeBridge Microservices</name>
-    <description>CodeBridge Microservices Platform</description>
-
+    <name>CodeBridge Parent</name>
+    <description>Parent project for CodeBridge microservices platform</description>
+    
     <modules>
-        <module>codebridge-auth-gateway</module>
+        <module>codebridge-user-service</module>
         <module>codebridge-docker-service</module>
-        <module>codebridge-api-test-service</module>
+        <module>codebridge-server-service</module>
+        <module>codebridge-api-testing-service</module>
+        <module>codebridge-gateway</module>
     </modules>
-
+    
     <properties>
         <java.version>17</java.version>
-        <spring-cloud.version>2022.0.3</spring-cloud.version>
         <spring-boot.version>3.1.0</spring-boot.version>
+        <spring-cloud.version>2022.0.3</spring-cloud.version>
         <jjwt.version>0.11.5</jjwt.version>
-        <docker-java.version>3.3.0</docker-java.version>
-        <httpclient5.version>5.2.1</httpclient5.version>
+        <springdoc-openapi.version>2.1.0</springdoc-openapi.version>
     </properties>
-
+    
     <dependencyManagement>
         <dependencies>
             <!-- Spring Cloud -->
@@ -43,7 +43,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            
             <!-- JWT -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
@@ -62,28 +62,16 @@
                 <version>${jjwt.version}</version>
                 <scope>runtime</scope>
             </dependency>
-
-            <!-- Docker Java -->
+            
+            <!-- Swagger/OpenAPI -->
             <dependency>
-                <groupId>com.github.docker-java</groupId>
-                <artifactId>docker-java-core</artifactId>
-                <version>${docker-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.docker-java</groupId>
-                <artifactId>docker-java-transport-httpclient5</artifactId>
-                <version>${docker-java.version}</version>
-            </dependency>
-
-            <!-- Apache HttpClient 5 -->
-            <dependency>
-                <groupId>org.apache.httpcomponents.client5</groupId>
-                <artifactId>httpclient5</artifactId>
-                <version>${httpclient5.version}</version>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc-openapi.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
-
+    
     <build>
         <pluginManagement>
             <plugins>

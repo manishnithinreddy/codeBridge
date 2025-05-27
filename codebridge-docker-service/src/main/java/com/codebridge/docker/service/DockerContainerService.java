@@ -1,267 +1,519 @@
 package com.codebridge.docker.service;
 
-import com.codebridge.docker.dto.ContainerCreationRequest;
-import com.codebridge.docker.dto.ContainerResponse;
-import com.codebridge.docker.exception.ContainerOperationException;
-import com.codebridge.docker.exception.ResourceNotFoundException;
-import com.codebridge.docker.model.Container;
-import com.codebridge.docker.model.ContainerStatus;
-import com.codebridge.docker.repository.ContainerRepository;
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.exception.DockerException;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.PortBinding;
+import com.codebridge.docker.model.DockerContainer;
+import com.codebridge.docker.model.DockerContext;
+import com.codebridge.docker.model.DockerLog;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Service for Docker container operations.
+ * Service for managing Docker containers.
  */
 @Service
 public class DockerContainerService {
 
-    private final DockerClient dockerClient;
-    private final ContainerRepository containerRepository;
+    private static final Logger logger = LoggerFactory.getLogger(DockerContainerService.class);
 
-    public DockerContainerService(DockerClient dockerClient, ContainerRepository containerRepository) {
-        this.dockerClient = dockerClient;
-        this.containerRepository = containerRepository;
+    private final DockerContextService contextService;
+    private final ObjectMapper objectMapper;
+    
+    // In-memory storage for demo purposes - in production, use a database
+    private final Map<String, Process> logStreams = new ConcurrentHashMap<>();
+
+    @Autowired
+    public DockerContainerService(DockerContextService contextService, ObjectMapper objectMapper) {
+        this.contextService = contextService;
+        this.objectMapper = objectMapper;
     }
 
     /**
-     * Creates a new Docker container.
+     * Get all containers in a Docker context.
      *
-     * @param request the container creation request
-     * @param userId the user ID
-     * @param teamId the team ID
-     * @return the created container
+     * @param contextId The context ID
+     * @param showAll Whether to show all containers (including stopped ones)
+     * @return List of Docker containers
      */
-    @Transactional
-    public ContainerResponse createContainer(ContainerCreationRequest request, UUID userId, UUID teamId) {
+    public List<DockerContainer> getContainers(String contextId, boolean showAll) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        
         try {
-            // Create port bindings
-            List<PortBinding> portBindings = new ArrayList<>();
-            if (request.getPorts() != null) {
-                portBindings = request.getPorts().entrySet().stream()
-                        .map(entry -> PortBinding.parse(entry.getKey() + ":" + entry.getValue()))
-                        .collect(Collectors.toList());
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("ls");
+            command.add("--format");
+            command.add("{{json .}}");
+            
+            if (showAll) {
+                command.add("--all");
             }
             
-            // Create host config
-            HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withPortBindings(portBindings)
-                    .withMemory(request.getMemoryLimit())
-                    .withCpuCount(request.getCpuLimit());
+            String output = contextService.executeCommand(contextId, command);
             
-            // Create container
-            CreateContainerResponse createResponse = dockerClient.createContainerCmd(request.getImage())
-                    .withName(request.getName())
-                    .withHostConfig(hostConfig)
-                    .withEnv(mapToEnvList(request.getEnvironment()))
-                    .exec();
+            List<DockerContainer> containers = new ArrayList<>();
+            for (String line : output.split("\n")) {
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+                
+                Map<String, Object> containerData = objectMapper.readValue(line, Map.class);
+                DockerContainer container = new DockerContainer();
+                container.setId(UUID.randomUUID().toString());
+                container.setContainerId((String) containerData.get("ID"));
+                container.setName((String) containerData.get("Names"));
+                container.setImageName((String) containerData.get("Image"));
+                container.setStatus((String) containerData.get("Status"));
+                container.setState(getContainerState((String) containerData.get("Status")));
+                container.setCommand((String) containerData.get("Command"));
+                container.setPorts(Collections.singletonList((String) containerData.get("Ports")));
+                
+                containers.add(container);
+            }
             
-            // Start container
-            dockerClient.startContainerCmd(createResponse.getId()).exec();
-            
-            // Inspect container
-            InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(createResponse.getId()).exec();
-            
-            // Save container to database
-            Container container = new Container();
-            container.setId(UUID.randomUUID());
-            container.setName(request.getName());
-            container.setImage(request.getImage());
-            container.setContainerId(createResponse.getId());
-            container.setUserId(userId);
-            container.setTeamId(teamId);
-            container.setStatus(ContainerStatus.RUNNING);
-            container.setPorts(request.getPorts().toString());
-            container.setEnvironment(request.getEnvironment().toString());
-            container.setMemoryLimit(request.getMemoryLimit());
-            container.setCpuLimit(request.getCpuLimit());
-            
-            container = containerRepository.save(container);
-            
-            return mapToContainerResponse(container, inspectResponse);
-        } catch (DockerException e) {
-            throw new ContainerOperationException("Failed to create container: " + e.getMessage(), e);
+            return containers;
+        } catch (Exception e) {
+            logger.error("Error fetching containers from context {}: {}", context.getName(), e.getMessage());
+            return Collections.emptyList();
         }
     }
 
     /**
-     * Gets all containers for a user.
+     * Get a container by ID.
      *
-     * @param userId the user ID
-     * @return the list of containers
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return The Docker container
      */
-    public List<ContainerResponse> getContainers(UUID userId) {
-        List<Container> containers = containerRepository.findByUserId(userId);
+    public DockerContainer getContainer(String contextId, String containerId) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return null;
+        }
         
-        return containers.stream()
-                .map(container -> {
-                    try {
-                        InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(container.getContainerId()).exec();
-                        return mapToContainerResponse(container, inspectResponse);
-                    } catch (DockerException e) {
-                        // Container might have been removed outside of our system
-                        container.setStatus(ContainerStatus.UNKNOWN);
-                        containerRepository.save(container);
-                        return mapToContainerResponse(container, null);
+        try {
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("inspect");
+            command.add(containerId);
+            
+            String output = contextService.executeCommand(contextId, command);
+            
+            List<Map<String, Object>> containerData = objectMapper.readValue(output, List.class);
+            if (containerData.isEmpty()) {
+                return null;
+            }
+            
+            Map<String, Object> data = containerData.get(0);
+            DockerContainer container = new DockerContainer();
+            container.setId(UUID.randomUUID().toString());
+            container.setContainerId(containerId);
+            
+            Map<String, Object> config = (Map<String, Object>) data.get("Config");
+            if (config != null) {
+                container.setName((String) config.get("Hostname"));
+                container.setImageName((String) config.get("Image"));
+                container.setCommand((String) config.get("Cmd"));
+                
+                Map<String, String> labels = (Map<String, String>) config.get("Labels");
+                container.setLabels(labels);
+                
+                List<String> envList = (List<String>) config.get("Env");
+                if (envList != null) {
+                    Map<String, String> envMap = envList.stream()
+                            .filter(env -> env.contains("="))
+                            .collect(Collectors.toMap(
+                                    env -> env.substring(0, env.indexOf('=')),
+                                    env -> env.substring(env.indexOf('=') + 1),
+                                    (v1, v2) -> v2
+                            ));
+                    container.setEnv(envMap);
+                }
+            }
+            
+            Map<String, Object> state = (Map<String, Object>) data.get("State");
+            if (state != null) {
+                container.setState((String) state.get("Status"));
+                container.setStatus((String) state.get("Status"));
+                
+                String startedAt = (String) state.get("StartedAt");
+                if (startedAt != null && !startedAt.isEmpty() && !startedAt.equals("0001-01-01T00:00:00Z")) {
+                    container.setStartedAt(LocalDateTime.parse(startedAt.substring(0, 19)));
+                }
+                
+                String finishedAt = (String) state.get("FinishedAt");
+                if (finishedAt != null && !finishedAt.isEmpty() && !finishedAt.equals("0001-01-01T00:00:00Z")) {
+                    container.setFinishedAt(LocalDateTime.parse(finishedAt.substring(0, 19)));
+                }
+                
+                container.setExitCode((Integer) state.get("ExitCode"));
+                container.setRestartCount((Integer) state.get("RestartCount"));
+            }
+            
+            Map<String, Object> hostConfig = (Map<String, Object>) data.get("HostConfig");
+            if (hostConfig != null) {
+                container.setHostConfig(hostConfig);
+            }
+            
+            Map<String, Object> networkSettings = (Map<String, Object>) data.get("NetworkSettings");
+            if (networkSettings != null) {
+                container.setNetworkSettings(networkSettings);
+                
+                Map<String, Object> ports = (Map<String, Object>) networkSettings.get("Ports");
+                if (ports != null) {
+                    List<String> portList = new ArrayList<>();
+                    for (Map.Entry<String, Object> entry : ports.entrySet()) {
+                        portList.add(entry.getKey() + " -> " + entry.getValue());
                     }
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Gets a container by ID.
-     *
-     * @param id the container ID
-     * @param userId the user ID
-     * @return the container
-     */
-    public ContainerResponse getContainer(UUID id, UUID userId) {
-        Container container = containerRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Container", "id", id));
-        
-        try {
-            InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(container.getContainerId()).exec();
-            return mapToContainerResponse(container, inspectResponse);
-        } catch (DockerException e) {
-            // Container might have been removed outside of our system
-            container.setStatus(ContainerStatus.UNKNOWN);
-            containerRepository.save(container);
-            return mapToContainerResponse(container, null);
-        }
-    }
-
-    /**
-     * Starts a container.
-     *
-     * @param id the container ID
-     * @param userId the user ID
-     * @return the updated container
-     */
-    @Transactional
-    public ContainerResponse startContainer(UUID id, UUID userId) {
-        Container container = containerRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Container", "id", id));
-        
-        try {
-            dockerClient.startContainerCmd(container.getContainerId()).exec();
-            
-            container.setStatus(ContainerStatus.RUNNING);
-            container = containerRepository.save(container);
-            
-            InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(container.getContainerId()).exec();
-            return mapToContainerResponse(container, inspectResponse);
-        } catch (DockerException e) {
-            throw new ContainerOperationException("Failed to start container: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Stops a container.
-     *
-     * @param id the container ID
-     * @param userId the user ID
-     * @return the updated container
-     */
-    @Transactional
-    public ContainerResponse stopContainer(UUID id, UUID userId) {
-        Container container = containerRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Container", "id", id));
-        
-        try {
-            dockerClient.stopContainerCmd(container.getContainerId()).exec();
-            
-            container.setStatus(ContainerStatus.STOPPED);
-            container = containerRepository.save(container);
-            
-            InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(container.getContainerId()).exec();
-            return mapToContainerResponse(container, inspectResponse);
-        } catch (DockerException e) {
-            throw new ContainerOperationException("Failed to stop container: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Removes a container.
-     *
-     * @param id the container ID
-     * @param userId the user ID
-     */
-    @Transactional
-    public void removeContainer(UUID id, UUID userId) {
-        Container container = containerRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Container", "id", id));
-        
-        try {
-            // Stop container if running
-            if (container.getStatus() == ContainerStatus.RUNNING) {
-                dockerClient.stopContainerCmd(container.getContainerId()).exec();
+                    container.setPorts(portList);
+                }
+                
+                Map<String, Object> networks = (Map<String, Object>) networkSettings.get("Networks");
+                if (networks != null) {
+                    container.setNetworks(new ArrayList<>(networks.keySet()));
+                }
             }
             
-            // Remove container
-            dockerClient.removeContainerCmd(container.getContainerId()).exec();
+            List<Map<String, Object>> mounts = (List<Map<String, Object>>) data.get("Mounts");
+            if (mounts != null) {
+                container.setMountPoints(mounts);
+                
+                List<String> volumes = mounts.stream()
+                        .map(mount -> mount.get("Source") + ":" + mount.get("Destination"))
+                        .collect(Collectors.toList());
+                container.setVolumes(volumes);
+            }
             
-            // Remove from database
-            containerRepository.delete(container);
-        } catch (DockerException e) {
-            throw new ContainerOperationException("Failed to remove container: " + e.getMessage(), e);
+            return container;
+        } catch (Exception e) {
+            logger.error("Error fetching container {} from context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return null;
         }
     }
 
     /**
-     * Maps a container and inspect response to a container response.
+     * Start a container.
      *
-     * @param container the container
-     * @param inspectResponse the inspect response
-     * @return the container response
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return True if started successfully
      */
-    private ContainerResponse mapToContainerResponse(Container container, InspectContainerResponse inspectResponse) {
-        ContainerResponse response = new ContainerResponse();
-        response.setId(container.getId());
-        response.setName(container.getName());
-        response.setImage(container.getImage());
-        response.setContainerId(container.getContainerId());
-        response.setStatus(container.getStatus());
-        response.setPorts(container.getPorts());
-        response.setEnvironment(container.getEnvironment());
-        response.setMemoryLimit(container.getMemoryLimit());
-        response.setCpuLimit(container.getCpuLimit());
-        response.setCreatedAt(container.getCreatedAt());
-        
-        if (inspectResponse != null) {
-            response.setIpAddress(inspectResponse.getNetworkSettings().getIpAddress());
-            response.setRunning(inspectResponse.getState().getRunning());
-            response.setStartedAt(inspectResponse.getState().getStartedAt());
+    public boolean startContainer(String contextId, String containerId) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return false;
         }
         
-        return response;
+        try {
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("start");
+            command.add(containerId);
+            
+            String output = contextService.executeCommand(contextId, command);
+            
+            return output.contains(containerId);
+        } catch (Exception e) {
+            logger.error("Error starting container {} in context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Maps environment variables to a list of strings.
+     * Stop a container.
      *
-     * @param environment the environment variables
-     * @return the list of environment variables
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return True if stopped successfully
      */
-    private List<String> mapToEnvList(Map<String, String> environment) {
-        if (environment == null) {
-            return new ArrayList<>();
+    public boolean stopContainer(String contextId, String containerId) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return false;
         }
         
-        return environment.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.toList());
+        try {
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("stop");
+            command.add(containerId);
+            
+            String output = contextService.executeCommand(contextId, command);
+            
+            return output.contains(containerId);
+        } catch (Exception e) {
+            logger.error("Error stopping container {} in context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Restart a container.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return True if restarted successfully
+     */
+    public boolean restartContainer(String contextId, String containerId) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return false;
+        }
+        
+        try {
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("restart");
+            command.add(containerId);
+            
+            String output = contextService.executeCommand(contextId, command);
+            
+            return output.contains(containerId);
+        } catch (Exception e) {
+            logger.error("Error restarting container {} in context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remove a container.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @param force Whether to force removal
+     * @return True if removed successfully
+     */
+    public boolean removeContainer(String contextId, String containerId, boolean force) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return false;
+        }
+        
+        try {
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("rm");
+            
+            if (force) {
+                command.add("--force");
+            }
+            
+            command.add(containerId);
+            
+            String output = contextService.executeCommand(contextId, command);
+            
+            return output.contains(containerId);
+        } catch (Exception e) {
+            logger.error("Error removing container {} in context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get container logs.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @param tail Number of lines to show from the end of the logs
+     * @return List of Docker logs
+     */
+    public List<DockerLog> getContainerLogs(String contextId, String containerId, int tail) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        
+        try {
+            List<String> command = new ArrayList<>();
+            command.add("container");
+            command.add("logs");
+            command.add("--timestamps");
+            
+            if (tail > 0) {
+                command.add("--tail");
+                command.add(String.valueOf(tail));
+            }
+            
+            command.add(containerId);
+            
+            String output = contextService.executeCommand(contextId, command);
+            
+            List<DockerLog> logs = new ArrayList<>();
+            long lineNumber = 1;
+            
+            for (String line : output.split("\n")) {
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+                
+                DockerLog log = new DockerLog();
+                log.setId(UUID.randomUUID().toString());
+                log.setContainerId(containerId);
+                
+                // Parse timestamp and message
+                if (line.length() > 30) {
+                    String timestamp = line.substring(0, 30).trim();
+                    String message = line.substring(30).trim();
+                    
+                    log.setTimestamp(LocalDateTime.parse(timestamp.substring(0, 19)));
+                    log.setMessage(message);
+                } else {
+                    log.setMessage(line);
+                }
+                
+                log.setLineNumber(lineNumber++);
+                log.setStream("stdout");  // Default to stdout
+                
+                logs.add(log);
+            }
+            
+            return logs;
+        } catch (Exception e) {
+            logger.error("Error fetching logs for container {} in context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Stream container logs.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return True if streaming started successfully
+     */
+    public boolean streamContainerLogs(String contextId, String containerId) {
+        DockerContext context = contextService.getContextById(contextId);
+        if (context == null) {
+            return false;
+        }
+        
+        // Stop any existing log stream for this container
+        stopLogStream(contextId, containerId);
+        
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            
+            List<String> command = new ArrayList<>();
+            command.add("docker");
+            command.add("container");
+            command.add("logs");
+            command.add("--timestamps");
+            command.add("--follow");
+            command.add(containerId);
+            
+            // Add context-specific environment variables
+            if (context.getDockerHost() != null && !context.getDockerHost().isEmpty()) {
+                processBuilder.environment().put("DOCKER_HOST", context.getDockerHost());
+            }
+            
+            if (context.isTlsEnabled()) {
+                processBuilder.environment().put("DOCKER_TLS_VERIFY", "1");
+                
+                if (context.getCertPath() != null && !context.getCertPath().isEmpty()) {
+                    processBuilder.environment().put("DOCKER_CERT_PATH", context.getCertPath());
+                }
+            }
+            
+            processBuilder.command(command);
+            
+            Process process = processBuilder.start();
+            logStreams.put(contextId + "-" + containerId, process);
+            
+            // Start a thread to read the log stream
+            new Thread(() -> {
+                try {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Process log line (in a real application, send to WebSocket or SSE)
+                        logger.debug("Container {} log: {}", containerId, line);
+                    }
+                } catch (Exception e) {
+                    logger.error("Error reading log stream for container {} in context {}: {}", 
+                            containerId, contextId, e.getMessage());
+                } finally {
+                    logStreams.remove(contextId + "-" + containerId);
+                }
+            }).start();
+            
+            return true;
+        } catch (Exception e) {
+            logger.error("Error streaming logs for container {} in context {}: {}", 
+                    containerId, context.getName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Stop streaming container logs.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return True if streaming stopped successfully
+     */
+    public boolean stopLogStream(String contextId, String containerId) {
+        Process process = logStreams.get(contextId + "-" + containerId);
+        if (process == null) {
+            return false;
+        }
+        
+        process.destroy();
+        logStreams.remove(contextId + "-" + containerId);
+        
+        return true;
+    }
+
+    /**
+     * Get container state from status string.
+     *
+     * @param status The container status string
+     * @return The container state
+     */
+    private String getContainerState(String status) {
+        if (status == null) {
+            return "unknown";
+        }
+        
+        status = status.toLowerCase();
+        
+        if (status.contains("running")) {
+            return "running";
+        } else if (status.contains("created")) {
+            return "created";
+        } else if (status.contains("exited")) {
+            return "exited";
+        } else if (status.contains("paused")) {
+            return "paused";
+        } else if (status.contains("restarting")) {
+            return "restarting";
+        } else if (status.contains("removing")) {
+            return "removing";
+        } else if (status.contains("dead")) {
+            return "dead";
+        } else {
+            return "unknown";
+        }
     }
 }
 

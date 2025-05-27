@@ -1,51 +1,43 @@
 server:
-  port: 8081
+  port: 8084
+  servlet:
+    context-path: /
 
 spring:
   application:
-    name: docker-service
-  datasource:
-    url: jdbc:h2:mem:dockerdb
-    username: sa
-    password: password
-    driver-class-name: org.h2.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    name: codebridge-docker-service
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-  instance:
-    prefer-ip-address: true
+# OpenAPI configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    docExpansion: none
+    filter: true
+    displayRequestDuration: true
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-
-docker:
-  host: unix:///var/run/docker.sock
-  registry:
-    url: https://index.docker.io/v1/
-    username: 
-    password: 
-    email: 
-
+# Logging configuration
 logging:
   level:
     root: INFO
+    com.codebridge: DEBUG
     org.springframework.web: INFO
     org.springframework.security: INFO
-    com.codebridge: DEBUG
+
+# Docker service configuration
+docker:
+  connection:
+    timeout: 30000
+    socket-timeout: 30000
+  registry:
+    default-auth-type: basic
+    verify-ssl: true
+  context:
+    default-endpoint-type: docker
+  container:
+    log-tail-lines: 100
+    log-stream-timeout: 3600000
 
