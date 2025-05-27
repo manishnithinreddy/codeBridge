@@ -1,47 +1,96 @@
-# CodeBridge Microservices Platform
+# CodeBridge
 
-CodeBridge is a comprehensive microservices platform for managing development environments, API testing, and team collaboration.
+CodeBridge is a comprehensive microservices platform for managing and integrating various development tools and services.
 
-## Architecture
+## Project Structure
 
-The platform consists of the following microservices:
+The CodeBridge platform consists of the following microservices:
 
-### Core Services
+- **codebridge-user-service**: User management, authentication, and authorization
+- **codebridge-docker-service**: Docker registry and container management
+- **codebridge-server-service**: Server management with time-based access expiry
+- **codebridge-api-testing-service**: API testing, scheduling, and reporting
+- **codebridge-gateway**: API Gateway for routing and security
 
-1. **Auth Gateway Service**
-   - API Gateway with routing and load balancing
-   - Authentication and authorization with JWT
-   - Role-based access control
-   - Team-based resource isolation
+## Features
 
-2. **Docker Service**
-   - Container management (create, start, stop, remove)
-   - Resource limits (CPU, memory)
-   - Team-based access control
-   - Container monitoring
+### Docker Integration Features
 
-3. **API Testing Service**
-   - HTTP request testing
-   - Response validation
-   - Test scripting
-   - Test results tracking
+- **Registry Management**:
+  - Registry browser with authentication and SSL settings
+  - Image listing and tag management
+  - Connection testing
 
-### Security Features
+- **Container Management**:
+  - Context management for multiple Docker environments
+  - Container lifecycle operations (start, stop, restart)
+  - Resource monitoring
+  - Volume and network management
 
-- JWT-based authentication
-- Role-based access control
-- Team resource isolation
-- Service-to-service authentication
-- Audit logging
+- **Advanced Logging**:
+  - Log streaming and management
+  - Log filtering and search
+  - Log retention policies
+
+### Server Management Features
+
+- **Server Access Control**:
+  - Time-based access expiry
+  - Role-based permissions
+  - Access audit logging
+
+- **Multi-Server UI**:
+  - Unified dashboard for multiple servers
+  - Server health monitoring
+  - Resource utilization tracking
+
+- **Advanced Log Streaming**:
+  - Real-time log aggregation
+  - Log analysis and alerting
+  - Custom log parsers
+
+### API Testing Features
+
+- **Test Scheduling**:
+  - Cron-based test scheduling
+  - Parallel test execution
+  - Conditional test execution
+
+- **Reporting Dashboard**:
+  - Test result visualization
+  - Historical trend analysis
+  - Performance metrics
+
+- **CI/CD Integration**:
+  - Webhook triggers
+  - Pipeline integration
+  - Automated deployment testing
+
+### General Features
+
+- **Enhanced Role-Based Access Controls**:
+  - Fine-grained permission management
+  - Dynamic role assignment
+  - Permission inheritance
+
+- **Webhook Management UI**:
+  - Webhook creation and configuration
+  - Event filtering
+  - Delivery monitoring and retry
+
+- **JetBrains Plugin Integration**:
+  - Direct IDE integration
+  - Code navigation
+  - Remote debugging
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 17+
-- Maven 3.8+
-- Docker
-- PostgreSQL (optional, can use H2 for development)
+- Java 17 or higher
+- Maven 3.8 or higher
+- PostgreSQL 13 or higher
+- Docker (for containerization)
 
 ### Building the Project
 
@@ -51,63 +100,31 @@ mvn clean install
 
 ### Running the Services
 
-1. Start the Auth Gateway:
+Each service can be run independently:
 
 ```bash
-cd codebridge-auth-gateway
-mvn spring-boot:run
+java -jar codebridge-user-service/target/codebridge-user-service-1.0.0-SNAPSHOT.jar
+java -jar codebridge-docker-service/target/codebridge-docker-service-1.0.0-SNAPSHOT.jar
+java -jar codebridge-server-service/target/codebridge-server-service-1.0.0-SNAPSHOT.jar
+java -jar codebridge-api-testing-service/target/codebridge-api-testing-service-1.0.0-SNAPSHOT.jar
+java -jar codebridge-gateway/target/codebridge-gateway-1.0.0-SNAPSHOT.jar
 ```
 
-2. Start the Docker Service:
+### Docker Deployment
 
 ```bash
-cd codebridge-docker-service
-mvn spring-boot:run
-```
-
-3. Start the API Testing Service:
-
-```bash
-cd codebridge-api-test-service
-mvn spring-boot:run
+docker-compose up -d
 ```
 
 ## API Documentation
 
-### Auth Gateway API
+Each service provides Swagger/OpenAPI documentation at:
 
-- `POST /api/login` - Authenticate user
-- `POST /api/register` - Register new user
-- `POST /api/refresh-token` - Refresh JWT token
-
-### Docker Service API
-
-- `POST /api/containers` - Create container
-- `GET /api/containers` - List containers
-- `GET /api/containers/{id}` - Get container
-- `PUT /api/containers/{id}/start` - Start container
-- `PUT /api/containers/{id}/stop` - Stop container
-- `DELETE /api/containers/{id}` - Remove container
-
-### API Testing Service
-
-- `POST /api/tests` - Create API test
-- `GET /api/tests` - List API tests
-- `GET /api/tests/{id}` - Get API test
-- `PUT /api/tests/{id}` - Update API test
-- `DELETE /api/tests/{id}` - Delete API test
-- `POST /api/tests/{id}/execute` - Execute API test
-- `GET /api/tests/{id}/results` - Get test results
-
-## Security
-
-The platform implements multiple layers of security:
-
-1. **Authentication** - JWT-based authentication for all services
-2. **Authorization** - Role-based access control for API endpoints
-3. **Resource Isolation** - Team-based resource isolation
-4. **Service Security** - Service-to-service authentication
-5. **Audit Logging** - Comprehensive audit logging for all operations
+- User Service: http://localhost:8081/swagger-ui.html
+- Docker Service: http://localhost:8084/swagger-ui.html
+- Server Service: http://localhost:8085/swagger-ui.html
+- API Testing Service: http://localhost:8086/swagger-ui.html
+- Gateway: http://localhost:8080/swagger-ui.html
 
 ## Contributing
 
@@ -115,5 +132,5 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 

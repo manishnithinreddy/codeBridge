@@ -1,137 +1,340 @@
 package com.codebridge.docker.controller;
 
-import com.codebridge.docker.dto.ContainerCreationRequest;
-import com.codebridge.docker.dto.ContainerResponse;
+import com.codebridge.docker.model.DockerContainer;
+import com.codebridge.docker.model.DockerLog;
 import com.codebridge.docker.service.DockerContainerService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 /**
  * Controller for Docker container operations.
  */
 @RestController
-@RequestMapping("/api/containers")
+@RequestMapping("/api/docker/contexts/{contextId}/containers")
+@Tag(name = "Docker Containers", description = "APIs for Docker container operations")
+@SecurityRequirement(name = "bearerAuth")
 public class DockerContainerController {
 
     private final DockerContainerService containerService;
 
+    @Autowired
     public DockerContainerController(DockerContainerService containerService) {
         this.containerService = containerService;
     }
 
     /**
-     * Creates a new Docker container.
+     * Get all containers in a Docker context.
      *
-     * @param request the container creation request
-     * @return the created container
-     */
-    @PostMapping
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ContainerResponse> createContainer(@Valid @RequestBody ContainerCreationRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString((String) authentication.getPrincipal());
-        UUID teamId = null;
-        
-        if (authentication.getDetails() != null && authentication.getDetails() instanceof String) {
-            teamId = UUID.fromString((String) authentication.getDetails());
-        }
-        
-        ContainerResponse container = containerService.createContainer(request, userId, teamId);
-        return new ResponseEntity<>(container, HttpStatus.CREATED);
-    }
-
-    /**
-     * Gets all containers for the authenticated user.
-     *
-     * @return the list of containers
+     * @param contextId The context ID
+     * @param showAll Whether to show all containers (including stopped ones)
+     * @return List of Docker containers
      */
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<ContainerResponse>> getContainers() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+    @Operation(
+        summary = "Get all containers",
+        description = "Get a list of all containers in a Docker context",
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "Successful operation",
+                content = @Content(schema = @Schema(implementation = DockerContainer.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context not found")
+        }
+    )
+    public ResponseEntity<List<DockerContainer>> getContainers(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Show all containers (including stopped ones)")
+            @RequestParam(required = false, defaultValue = "false") boolean showAll) {
         
-        List<ContainerResponse> containers = containerService.getContainers(userId);
+        List<DockerContainer> containers = containerService.getContainers(contextId, showAll);
+        
         return ResponseEntity.ok(containers);
     }
 
     /**
-     * Gets a container by ID.
+     * Get a container by ID.
      *
-     * @param id the container ID
-     * @return the container
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return The Docker container
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{containerId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ContainerResponse> getContainer(@PathVariable UUID id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+    @Operation(
+        summary = "Get a container",
+        description = "Get a container by its ID",
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "Successful operation",
+                content = @Content(schema = @Schema(implementation = DockerContainer.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<DockerContainer> getContainer(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId) {
         
-        ContainerResponse container = containerService.getContainer(id, userId);
+        DockerContainer container = containerService.getContainer(contextId, containerId);
+        
+        if (container == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
         return ResponseEntity.ok(container);
     }
 
     /**
-     * Starts a container.
+     * Start a container.
      *
-     * @param id the container ID
-     * @return the updated container
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return Success status
      */
-    @PutMapping("/{id}/start")
+    @PostMapping("/{containerId}/start")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ContainerResponse> startContainer(@PathVariable UUID id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+    @Operation(
+        summary = "Start a container",
+        description = "Start a container by its ID",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<Map<String, Boolean>> startContainer(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId) {
         
-        ContainerResponse container = containerService.startContainer(id, userId);
-        return ResponseEntity.ok(container);
+        boolean started = containerService.startContainer(contextId, containerId);
+        
+        return ResponseEntity.ok(Map.of("success", started));
     }
 
     /**
-     * Stops a container.
+     * Stop a container.
      *
-     * @param id the container ID
-     * @return the updated container
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return Success status
      */
-    @PutMapping("/{id}/stop")
+    @PostMapping("/{containerId}/stop")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ContainerResponse> stopContainer(@PathVariable UUID id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+    @Operation(
+        summary = "Stop a container",
+        description = "Stop a container by its ID",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<Map<String, Boolean>> stopContainer(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId) {
         
-        ContainerResponse container = containerService.stopContainer(id, userId);
-        return ResponseEntity.ok(container);
+        boolean stopped = containerService.stopContainer(contextId, containerId);
+        
+        return ResponseEntity.ok(Map.of("success", stopped));
     }
 
     /**
-     * Removes a container.
+     * Restart a container.
      *
-     * @param id the container ID
-     * @return the response entity
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return Success status
      */
-    @DeleteMapping("/{id}")
+    @PostMapping("/{containerId}/restart")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> removeContainer(@PathVariable UUID id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+    @Operation(
+        summary = "Restart a container",
+        description = "Restart a container by its ID",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<Map<String, Boolean>> restartContainer(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId) {
         
-        containerService.removeContainer(id, userId);
-        return ResponseEntity.noContent().build();
+        boolean restarted = containerService.restartContainer(contextId, containerId);
+        
+        return ResponseEntity.ok(Map.of("success", restarted));
+    }
+
+    /**
+     * Remove a container.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @param force Whether to force removal
+     * @return Success status
+     */
+    @DeleteMapping("/{containerId}")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Remove a container",
+        description = "Remove a container by its ID",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<Map<String, Boolean>> removeContainer(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId,
+            
+            @Parameter(description = "Force removal")
+            @RequestParam(required = false, defaultValue = "false") boolean force) {
+        
+        boolean removed = containerService.removeContainer(contextId, containerId, force);
+        
+        return ResponseEntity.ok(Map.of("success", removed));
+    }
+
+    /**
+     * Get container logs.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @param tail Number of lines to show from the end of the logs
+     * @return List of Docker logs
+     */
+    @GetMapping("/{containerId}/logs")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Get container logs",
+        description = "Get logs for a container",
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "Successful operation",
+                content = @Content(schema = @Schema(implementation = DockerLog.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<List<DockerLog>> getContainerLogs(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId,
+            
+            @Parameter(description = "Number of lines to show from the end of the logs")
+            @RequestParam(required = false, defaultValue = "100") int tail) {
+        
+        List<DockerLog> logs = containerService.getContainerLogs(contextId, containerId, tail);
+        
+        return ResponseEntity.ok(logs);
+    }
+
+    /**
+     * Stream container logs.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return Success status
+     */
+    @PostMapping("/{containerId}/logs/stream")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Stream container logs",
+        description = "Start streaming logs for a container",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<Map<String, Boolean>> streamContainerLogs(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId) {
+        
+        boolean started = containerService.streamContainerLogs(contextId, containerId);
+        
+        return ResponseEntity.ok(Map.of("success", started));
+    }
+
+    /**
+     * Stop streaming container logs.
+     *
+     * @param contextId The context ID
+     * @param containerId The container ID
+     * @return Success status
+     */
+    @PostMapping("/{containerId}/logs/stop-stream")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+        summary = "Stop streaming container logs",
+        description = "Stop streaming logs for a container",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Context or container not found")
+        }
+    )
+    public ResponseEntity<Map<String, Boolean>> stopLogStream(
+            @Parameter(description = "Context ID", required = true)
+            @PathVariable String contextId,
+            
+            @Parameter(description = "Container ID", required = true)
+            @PathVariable String containerId) {
+        
+        boolean stopped = containerService.stopLogStream(contextId, containerId);
+        
+        return ResponseEntity.ok(Map.of("success", stopped));
     }
 }
 
