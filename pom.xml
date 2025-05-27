@@ -18,11 +18,16 @@
     <description>Parent project for CodeBridge microservices platform</description>
     
     <modules>
-        <module>codebridge-user-service</module>
+        <module>codebridge-user-management-service</module>
         <module>codebridge-docker-service</module>
         <module>codebridge-server-service</module>
-        <module>codebridge-api-testing-service</module>
+        <module>codebridge-api-test-service</module>
         <module>codebridge-gateway</module>
+        <module>codebridge-security-service</module>
+        <module>codebridge-auth-gateway</module>
+        <module>codebridge-core</module>
+        <module>codebridge-webhook-service</module>
+        <module>codebridge-gitlab-service</module>
     </modules>
     
     <properties>
@@ -91,4 +96,3 @@
         </pluginManagement>
     </build>
 </project>
-
