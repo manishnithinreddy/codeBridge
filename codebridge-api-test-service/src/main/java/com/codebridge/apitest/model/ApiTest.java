@@ -15,6 +15,7 @@ import java.util.UUID;
 
 /**
  * Entity for API tests.
+ * Supports HTTP, WebSocket, gRPC, and GraphQL requests.
  */
 @Entity
 @Table(name = "api_tests")
@@ -43,6 +44,13 @@ public class ApiTest {
     private HttpMethod method;
 
     @Column
+    @Enumerated(EnumType.STRING)
+    private ProtocolType protocolType;
+
+    @Column
+    private UUID environmentId;
+
+    @Column
     @Lob
     private String headers;
 
@@ -51,11 +59,35 @@ public class ApiTest {
     private String requestBody;
 
     @Column
+    @Lob
+    private String graphqlQuery;
+
+    @Column
+    @Lob
+    private String graphqlVariables;
+
+    @Column
+    @Lob
+    private String grpcRequest;
+
+    @Column
+    @Lob
+    private String grpcServiceDefinition;
+
+    @Column
     private Integer expectedStatusCode;
 
     @Column
     @Lob
     private String expectedResponseBody;
+
+    @Column
+    @Lob
+    private String preRequestScript;
+
+    @Column
+    @Lob
+    private String postRequestScript;
 
     @Column
     @Lob
@@ -140,6 +172,22 @@ public class ApiTest {
         this.method = method;
     }
 
+    public ProtocolType getProtocolType() {
+        return protocolType;
+    }
+
+    public void setProtocolType(ProtocolType protocolType) {
+        this.protocolType = protocolType;
+    }
+
+    public UUID getEnvironmentId() {
+        return environmentId;
+    }
+
+    public void setEnvironmentId(UUID environmentId) {
+        this.environmentId = environmentId;
+    }
+
     public String getHeaders() {
         return headers;
     }
@@ -156,6 +204,38 @@ public class ApiTest {
         this.requestBody = requestBody;
     }
 
+    public String getGraphqlQuery() {
+        return graphqlQuery;
+    }
+
+    public void setGraphqlQuery(String graphqlQuery) {
+        this.graphqlQuery = graphqlQuery;
+    }
+
+    public String getGraphqlVariables() {
+        return graphqlVariables;
+    }
+
+    public void setGraphqlVariables(String graphqlVariables) {
+        this.graphqlVariables = graphqlVariables;
+    }
+
+    public String getGrpcRequest() {
+        return grpcRequest;
+    }
+
+    public void setGrpcRequest(String grpcRequest) {
+        this.grpcRequest = grpcRequest;
+    }
+
+    public String getGrpcServiceDefinition() {
+        return grpcServiceDefinition;
+    }
+
+    public void setGrpcServiceDefinition(String grpcServiceDefinition) {
+        this.grpcServiceDefinition = grpcServiceDefinition;
+    }
+
     public Integer getExpectedStatusCode() {
         return expectedStatusCode;
     }
@@ -170,6 +250,22 @@ public class ApiTest {
 
     public void setExpectedResponseBody(String expectedResponseBody) {
         this.expectedResponseBody = expectedResponseBody;
+    }
+
+    public String getPreRequestScript() {
+        return preRequestScript;
+    }
+
+    public void setPreRequestScript(String preRequestScript) {
+        this.preRequestScript = preRequestScript;
+    }
+
+    public String getPostRequestScript() {
+        return postRequestScript;
+    }
+
+    public void setPostRequestScript(String postRequestScript) {
+        this.postRequestScript = postRequestScript;
     }
 
     public String getValidationScript() {
@@ -212,4 +308,3 @@ public class ApiTest {
         this.updatedAt = updatedAt;
     }
 }
-
