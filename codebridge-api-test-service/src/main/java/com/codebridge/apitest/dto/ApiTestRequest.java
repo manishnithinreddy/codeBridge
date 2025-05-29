@@ -57,6 +57,14 @@ public class ApiTestRequest {
     @Min(value = 1000, message = "Timeout must be at least 1000 ms")
     private Integer timeoutMs;
 
+    // Auth fields
+    private String authType; // String to allow for easy mapping, will be converted to enum in service
+    private String authToken;
+    private String apiKeyName;
+    private String apiKeyValue;
+    private String apiKeyLocation; // String for enum
+
+
     public String getName() {
         return name;
     }
@@ -199,5 +207,45 @@ public class ApiTestRequest {
 
     public void setTimeoutMs(Integer timeoutMs) {
         this.timeoutMs = timeoutMs;
+    }
+
+    public String getAuthType() {
+        return authType;
+    }
+
+    public void setAuthType(String authType) {
+        this.authType = authType;
+    }
+
+    public String getAuthToken() {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
+    }
+
+    public String getApiKeyName() {
+        return apiKeyName;
+    }
+
+    public void setApiKeyName(String apiKeyName) {
+        this.apiKeyName = apiKeyName;
+    }
+
+    public String getApiKeyValue() {
+        return apiKeyValue;
+    }
+
+    public void setApiKeyValue(String apiKeyValue) {
+        this.apiKeyValue = apiKeyValue;
+    }
+
+    public String getApiKeyLocation() {
+        return apiKeyLocation;
+    }
+
+    public void setApiKeyLocation(String apiKeyLocation) {
+        this.apiKeyLocation = apiKeyLocation;
     }
 }
