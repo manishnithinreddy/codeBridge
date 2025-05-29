@@ -257,7 +257,11 @@ public class CollectionService {
                 // Execute pre-request script for test (future implementation)
                 
                 // Execute the test
-                TestResultResponse result = apiTestService.executeTest(test.getTestId(), userId);
+                TestResultResponse result = apiTestService.executeTest(
+                    test.getTestId(), 
+                    userId, 
+                    collectionVariables // Pass collection variables
+                );
                 results.add(result);
                 
                 // Execute post-request script for test (future implementation)
