@@ -6,151 +6,134 @@ import com.codebridge.server.dto.remote.CommandResponse;
 import com.codebridge.server.exception.RemoteCommandException;
 import com.codebridge.server.exception.ResourceNotFoundException;
 // Server model might not be directly used if ServerResponse from ServerManagementService has all needed info
-// import com.codebridge.server.model.Server; 
+// import com.codebridge.server.model.Server;
 import com.codebridge.server.model.SshKey;
 import com.codebridge.server.model.enums.ServerAuthProvider;
 import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+import com.codebridge.server.model.Server;
+import com.codebridge.server.sessions.SessionKey;
+// import com.codebridge.server.model.Server; // Not directly used in this refactored version
+// import com.codebridge.server.model.SshKey; // Not directly used
+// import com.codebridge.server.model.enums.ServerAuthProvider; // Not directly used
+// import com.jcraft.jsch.ChannelExec; // JSch logic moves to SessionService
+// import com.jcraft.jsch.JSchException; // JSch logic moves to SessionService
+import com.codebridge.server.sessions.SessionKey;
+// import com.codebridge.server.sessions.SessionManager; // Removed
+// import com.codebridge.server.sessions.SshSessionWrapper; // Removed
+import com.codebridge.server.exception.AccessDeniedException;
+import com.codebridge.server.security.jwt.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+// import java.util.concurrent.TimeUnit; // No longer managing timeouts directly
+// import java.io.ByteArrayOutputStream; // No longer managing streams directly
+// import java.nio.charset.StandardCharsets; // No longer managing streams directly
+// import java.util.function.Supplier; // No longer creating sessions here
 
 @Service
 public class RemoteExecutionService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RemoteExecutionService.class);
-    private static final int DEFAULT_COMMAND_TIMEOUT_SECONDS = 60;
-    private static final int CONNECT_TIMEOUT_MS = 20000; // 20 seconds
-    private static final int CHANNEL_CONNECT_TIMEOUT_MS = 5000; // 5 seconds for channel connection
+    private static final Logger log = LoggerFactory.getLogger(RemoteExecutionService.class);
+    // DEFAULT_COMMAND_TIMEOUT_SECONDS, CONNECT_TIMEOUT_MS, CHANNEL_CONNECT_TIMEOUT_MS removed as JSch logic is gone
 
-    private final ServerManagementService serverManagementService;
-    private final SshKeyManagementService sshKeyManagementService;
-    // private final ServerActivityLogService activityLogService; // Placeholder for future integration
+    private final ServerAccessControlService serverAccessControlService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RestTemplate restTemplate;
+    private final ServerActivityLogService activityLogService; // For logging
 
-    public RemoteExecutionService(ServerManagementService serverManagementService,
-                                  SshKeyManagementService sshKeyManagementService
-                                  /* ServerActivityLogService activityLogService */) {
-        this.serverManagementService = serverManagementService;
-        this.sshKeyManagementService = sshKeyManagementService;
-        // this.activityLogService = activityLogService;
+    @Value("${codebridge.service-urls.session-service}")
+    private String sessionServiceBaseUrl;
+
+    @Autowired
+    public RemoteExecutionService(ServerAccessControlService serverAccessControlService,
+                                  JwtTokenProvider jwtTokenProvider,
+                                  RestTemplate restTemplate,
+                                  ServerActivityLogService activityLogService) {
+        this.serverAccessControlService = serverAccessControlService;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.restTemplate = restTemplate;
+        this.activityLogService = activityLogService;
     }
 
-    public CommandResponse executeCommand(UUID serverId, UUID userId, CommandRequest commandRequest) {
-        long executionStartTime = System.currentTimeMillis();
-        String command = commandRequest.getCommand();
-        int commandTimeoutSeconds = commandRequest.getTimeout() != null && commandRequest.getTimeout() > 0 
-                                    ? commandRequest.getTimeout() 
-                                    : DEFAULT_COMMAND_TIMEOUT_SECONDS;
-
-        ServerResponse serverDetails = serverManagementService.getServerById(serverId, userId);
-
-        if (serverDetails.getAuthProvider() == null || 
-            ServerAuthProvider.valueOf(serverDetails.getAuthProvider()) != ServerAuthProvider.SSH_KEY) {
-            // logActivity(serverId, userId, command, "Unsupported auth provider: " + serverDetails.getAuthProvider(), "FAILURE");
-            throw new RemoteCommandException("Command execution failed: Server is not configured for SSH Key authentication.");
+    public CommandResponse executeCommand(UUID serverId, String sessionToken, CommandRequest commandRequest) {
+        // 1. Validate token and extract SessionKey
+        Optional<SessionKey> keyOpt = jwtTokenProvider.validateTokenAndExtractSessionKey(sessionToken);
+        if (keyOpt.isEmpty()) {
+            logActivity(serverId, null, commandRequest.getCommand(), "Invalid or expired session token.", "FAILURE", null, null, null);
+            throw new AccessDeniedException("Invalid or expired session token.");
         }
-        if (serverDetails.getSshKeyId() == null) {
-            // logActivity(serverId, userId, command, "SSH Key ID is missing for server.", "FAILURE");
-            throw new RemoteCommandException("Command execution failed: SSH Key ID is missing for server " + serverId);
+        SessionKey sessionKey = keyOpt.get();
+        UUID platformUserId = sessionKey.userId();
+
+        // 2. Verify token matches requested server
+        if (!sessionKey.resourceId().equals(serverId) || !"SSH".equals(sessionKey.resourceType())) {
+            logActivity(serverId, platformUserId, commandRequest.getCommand(), "Session token mismatch.", "FAILURE", null, null, null);
+            throw new AccessDeniedException("Session token mismatch: Token is not valid for the requested server or resource type.");
         }
 
-        SshKey sshKey = sshKeyManagementService.getDecryptedSshKey(serverDetails.getSshKeyId(), userId);
-        if (sshKey.getPrivateKey() == null || sshKey.getPrivateKey().isBlank()) {
-            // logActivity(serverId, userId, command, "Decrypted private key is empty.", "FAILURE");
-            throw new RemoteCommandException("Command execution failed: Private key is missing or empty for SSH key " + sshKey.getId());
+        // 3. Perform business authorization check
+        try {
+            serverAccessControlService.checkUserAccessAndGetConnectionDetails(platformUserId, serverId);
+            // We don't need the details themselves here, just the confirmation of access.
+            // SessionService will use the details it received during session init.
+            log.debug("User {} authorized for server {} via ServerAccessControlService", platformUserId, serverId);
+        } catch (AccessDeniedException | ResourceNotFoundException e) {
+            logActivity(serverId, platformUserId, commandRequest.getCommand(), "Authorization failed: " + e.getMessage(), "FAILURE", null, null, null);
+            throw e; // Re-throw to be handled by GlobalExceptionHandler
         }
 
-        String hostname = serverDetails.getHostname();
-        int port = serverDetails.getPort();
-        String remoteUsername = serverDetails.getRemoteUsername();
-
-        JSch jsch = new JSch();
-        Session session = null;
-        ChannelExec channelExec = null;
-
-        String stdoutOutput = "";
-        String stderrOutput = "";
-        Integer exitStatus = null;
+        // 4. Make HTTP POST call to SessionService
+        String url = sessionServiceBaseUrl + "/ops/ssh/" + sessionToken + "/execute-command";
+        HttpHeaders headers = new HttpHeaders();
+        // Potentially add an inter-service auth token if SessionService requires it from ServerService
+        HttpEntity<CommandRequest> requestEntity = new HttpEntity<>(commandRequest, headers);
 
         try {
-            jsch.addIdentity(
-                    "sshKey_" + sshKey.getId().toString(), // Unique name for the key
-                    sshKey.getPrivateKey().getBytes(StandardCharsets.UTF_8),
-                    sshKey.getPublicKey() != null ? sshKey.getPublicKey().getBytes(StandardCharsets.UTF_8) : null,
-                    null // Passphrase bytes - assuming no passphrase for now
+            log.info("Delegating command execution for server {} (token: {}) to SessionService at {}", serverId, sessionToken, url);
+            ResponseEntity<CommandResponse> responseEntity = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                CommandResponse.class
             );
 
-            session = jsch.getSession(remoteUsername, hostname, port);
-            session.setConfig("StrictHostKeyChecking", "no"); // TODO: Make configurable or use known_hosts
-            session.setTimeout(CONNECT_TIMEOUT_MS);
-            logger.info("Attempting to connect to server: {}@{}:{} for command execution.", remoteUsername, hostname, port);
-            session.connect();
-            logger.info("Successfully connected to server: {}.", serverId);
-
-            channelExec = (ChannelExec) session.openChannel("exec");
-            channelExec.setCommand(command);
-
-            ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
-            ByteArrayOutputStream stderrStream = new ByteArrayOutputStream();
-            channelExec.setOutputStream(stdoutStream);
-            channelExec.setErrStream(stderrStream);
-            channelExec.setInputStream(null); // No input stream for simple commands
-
-            logger.info("Executing command on server {}: {}", serverId, command);
-            channelExec.connect(CHANNEL_CONNECT_TIMEOUT_MS); 
-
-            long timeoutEndTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(commandTimeoutSeconds);
-            while (!channelExec.isClosed() && System.currentTimeMillis() < timeoutEndTime) {
-                Thread.sleep(100); // Polling interval
+            CommandResponse response = responseEntity.getBody();
+            if (response != null) {
+                 logActivity(serverId, platformUserId, commandRequest.getCommand(),
+                            "Command executed via SessionService. Exit: " + response.getExitStatus(),
+                            response.getExitStatus() == 0 ? "SUCCESS" : "FAILURE",
+                            response.getStdout(), response.getStderr(), response.getExitStatus());
+            } else {
+                 logActivity(serverId, platformUserId, commandRequest.getCommand(),
+                            "Command execution via SessionService returned null body.", "FAILURE", null, null, null);
             }
-            
-            // Read streams after channel is closed or timed out
-            stdoutOutput = stdoutStream.toString(StandardCharsets.UTF_8);
-            stderrOutput = stderrStream.toString(StandardCharsets.UTF_8);
+            return response;
 
-            if (!channelExec.isClosed()) {
-                channelExec.sendSignal("KILL"); // Attempt to kill the process if timed out
-                // logActivity(serverId, userId, command, "Command execution timed out.", "FAILURE", stdoutOutput, stderrOutput, null);
-                throw new RemoteCommandException("Command execution timed out after " + commandTimeoutSeconds + " seconds. Partial stdout: " + stdoutOutput + " Partial stderr: " + stderrOutput);
-            }
-            
-            exitStatus = channelExec.getExitStatus();
-            logger.info("Command executed on server {}. Exit status: {}. Stdout: [{}], Stderr: [{}]", serverId, exitStatus, stdoutOutput, stderrOutput);
-            // logActivity(serverId, userId, command, "Command executed.", "SUCCESS", stdoutOutput, stderrOutput, exitStatus);
-
-        } catch (JSchException e) {
-            logger.error("JSchException during command execution on server {}: {}", serverId, e.getMessage(), e);
-            // logActivity(serverId, userId, command, "JSchException: " + e.getMessage(), "FAILURE", stdoutOutput, stderrOutput, null);
-            throw new RemoteCommandException("SSH connection or command execution error: " + e.getMessage(), e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("Command execution interrupted on server {}: {}", serverId, e.getMessage(), e);
-            // logActivity(serverId, userId, command, "Command execution interrupted.", "FAILURE", stdoutOutput, stderrOutput, null);
-            throw new RemoteCommandException("Command execution interrupted: " + e.getMessage(), e);
-        } catch (Exception e) { // Catch other potential exceptions (e.g., IOException from streams)
-            logger.error("Unexpected exception during command execution on server {}: {}", serverId, e.getMessage(), e);
-            // logActivity(serverId, userId, command, "Unexpected Exception: " + e.getMessage(), "FAILURE", stdoutOutput, stderrOutput, null);
-            throw new RemoteCommandException("Error during command execution: " + e.getMessage(), e);
-        } finally {
-            if (channelExec != null) {
-                channelExec.disconnect();
-            }
-            if (session != null) {
-                session.disconnect();
-            }
-            logger.info("Disconnected from server: {} after command execution.", serverId);
+        } catch (HttpStatusCodeException e) {
+            log.error("SessionService call failed for command execution (server {}): {} - {}", serverId, e.getStatusCode(), e.getResponseBodyAsString(), e);
+            // Log failure activity
+            logActivity(serverId, platformUserId, commandRequest.getCommand(),
+                        "SessionService error: " + e.getStatusCode(), "FAILURE", null, e.getResponseBodyAsString(), null);
+            // Map to a local exception type
+            throw new RemoteCommandException("Failed to execute command via SessionService: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error during command execution delegation (server {}): {}", serverId, e.getMessage(), e);
+            logActivity(serverId, platformUserId, commandRequest.getCommand(),
+                        "Unexpected error: " + e.getMessage(), "FAILURE", null, null, null);
+            throw new RemoteCommandException("Unexpected error delegating command execution: " + e.getMessage(), e);
         }
-
-        long durationMs = System.currentTimeMillis() - executionStartTime;
-        return new CommandResponse(stdoutOutput, stderrOutput, exitStatus, durationMs);
     }
 
     // Placeholder for activity logging method - to be implemented when ServerActivityLogService is available

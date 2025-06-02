@@ -81,7 +81,7 @@ class ServerControllerTests {
         request.setSshKeyId("ssh-key-id-123");
         return request;
     }
-    
+
     private ServerDetailsDTO sampleServerDetailsDTO() {
         ServerDetailsDTO dto = new ServerDetailsDTO();
         dto.setId("server-id-123");
@@ -160,7 +160,7 @@ class ServerControllerTests {
             .andExpect(jsonPath("$.errors[0].field").value("ipAddress"))
             .andExpect(jsonPath("$.errors[0].message").value("Invalid IP address format."));
     }
-    
+
     @Test
     void createServer_whenPortIsInvalid_shouldReturnBadRequest() throws Exception {
         CreateServerRequest request = validCreatePasswordServerRequest();
@@ -177,7 +177,7 @@ class ServerControllerTests {
     @Test
     void createServer_whenAuthTypeIsNull_shouldReturnBadRequest() throws Exception {
         CreateServerRequest request = validCreatePasswordServerRequest();
-        request.setAuthType(null); 
+        request.setAuthType(null);
 
         mockMvc.perform(post("/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -190,7 +190,7 @@ class ServerControllerTests {
     @Test
     void createServer_passwordAuth_whenUsernameIsBlank_shouldReturnBadRequest() throws Exception {
         CreateServerRequest request = validCreatePasswordServerRequest();
-        request.setUsername(""); 
+        request.setUsername("");
 
         mockMvc.perform(post("/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -199,7 +199,7 @@ class ServerControllerTests {
             .andExpect(jsonPath("$.errors[0].field").value("username"))
             .andExpect(jsonPath("$.errors[0].message").value("Username is required for password authentication."));
     }
-    
+
     @Test
     void createServer_passwordAuth_whenPasswordIsBlank_shouldReturnBadRequest() throws Exception {
         CreateServerRequest request = validCreatePasswordServerRequest();
@@ -238,11 +238,11 @@ class ServerControllerTests {
             .andExpect(jsonPath("$.errors[0].field").value("sshKeyId"))
             .andExpect(jsonPath("$.errors[0].message").value("SSH Key ID is required for SSH key authentication."));
     }
-    
+
     @Test
     void createServer_whenSshKeyNotFound_shouldReturnNotFound() throws Exception {
         CreateServerRequest request = validCreateSshKeyServerRequest();
-        
+
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(mockAdminUserId));
             when(serverManagementService.createServer(eq(mockAdminUserId), any(CreateServerRequest.class)))
@@ -260,7 +260,7 @@ class ServerControllerTests {
     void getServerById_shouldReturnServerDetails() throws Exception {
         String serverId = "server-id-123";
         ServerDetailsDTO serverDetails = sampleServerDetailsDTO();
-        
+
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(mockAdminUserId));
             when(serverManagementService.getServerById(eq(mockAdminUserId), eq(serverId))).thenReturn(serverDetails);
@@ -276,7 +276,7 @@ class ServerControllerTests {
     @Test
     void getServerById_whenNotFound_shouldReturnNotFound() throws Exception {
         String serverId = "non-existent-server";
-        
+
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(mockAdminUserId));
             when(serverManagementService.getServerById(eq(mockAdminUserId), eq(serverId)))
@@ -307,7 +307,7 @@ class ServerControllerTests {
                 .andExpect(jsonPath("$[0].name").value("Server 1"));
         }
     }
-    
+
     @Test
     void listServersForUser_whenNoServers_shouldReturnEmptyList() throws Exception {
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
@@ -358,7 +358,7 @@ class ServerControllerTests {
     void updateServer_whenNameIsBlank_shouldReturnBadRequest() throws Exception {
         String serverId = "server-id";
         UpdateServerRequest request = validUpdateServerRequest();
-        request.setName(""); 
+        request.setName("");
 
         mockMvc.perform(put("/api/servers/{serverId}", serverId)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -367,7 +367,7 @@ class ServerControllerTests {
             .andExpect(jsonPath("$.errors[0].field").value("name"))
             .andExpect(jsonPath("$.errors[0].message").value("Server name cannot be blank."));
     }
-    
+
     @Test
     void updateServer_whenServerNotFound_shouldReturnNotFound() throws Exception {
         String serverId = "non-existent-server";
@@ -385,7 +385,7 @@ class ServerControllerTests {
                 .andExpect(jsonPath("$.message").value("Server not found"));
         }
     }
-    
+
     @Test
     void updateServer_whenSshKeyForAuthNotFound_shouldReturnNotFound() throws Exception {
         String serverId = "server-id";
@@ -411,7 +411,7 @@ class ServerControllerTests {
     @Test
     void deleteServer_shouldReturnNoContent() throws Exception {
         String serverId = "server-id-to-delete";
-        
+
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(mockAdminUserId));
             doNothing().when(serverManagementService).deleteServer(eq(mockAdminUserId), eq(serverId));

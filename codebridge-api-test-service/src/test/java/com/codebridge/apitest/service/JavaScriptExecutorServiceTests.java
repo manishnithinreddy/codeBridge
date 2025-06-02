@@ -54,7 +54,7 @@ class JavaScriptExecutorServiceTests {
         assertTrue(result instanceof Double);
         assertEquals(123.45, (Double) result, 0.001);
     }
-    
+
     @Test
     void testExecuteScriptReturningInteger() {
         String script = "123";
@@ -84,7 +84,7 @@ class JavaScriptExecutorServiceTests {
         assertTrue(result instanceof Boolean);
         assertEquals(false, result);
     }
-    
+
     @Test
     void testExecuteScriptReturningNull() {
         String script = "null;"; // Explicitly return null
@@ -114,11 +114,11 @@ class JavaScriptExecutorServiceTests {
         // The exact message from GraalVM can vary, so check for a general indication of syntax error
         assertTrue(exception.getCause().getMessage().toLowerCase().contains("syntax error"));
     }
-    
+
     @Test
     void testExecuteScriptWithBindingAccessingNonExistentMember() {
         // Accessing a property of a non-existent member in bindings
-        String script = "request.body.test"; 
+        String script = "request.body.test";
         Map<String, Object> bindings = new HashMap<>();
         // request is not in bindings
         ScriptExecutionException exception = assertThrows(
@@ -127,7 +127,7 @@ class JavaScriptExecutorServiceTests {
         );
         assertTrue(exception.getMessage().contains("Error executing JavaScript"));
         // Error message might be like "ReferenceError: request is not defined" or similar
-        assertTrue(exception.getCause().getMessage().contains("request")); 
+        assertTrue(exception.getCause().getMessage().contains("request"));
     }
 
     @Test
@@ -140,24 +140,24 @@ class JavaScriptExecutorServiceTests {
         bindings.put("person", person);
 
         Object result = javaScriptExecutorService.executeScript(script, bindings);
-        
+
         // The result from GraalVM for a JS object is a Value that acts like a Map
         assertTrue(result instanceof Map, "Result should be a Map-like object");
         @SuppressWarnings("unchecked")
         Map<String, Object> resultMap = (Map<String, Object>) result;
-        
+
         assertEquals("JOHN DOE", resultMap.get("name"));
         // Numbers from JS might be Doubles
         assertEquals(31.0, ((Number)resultMap.get("age")).doubleValue());
     }
-    
+
     @Test
     void testExecuteScriptModifyingBindings() {
         String script = "variables.put('newVar', 'newValueFromScript'); variables.set('existingVar', 'modifiedValue');";
         Map<String, Object> bindings = new HashMap<>();
         Map<String, String> scriptVariables = new HashMap<>();
         scriptVariables.put("existingVar", "initialValue");
-        
+
         bindings.put("variables", scriptVariables); // Pass the actual map
 
         javaScriptExecutorService.executeScript(script, bindings);

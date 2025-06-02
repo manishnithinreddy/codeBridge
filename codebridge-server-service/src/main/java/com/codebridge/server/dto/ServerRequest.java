@@ -39,7 +39,7 @@ public class ServerRequest {
 
     @Size(max = 255, message = "Operating system name is too long")
     private String operatingSystem;
-    
+
     private String cloudProvider; // Will be mapped to ServerCloudProvider enum
 
     // userId will be sourced from authenticated context

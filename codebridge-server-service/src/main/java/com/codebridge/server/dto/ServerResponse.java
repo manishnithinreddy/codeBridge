@@ -20,7 +20,7 @@ public class ServerResponse {
     private LocalDateTime updatedAt;
 
     // Include SshKeyResponse if needed, but often just the ID is fine for lists
-    // private SshKeyResponse sshKey; 
+    // private SshKeyResponse sshKey;
 
     // Getters and Setters
     public UUID getId() {
