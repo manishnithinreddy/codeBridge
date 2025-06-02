@@ -1,341 +1,142 @@
 package com.codebridge.apitest.service;
 
-import com.codebridge.apitest.dto.ApiTestResponse;
+import com.codebridge.apitester.model.Collection; // Corrected model import
+import com.codebridge.apitester.model.Project;   // Corrected model import
 import com.codebridge.apitest.dto.CollectionRequest;
 import com.codebridge.apitest.dto.CollectionResponse;
-import com.codebridge.apitest.dto.CollectionTestRequest;
-import com.codebridge.apitest.dto.CollectionTestResponse;
-import com.codebridge.apitest.dto.TestResultResponse;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
-import com.codebridge.apitest.model.ApiTest;
-import com.codebridge.apitest.model.Collection;
-import com.codebridge.apitest.model.CollectionTest;
-import com.codebridge.apitest.repository.ApiTestRepository;
-import com.codebridge.apitest.repository.CollectionRepository;
-import com.codebridge.apitest.repository.CollectionTestRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.codebridge.apitest.repository.CollectionRepository; // Repository from apitest
+import com.codebridge.apitest.repository.ProjectRepository;   // Repository from apitest
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Service for collection operations.
- */
 @Service
 public class CollectionService {
 
     private final CollectionRepository collectionRepository;
-    private final CollectionTestRepository collectionTestRepository;
-    private final ApiTestRepository apiTestRepository;
-    private final ApiTestService apiTestService;
-    private final ObjectMapper objectMapper;
+    private final ProjectRepository projectRepository; // Added ProjectRepository
 
-    public CollectionService(
-            CollectionRepository collectionRepository,
-            CollectionTestRepository collectionTestRepository,
-            ApiTestRepository apiTestRepository,
-            ApiTestService apiTestService,
-            ObjectMapper objectMapper) {
+    public CollectionService(CollectionRepository collectionRepository, ProjectRepository projectRepository) {
         this.collectionRepository = collectionRepository;
-        this.collectionTestRepository = collectionTestRepository;
-        this.apiTestRepository = apiTestRepository;
-        this.apiTestService = apiTestService;
-        this.objectMapper = objectMapper;
+        this.projectRepository = projectRepository;
     }
 
-    /**
-     * Create a new collection.
-     *
-     * @param request the collection request
-     * @param userId the user ID
-     * @return the created collection
-     */
     @Transactional
-    public CollectionResponse createCollection(CollectionRequest request, UUID userId) {
+    public CollectionResponse createCollection(CollectionRequest collectionRequest, UUID platformUserId) {
+        // Validate project existence and ownership
+        Project project = projectRepository.findByIdAndPlatformUserId(
+                collectionRequest.getProjectId(), platformUserId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Project not found with id " + collectionRequest.getProjectId() + " for this user. Cannot create collection."
+                ));
+
         Collection collection = new Collection();
-        collection.setId(UUID.randomUUID());
-        collection.setName(request.getName());
-        collection.setDescription(request.getDescription());
-        collection.setUserId(userId);
-        
-        try {
-            if (request.getVariables() != null) {
-                collection.setVariables(objectMapper.writeValueAsString(request.getVariables()));
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing variables JSON", e);
-        }
-        
-        collection.setPreRequestScript(request.getPreRequestScript());
-        collection.setPostRequestScript(request.getPostRequestScript());
-        collection.setShared(request.isShared());
-        
+        collection.setName(collectionRequest.getName());
+        // collection.setDescription(collectionRequest.getDescription()); // Assuming description is still wanted
+        collection.setUserId(platformUserId); // platformUserId is the owner of this collection instance
+        collection.setProject(project); // Associate with the project
+
+        // Other fields from CollectionRequest like variables, scripts, shared can be set here if they are kept
+        // For this phase, focusing on project association.
+
         Collection savedCollection = collectionRepository.save(collection);
-        return mapToCollectionResponse(savedCollection, new ArrayList<>());
+        return mapToCollectionResponse(savedCollection);
     }
 
-    /**
-     * Get all collections for a user.
-     *
-     * @param userId the user ID
-     * @return list of collections
-     */
-    public List<CollectionResponse> getAllCollections(UUID userId) {
-        List<Collection> collections = collectionRepository.findByUserId(userId);
-        return collections.stream()
-                .map(collection -> {
-                    List<CollectionTest> tests = collectionTestRepository.findByCollectionIdOrderByOrder(collection.getId());
-                    return mapToCollectionResponse(collection, tests);
-                })
+    @Transactional(readOnly = true)
+    public CollectionResponse getCollectionByIdForUser(UUID collectionId, UUID platformUserId) {
+        // This method currently assumes direct ownership for standalone collections or collections where userId matches.
+        // For project-based collections, access might be via project ownership/sharing (handled in later phase).
+        Collection collection = collectionRepository.findByIdAndUserId(collectionId, platformUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId + " for this user."));
+        return mapToCollectionResponse(collection);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CollectionResponse> getAllCollectionsForUser(UUID platformUserId) {
+        // This lists collections directly owned by the user, not yet considering project sharing.
+        return collectionRepository.findByUserId(platformUserId).stream()
+                .map(this::mapToCollectionResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get collection by ID.
-     *
-     * @param id the collection ID
-     * @param userId the user ID
-     * @return the collection
-     */
-    public CollectionResponse getCollectionById(UUID id, UUID userId) {
-        Collection collection = collectionRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", id));
-        
-        List<CollectionTest> tests = collectionTestRepository.findByCollectionIdOrderByOrder(id);
-        return mapToCollectionResponse(collection, tests);
+    @Transactional(readOnly = true)
+    public List<CollectionResponse> getAllCollectionsForProject(UUID projectId, UUID platformUserId) {
+        // Ensure user owns the project before listing its collections
+        projectRepository.findByIdAndPlatformUserId(projectId, platformUserId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Project not found with id " + projectId + " for this user. Cannot list collections."
+                ));
+
+        return collectionRepository.findByProjectId(projectId).stream()
+                .map(this::mapToCollectionResponse)
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Update a collection.
-     *
-     * @param id the collection ID
-     * @param request the collection request
-     * @param userId the user ID
-     * @return the updated collection
-     */
+
     @Transactional
-    public CollectionResponse updateCollection(UUID id, CollectionRequest request, UUID userId) {
-        Collection collection = collectionRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", id));
-        
-        collection.setName(request.getName());
-        collection.setDescription(request.getDescription());
-        
-        try {
-            if (request.getVariables() != null) {
-                collection.setVariables(objectMapper.writeValueAsString(request.getVariables()));
+    public CollectionResponse updateCollection(UUID collectionId, CollectionRequest collectionRequest, UUID platformUserId) {
+        Collection collection = collectionRepository.findByIdAndUserId(collectionId, platformUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId + " for this user, cannot update."));
+
+        // If collection is part of a project, ensure the project ID in request matches (or handle project change)
+        if (collection.getProject() != null) {
+            if (!collection.getProject().getId().equals(collectionRequest.getProjectId())) {
+                // This logic might need refinement: are we allowing moving collection between projects?
+                // For now, let's assume projectId in request should match existing project if collection is already associated.
+                // Or, if it's for associating an unassigned collection:
+                Project project = projectRepository.findByIdAndPlatformUserId(
+                        collectionRequest.getProjectId(), platformUserId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Project not found with id " + collectionRequest.getProjectId() + " for this user."
+                        ));
+                collection.setProject(project);
             }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing variables JSON", e);
+        } else if (collectionRequest.getProjectId() != null) { // If it was a standalone collection and now gets a project
+             Project project = projectRepository.findByIdAndPlatformUserId(
+                        collectionRequest.getProjectId(), platformUserId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Project not found with id " + collectionRequest.getProjectId() + " for this user."
+                        ));
+             collection.setProject(project);
         }
-        
-        collection.setPreRequestScript(request.getPreRequestScript());
-        collection.setPostRequestScript(request.getPostRequestScript());
-        collection.setShared(request.isShared());
-        
+
+
+        collection.setName(collectionRequest.getName());
+        // collection.setDescription(collectionRequest.getDescription()); // if description is in CollectionRequest & Collection model
+
         Collection updatedCollection = collectionRepository.save(collection);
-        List<CollectionTest> tests = collectionTestRepository.findByCollectionIdOrderByOrder(id);
-        return mapToCollectionResponse(updatedCollection, tests);
+        return mapToCollectionResponse(updatedCollection);
     }
 
-    /**
-     * Delete a collection.
-     *
-     * @param id the collection ID
-     * @param userId the user ID
-     */
     @Transactional
-    public void deleteCollection(UUID id, UUID userId) {
-        Collection collection = collectionRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", id));
-        
-        // Delete all associated collection tests first
-        collectionTestRepository.deleteByCollectionId(id);
-        
-        // Then delete the collection
+    public void deleteCollection(UUID collectionId, UUID platformUserId) {
+        Collection collection = collectionRepository.findByIdAndUserId(collectionId, platformUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId + " for this user, cannot delete."));
         collectionRepository.delete(collection);
     }
 
-    /**
-     * Add a test to a collection.
-     *
-     * @param collectionId the collection ID
-     * @param request the collection test request
-     * @param userId the user ID
-     * @return the updated collection
-     */
-    @Transactional
-    public CollectionResponse addTestToCollection(UUID collectionId, CollectionTestRequest request, UUID userId) {
-        Collection collection = collectionRepository.findByIdAndUserId(collectionId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId));
-        
-        ApiTest apiTest = apiTestRepository.findByIdAndUserId(request.getTestId(), userId)
-                .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", request.getTestId()));
-        
-        // Check if test is already in collection
-        collectionTestRepository.findByCollectionIdAndTestId(collectionId, request.getTestId())
-                .ifPresent(existingTest -> {
-                    throw new IllegalStateException("Test is already in this collection");
-                });
-        
-        CollectionTest collectionTest = new CollectionTest();
-        collectionTest.setId(UUID.randomUUID());
-        collectionTest.setCollectionId(collectionId);
-        collectionTest.setTestId(request.getTestId());
-        collectionTest.setOrder(request.getOrder());
-        collectionTest.setPreRequestScript(request.getPreRequestScript());
-        collectionTest.setPostRequestScript(request.getPostRequestScript());
-        collectionTest.setEnabled(request.isEnabled());
-        
-        collectionTestRepository.save(collectionTest);
-        
-        List<CollectionTest> tests = collectionTestRepository.findByCollectionIdOrderByOrder(collectionId);
-        return mapToCollectionResponse(collection, tests);
-    }
-
-    /**
-     * Remove a test from a collection.
-     *
-     * @param collectionId the collection ID
-     * @param testId the test ID
-     * @param userId the user ID
-     * @return the updated collection
-     */
-    @Transactional
-    public CollectionResponse removeTestFromCollection(UUID collectionId, UUID testId, UUID userId) {
-        Collection collection = collectionRepository.findByIdAndUserId(collectionId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId));
-        
-        collectionTestRepository.findByCollectionIdAndTestId(collectionId, testId)
-                .orElseThrow(() -> new ResourceNotFoundException("CollectionTest", "testId", testId));
-        
-        collectionTestRepository.deleteByCollectionIdAndTestId(collectionId, testId);
-        
-        List<CollectionTest> tests = collectionTestRepository.findByCollectionIdOrderByOrder(collectionId);
-        return mapToCollectionResponse(collection, tests);
-    }
-
-    /**
-     * Execute all tests in a collection.
-     *
-     * @param id the collection ID
-     * @param userId the user ID
-     * @return list of test results
-     */
-    @Transactional
-    public List<TestResultResponse> executeCollection(UUID id, UUID userId) {
-        Collection collection = collectionRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", id));
-        
-        List<CollectionTest> tests = collectionTestRepository.findByCollectionIdOrderByOrder(id);
-        
-        List<TestResultResponse> results = new ArrayList<>();
-        
-        // Get collection variables
-        Map<String, String> collectionVariables = null;
-        if (collection.getVariables() != null) {
-            try {
-                collectionVariables = objectMapper.readValue(collection.getVariables(), 
-                        new TypeReference<Map<String, String>>() {});
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error processing variables JSON", e);
-            }
+    private CollectionResponse mapToCollectionResponse(Collection collection) {
+        if (collection == null) {
+            return null;
         }
-        
-        // Execute pre-request script for collection (future implementation)
-        
-        // Execute each test in order
-        for (CollectionTest test : tests) {
-            if (test.isEnabled()) {
-                // Execute pre-request script for test (future implementation)
-                
-                // Execute the test
-                TestResultResponse result = apiTestService.executeTest(
-                    test.getTestId(),
-                    userId,
-                    collectionVariables // Pass collection variables
-                );
-                results.add(result);
-                
-                // Execute post-request script for test (future implementation)
-            }
-        }
-        
-        // Execute post-request script for collection (future implementation)
-        
-        return results;
-    }
-
-    /**
-     * Maps a Collection entity to a CollectionResponse DTO.
-     *
-     * @param collection the collection entity
-     * @param collectionTests the collection tests
-     * @return the collection response DTO
-     */
-    private CollectionResponse mapToCollectionResponse(Collection collection, List<CollectionTest> collectionTests) {
         CollectionResponse response = new CollectionResponse();
         response.setId(collection.getId());
         response.setName(collection.getName());
-        response.setDescription(collection.getDescription());
-        
-        if (collection.getVariables() != null) {
-            try {
-                response.setVariables(objectMapper.readValue(collection.getVariables(), 
-                        new TypeReference<Map<String, String>>() {}));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error processing variables JSON", e);
-            }
-        }
-        
-        response.setPreRequestScript(collection.getPreRequestScript());
-        response.setPostRequestScript(collection.getPostRequestScript());
-        response.setShared(collection.isShared());
+        // response.setDescription(collection.getDescription()); // If description is present
         response.setCreatedAt(collection.getCreatedAt());
         response.setUpdatedAt(collection.getUpdatedAt());
-        
-        // Map collection tests
-        if (!collectionTests.isEmpty()) {
-            List<CollectionTestResponse> testResponses = collectionTests.stream()
-                    .map(this::mapToCollectionTestResponse)
-                    .collect(Collectors.toList());
-            response.setTests(testResponses);
-        }
-        
-        return response;
-    }
+        // response.setUserId(collection.getUserId()); // Typically not exposed directly if platformUserId is implicit
 
-    /**
-     * Maps a CollectionTest entity to a CollectionTestResponse DTO.
-     *
-     * @param collectionTest the collection test entity
-     * @return the collection test response DTO
-     */
-    private CollectionTestResponse mapToCollectionTestResponse(CollectionTest collectionTest) {
-        CollectionTestResponse response = new CollectionTestResponse();
-        response.setId(collectionTest.getId());
-        response.setTestId(collectionTest.getTestId());
-        response.setOrder(collectionTest.getOrder());
-        response.setPreRequestScript(collectionTest.getPreRequestScript());
-        response.setPostRequestScript(collectionTest.getPostRequestScript());
-        response.setEnabled(collectionTest.isEnabled());
-        response.setCreatedAt(collectionTest.getCreatedAt());
-        response.setUpdatedAt(collectionTest.getUpdatedAt());
-        
-        // Load the associated API test
-        apiTestRepository.findById(collectionTest.getTestId()).ifPresent(apiTest -> {
-            ApiTestResponse testResponse = apiTestService.mapToApiTestResponse(apiTest);
-            response.setTest(testResponse);
-        });
-        
+        if (collection.getProject() != null) {
+            response.setProjectId(collection.getProject().getId());
+            response.setProjectName(collection.getProject().getName());
+        }
+        // Other fields from the more complex CollectionResponse can be mapped here if kept (variables, scripts, tests etc.)
         return response;
     }
 }
-

@@ -1,190 +1,81 @@
 package com.codebridge.server.model;
 
-import com.codebridge.server.model.enums.ServerAuthProvider;
-import com.codebridge.server.model.enums.ServerCloudProvider;
-import com.codebridge.server.model.enums.ServerStatus;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Entity representing a server.
+ */
 @Entity
 @Table(name = "servers")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Server {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String hostname;
+    @Column(name = "host", nullable = false)
+    private String host;
 
-    @Column(nullable = false)
-    private Integer port = 22;
+    @Column(name = "port", nullable = false)
+    private int port;
 
-    @Column(nullable = false)
-    private String remoteUsername;
+    @Column(name = "user_id")
+    private UUID userId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ServerAuthProvider authProvider;
-
-    @Column(nullable = true) // Nullable because authProvider might be SSH_KEY
-    private String password; // Encrypted
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ssh_key_id", nullable = true) // Nullable if authProvider is PASSWORD
-    private SshKey sshKey;
+    @Column(name = "team_id")
+    private UUID teamId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "provider", nullable = false)
+    private ServerProvider provider;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Column(name = "instance_type")
+    private String instanceType;
+
+    @Column(name = "region")
+    private String region;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private ServerStatus status;
 
-    @Column(nullable = true)
-    private String operatingSystem;
+    @Column(name = "description")
+    private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = true)
-    private ServerCloudProvider cloudProvider;
+    @Column(name = "tags")
+    private String tags;
 
-    @Column(nullable = false, updatable = false)
-    private UUID userId; // User who registered this server
-
-    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        id = UUID.randomUUID();
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (status == null) {
-            status = ServerStatus.UNKNOWN;
-        }
-        if (port == null) {
-            port = 22;
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // Getters and Setters
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    public String getRemoteUsername() {
-        return remoteUsername;
-    }
-
-    public void setRemoteUsername(String remoteUsername) {
-        this.remoteUsername = remoteUsername;
-    }
-
-    public ServerAuthProvider getAuthProvider() {
-        return authProvider;
-    }
-
-    public void setAuthProvider(ServerAuthProvider authProvider) {
-        this.authProvider = authProvider;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public SshKey getSshKey() {
-        return sshKey;
-    }
-
-    public void setSshKey(SshKey sshKey) {
-        this.sshKey = sshKey;
-    }
-
-    public ServerStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ServerStatus status) {
-        this.status = status;
-    }
-
-    public String getOperatingSystem() {
-        return operatingSystem;
-    }
-
-    public void setOperatingSystem(String operatingSystem) {
-        this.operatingSystem = operatingSystem;
-    }
-
-    public ServerCloudProvider getCloudProvider() {
-        return cloudProvider;
-    }
-
-    public void setCloudProvider(ServerCloudProvider cloudProvider) {
-        this.cloudProvider = cloudProvider;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 }

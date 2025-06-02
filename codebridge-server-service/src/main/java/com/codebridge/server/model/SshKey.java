@@ -62,14 +62,5 @@ public class SshKey {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    // Helper methods to get key material as bytes for JSch
-    public byte[] getPrivateKeyBytes() {
-        return (this.privateKey != null) ? this.privateKey.getBytes(java.nio.charset.StandardCharsets.UTF_8) : null;
-    }
-
-    public byte[] getPublicKeyBytes() {
-        return (this.publicKey != null) ? this.publicKey.getBytes(java.nio.charset.StandardCharsets.UTF_8) : null;
-    }
 }
 
