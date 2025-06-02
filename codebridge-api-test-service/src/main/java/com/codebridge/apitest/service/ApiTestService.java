@@ -215,13 +215,13 @@ public class ApiTestService {
     public TestResultResponse executeTest(UUID id, UUID userId) {
         ApiTest test = apiTestRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", id));
-
+        
         TestResult result = new TestResult();
         result.setId(UUID.randomUUID());
         result.setTestId(test.getId());
-
+        
         long startTime = System.currentTimeMillis();
-
+        
         try {
             // Process environment variables if an environment is specified
             Map<String, String> environmentVariables = null;
@@ -234,7 +234,7 @@ public class ApiTestService {
             if (test.getPreRequestScript() != null && !test.getPreRequestScript().isEmpty()) {
                 // Execute pre-request script
             }
-
+            
             // Execute the test based on protocol type
             if (test.getProtocolType() == null || test.getProtocolType() == ProtocolType.HTTP) {
                 executeHttpTest(test, result, environmentVariables);
@@ -245,12 +245,12 @@ public class ApiTestService {
             } else if (test.getProtocolType() == ProtocolType.WEBSOCKET) {
                 executeWebSocketTest(test, result, environmentVariables);
             }
-
+            
             // Execute post-request script (future implementation)
             if (test.getPostRequestScript() != null && !test.getPostRequestScript().isEmpty()) {
                 // Execute post-request script
             }
-
+            
         } catch (Exception e) {
             result.setStatus(TestStatus.ERROR);
             result.setErrorMessage(e.getMessage());
@@ -293,10 +293,10 @@ public class ApiTestService {
     private void executeHttpTest(ApiTest test, TestResult result, Map<String, String> environmentVariables) throws Exception {
         // Process URL with environment variables
         String processedUrl = processEnvironmentVariables(test.getUrl(), environmentVariables);
-
+        
         // Create HTTP request with processed URL
         HttpUriRequest request = createHttpRequest(test, processedUrl, environmentVariables);
-
+        
         // Execute request
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             try (CloseableHttpResponse response = httpClient.execute(request)) {
@@ -315,7 +315,7 @@ public class ApiTestService {
                 HttpEntity entity = response.getEntity();
                 String responseBody = entity != null ? EntityUtils.toString(entity) : "";
                 result.setResponseBody(responseBody);
-
+                
                 // Validate response
                 boolean isValid = validateResponse(test, statusCode, responseBody);
                 result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
@@ -338,11 +338,11 @@ public class ApiTestService {
         // Process GraphQL query and variables with environment variables
         String processedQuery = processEnvironmentVariables(test.getGraphqlQuery(), environmentVariables);
         String processedVariables = processEnvironmentVariables(test.getGraphqlVariables(), environmentVariables);
-
+        
         // Create GraphQL request
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("query", processedQuery);
-
+        
         if (processedVariables != null && !processedVariables.isEmpty()) {
             try {
                 Map<String, Object> variables = objectMapper.readValue(processedVariables, new TypeReference<Map<String, Object>>() {});
@@ -351,14 +351,14 @@ public class ApiTestService {
                 throw new TestExecutionException("Invalid GraphQL variables JSON: " + e.getMessage());
             }
         }
-
+        
         // Create HTTP entity
         StringEntity entity = new StringEntity(objectMapper.writeValueAsString(requestBody), ContentType.APPLICATION_JSON);
-
+        
         // Create HTTP request
         HttpPost httpPost = new HttpPost(processedUrl);
         httpPost.setEntity(entity);
-
+        
         // Add headers
         if (test.getHeaders() != null) {
             Map<String, String> headers = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
@@ -367,7 +367,7 @@ public class ApiTestService {
                 httpPost.addHeader(header.getKey(), processedValue);
             }
         }
-
+        
         // Execute request
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
@@ -386,7 +386,7 @@ public class ApiTestService {
                 HttpEntity responseEntity = response.getEntity();
                 String responseBody = responseEntity != null ? EntityUtils.toString(responseEntity) : "";
                 result.setResponseBody(responseBody);
-
+                
                 // Validate response
                 boolean isValid = validateResponse(test, statusCode, responseBody);
                 result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
@@ -455,7 +455,7 @@ public class ApiTestService {
      */
     private HttpUriRequest createHttpRequest(ApiTest test, String processedUrl, Map<String, String> environmentVariables) throws IOException {
         HttpUriRequest request;
-
+        
         switch (test.getMethod()) {
             case GET:
                 request = new HttpGet(processedUrl);
@@ -496,7 +496,7 @@ public class ApiTestService {
             default:
                 throw new IllegalArgumentException("Unsupported HTTP method: " + test.getMethod());
         }
-
+        
         // Add headers
         if (test.getHeaders() != null) {
             Map<String, String> headers = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
@@ -505,13 +505,13 @@ public class ApiTestService {
                 request.addHeader(header.getKey(), processedValue);
             }
         }
-
+        
         // Set timeout
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(test.getTimeoutMs())
                 .setSocketTimeout(test.getTimeoutMs())
                 .build();
-
+        
         if (request instanceof HttpRequestBase) {
             ((HttpRequestBase) request).setConfig(requestConfig);
         }
@@ -537,9 +537,9 @@ public class ApiTestService {
         if (test.getExpectedResponseBody() != null && !test.getExpectedResponseBody().equals(responseBody)) {
             return false;
         }
-
+        
         // TODO: Implement validation script execution
-
+        
         return true;
     }
 
