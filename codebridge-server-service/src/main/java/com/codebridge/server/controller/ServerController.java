@@ -6,6 +6,7 @@ import com.codebridge.server.service.ServerManagementService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication; // New import
 import org.springframework.web.bind.annotation.*;
 // import org.springframework.security.core.annotation.AuthenticationPrincipal;
 // import org.springframework.security.core.userdetails.UserDetails; // Or your custom Principal object
@@ -23,47 +24,41 @@ public class ServerController {
         this.serverManagementService = serverManagementService;
     }
 
-    // Placeholder for userId extraction - replace with actual Spring Security principal
-    private UUID getCurrentUserId() {
-        // In a real app with Spring Security:
-        // UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        // return UUID.fromString(userDetails.getUsername()); // Assuming username is UUID
-        // For now, using a placeholder. This MUST be replaced.
-        return UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"); // Example UUID
-    }
+    // getCurrentUserId() placeholder removed
 
     @PostMapping
-    public ResponseEntity<ServerResponse> createServer(@Valid @RequestBody ServerRequest serverRequest) {
-        UUID userId = getCurrentUserId(); // Replace
+    public ResponseEntity<ServerResponse> createServer(@Valid @RequestBody ServerRequest serverRequest, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
         ServerResponse response = serverManagementService.createServer(serverRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/{serverId}")
-    public ResponseEntity<ServerResponse> getServerById(@PathVariable UUID serverId) {
-        UUID userId = getCurrentUserId(); // Replace
+    public ResponseEntity<ServerResponse> getServerById(@PathVariable UUID serverId, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
         ServerResponse response = serverManagementService.getServerById(serverId, userId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<ServerResponse>> listServersForUser() {
-        UUID userId = getCurrentUserId(); // Replace
+    public ResponseEntity<List<ServerResponse>> listServersForUser(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
         List<ServerResponse> responses = serverManagementService.listServersForUser(userId);
         return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{serverId}")
     public ResponseEntity<ServerResponse> updateServer(@PathVariable UUID serverId,
-                                                     @Valid @RequestBody ServerRequest serverRequest) {
-        UUID userId = getCurrentUserId(); // Replace
+                                                     @Valid @RequestBody ServerRequest serverRequest,
+                                                     Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
         ServerResponse response = serverManagementService.updateServer(serverId, serverRequest, userId);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{serverId}")
-    public ResponseEntity<Void> deleteServer(@PathVariable UUID serverId) {
-        UUID userId = getCurrentUserId(); // Replace
+    public ResponseEntity<Void> deleteServer(@PathVariable UUID serverId, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
         serverManagementService.deleteServer(serverId, userId);
         return ResponseEntity.noContent().build();
     }

@@ -8,8 +8,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication; // New import
+// import org.springframework.security.core.annotation.AuthenticationPrincipal; // Replaced
+// import org.springframework.security.core.userdetails.UserDetails; // Replaced
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,20 +40,22 @@ public class ApiTestController {
     @PostMapping
     public ResponseEntity<ApiTestResponse> createTest(
             @Valid @RequestBody ApiTestRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ApiTestResponse response = apiTestService.createTest(request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        ApiTestResponse response = apiTestService.createTest(request, platformUserId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
      * Gets all API tests for the authenticated user.
      *
-     * @param userDetails the authenticated user
+     * @param authentication the authenticated user principal
      * @return the list of API tests
      */
     @GetMapping
-    public ResponseEntity<List<ApiTestResponse>> getAllTests(@AuthenticationPrincipal UserDetails userDetails) {
-        List<ApiTestResponse> tests = apiTestService.getAllTests(UUID.fromString(userDetails.getUsername()));
+    public ResponseEntity<List<ApiTestResponse>> getAllTests(Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        List<ApiTestResponse> tests = apiTestService.getAllTests(platformUserId);
         return ResponseEntity.ok(tests);
     }
 
@@ -60,14 +63,15 @@ public class ApiTestController {
      * Gets an API test by ID.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authenticated user principal
      * @return the API test
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiTestResponse> getTestById(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ApiTestResponse test = apiTestService.getTestById(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        ApiTestResponse test = apiTestService.getTestById(id, platformUserId);
         return ResponseEntity.ok(test);
     }
 
@@ -76,15 +80,16 @@ public class ApiTestController {
      *
      * @param id the API test ID
      * @param request the API test request
-     * @param userDetails the authenticated user
+     * @param authentication the authenticated user principal
      * @return the updated API test
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiTestResponse> updateTest(
             @PathVariable UUID id,
             @Valid @RequestBody ApiTestRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ApiTestResponse response = apiTestService.updateTest(id, request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        ApiTestResponse response = apiTestService.updateTest(id, request, platformUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -92,14 +97,15 @@ public class ApiTestController {
      * Deletes an API test.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authenticated user principal
      * @return no content
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTest(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        apiTestService.deleteTest(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        apiTestService.deleteTest(id, platformUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -107,14 +113,15 @@ public class ApiTestController {
      * Executes an API test.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authenticated user principal
      * @return the test result
      */
     @PostMapping("/{id}/execute")
     public ResponseEntity<TestResultResponse> executeTest(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        TestResultResponse result = apiTestService.executeTest(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        TestResultResponse result = apiTestService.executeTest(id, platformUserId);
         return ResponseEntity.ok(result);
     }
 
@@ -122,14 +129,15 @@ public class ApiTestController {
      * Gets all test results for an API test.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authenticated user principal
      * @return the list of test results
      */
     @GetMapping("/{id}/results")
     public ResponseEntity<List<TestResultResponse>> getTestResults(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<TestResultResponse> results = apiTestService.getTestResults(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        List<TestResultResponse> results = apiTestService.getTestResults(id, platformUserId);
         return ResponseEntity.ok(results);
     }
 }

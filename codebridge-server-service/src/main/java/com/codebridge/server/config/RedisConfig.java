@@ -59,14 +59,11 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean
-    public RedisTemplate<String, DbSessionMetadata> dbSessionMetadataRedisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
-        RedisTemplate<String, DbSessionMetadata> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
-        return template;
-    }
+    // Removed RedisTemplate<String, DbSessionMetadata> dbSessionMetadataRedisTemplate
+    // as DB session metadata is now managed by SessionService.
+    // SshSessionMetadata template is also likely not needed here anymore if SSH ops are fully proxied.
+    // For now, keeping SshSessionMetadata template if any other local component might use it,
+    // and sessionKeyRedisTemplate for potential local JWT validation needs.
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
