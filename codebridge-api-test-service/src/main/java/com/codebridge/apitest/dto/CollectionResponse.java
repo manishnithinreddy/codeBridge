@@ -21,6 +21,10 @@ public class CollectionResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Added for project integration
+    private UUID projectId;
+    private String projectName;
+
     public UUID getId() {
         return id;
     }
@@ -99,6 +103,23 @@ public class CollectionResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Getters and setters for projectId and projectName
+    public UUID getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(UUID projectId) {
+        this.projectId = projectId;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 }
 

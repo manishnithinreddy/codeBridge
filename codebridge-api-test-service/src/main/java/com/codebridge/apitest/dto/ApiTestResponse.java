@@ -34,14 +34,6 @@ public class ApiTestResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Auth fields
-    private String authType;
-    private String authToken;
-    private String apiKeyName;
-    private String apiKeyValue;
-    private String apiKeyLocation;
-
-
     public UUID getId() {
         return id;
     }
@@ -224,45 +216,5 @@ public class ApiTestResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public String getAuthType() {
-        return authType;
-    }
-
-    public void setAuthType(String authType) {
-        this.authType = authType;
-    }
-
-    public String getAuthToken() {
-        return authToken;
-    }
-
-    public void setAuthToken(String authToken) {
-        this.authToken = authToken;
-    }
-
-    public String getApiKeyName() {
-        return apiKeyName;
-    }
-
-    public void setApiKeyName(String apiKeyName) {
-        this.apiKeyName = apiKeyName;
-    }
-
-    public String getApiKeyValue() {
-        return apiKeyValue;
-    }
-
-    public void setApiKeyValue(String apiKeyValue) {
-        this.apiKeyValue = apiKeyValue;
-    }
-
-    public String getApiKeyLocation() {
-        return apiKeyLocation;
-    }
-
-    public void setApiKeyLocation(String apiKeyLocation) {
-        this.apiKeyLocation = apiKeyLocation;
     }
 }
