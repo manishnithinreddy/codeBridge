@@ -9,9 +9,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import com.codebridge.server.dto.logging.LogEventMessage;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -37,11 +41,14 @@ class ServerActivityLogServiceTests {
     @Mock
     private ServerRepository serverRepository;
 
+    @Mock
+    private RabbitTemplate rabbitTemplateMock; // New Mock
+
     @InjectMocks
     private ServerActivityLogService serverActivityLogService;
 
     @Captor
-    private ArgumentCaptor<ServerActivityLog> activityLogCaptor;
+    private ArgumentCaptor<LogEventMessage> logEventMessageCaptor; // Changed to LogEventMessage
 
     private UUID testUserId;
     private UUID testServerId;
@@ -55,10 +62,14 @@ class ServerActivityLogServiceTests {
         server = new Server();
         server.setId(testServerId);
         server.setName("TestServer");
+
+        // Set @Value fields using ReflectionTestUtils
+        ReflectionTestUtils.setField(serverActivityLogService, "activityLogExchangeName", "test.exchange");
+        ReflectionTestUtils.setField(serverActivityLogService, "activityLogRoutingKey", "test.routingkey");
     }
 
     @Test
-    void createLog_success() {
+    void createLog_sendsMessageToRabbitMQ_withServerId() {
         String action = "TEST_ACTION";
         String details = "Test details";
         String status = "SUCCESS";
@@ -66,33 +77,44 @@ class ServerActivityLogServiceTests {
 
         serverActivityLogService.createLog(testUserId, action, testServerId, details, status, errorMessage);
 
-        verify(serverActivityLogRepository).save(activityLogCaptor.capture());
-        ServerActivityLog capturedLog = activityLogCaptor.getValue();
+        verify(rabbitTemplateMock, times(1)).convertAndSend(
+            eq("test.exchange"),
+            eq("test.routingkey"),
+            logEventMessageCaptor.capture()
+        );
+        LogEventMessage capturedMessage = logEventMessageCaptor.getValue();
 
-        assertEquals(testUserId, capturedLog.getPlatformUserId());
-        assertEquals(action, capturedLog.getAction());
-        assertEquals(testServerId, capturedLog.getServer().getId());
-        assertEquals(details, capturedLog.getDetails());
-        assertEquals(status, capturedLog.getStatus());
-        assertNull(capturedLog.getErrorMessage());
-        assertNotNull(capturedLog.getTimestamp());
+        assertEquals(testUserId, capturedMessage.platformUserId());
+        assertEquals(action, capturedMessage.action());
+        assertEquals(testServerId, capturedMessage.serverId());
+        assertEquals(details, capturedMessage.details());
+        assertEquals(status, capturedMessage.status());
+        assertNull(capturedMessage.errorMessage());
+        assertTrue(capturedMessage.timestamp() > 0);
+
+        // Verify DB save is NOT called
+        verify(serverActivityLogRepository, never()).save(any());
     }
-    
+
     @Test
-    void createLog_noServerId_success() {
+    void createLog_sendsMessageToRabbitMQ_withoutServerId() {
         String action = "USER_ACTION";
         String details = "User logged in";
         String status = "SUCCESS";
 
         serverActivityLogService.createLog(testUserId, action, null, details, status, null);
 
-        verify(serverActivityLogRepository).save(activityLogCaptor.capture());
-        ServerActivityLog capturedLog = activityLogCaptor.getValue();
+        verify(rabbitTemplateMock, times(1)).convertAndSend(
+            eq("test.exchange"),
+            eq("test.routingkey"),
+            logEventMessageCaptor.capture()
+        );
+        LogEventMessage capturedMessage = logEventMessageCaptor.getValue();
 
-        assertEquals(testUserId, capturedLog.getPlatformUserId());
-        assertEquals(action, capturedLog.getAction());
-        assertNull(capturedLog.getServer());
-        assertEquals(details, capturedLog.getDetails());
+        assertEquals(testUserId, capturedMessage.platformUserId());
+        assertEquals(action, capturedMessage.action());
+        assertNull(capturedMessage.serverId()); // Check serverId is null
+        assertEquals(details, capturedMessage.details());
         assertEquals(status, capturedLog.getStatus());
         assertNull(capturedLog.getErrorMessage());
     }
@@ -104,7 +126,7 @@ class ServerActivityLogServiceTests {
         log.setId(UUID.randomUUID());
         log.setPlatformUserId(testUserId);
         log.setAction("TEST_ACTION");
-        log.setServer(server); 
+        log.setServer(server);
         log.setStatus("SUCCESS");
         log.setTimestamp(LocalDateTime.now());
 
@@ -123,18 +145,18 @@ class ServerActivityLogServiceTests {
         assertEquals(testServerId, responseDto.getServerId());
         assertEquals("TestServer", responseDto.getServerName());
     }
-    
+
     @Test
     void getLogsForServer_serverNameMappingWhenServerMissing_handlesGracefully() {
         ServerActivityLog log = new ServerActivityLog();
         log.setId(UUID.randomUUID());
         log.setPlatformUserId(testUserId);
         log.setAction("TEST_ACTION_NO_SERVER_NAME");
-        
+
         Server serverRef = new Server(); // Server reference with only ID
         serverRef.setId(testServerId);
-        log.setServer(serverRef); 
-        
+        log.setServer(serverRef);
+
         log.setStatus("SUCCESS");
         log.setTimestamp(LocalDateTime.now());
 

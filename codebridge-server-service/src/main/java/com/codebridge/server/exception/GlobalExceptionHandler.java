@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
         logger.error("Encryption operation failed: {}", ex.getMessage()); // Log the actual exception for internal review
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR); // Or BAD_REQUEST if it's due to bad input causing decryption issues
     }
-    
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorDetails> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
         ErrorDetails errorDetails = new ErrorDetails(
@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toList());
         body.put("errors", errors);
         body.put("path", request.getDescription(false));
-        
+
         logger.warn("Validation error: {}", errors);
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }

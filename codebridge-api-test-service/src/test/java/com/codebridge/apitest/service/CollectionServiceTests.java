@@ -107,11 +107,11 @@ class CollectionServiceTests {
         enabledTest1.setTestId(UUID.randomUUID());
         enabledTest1.setEnabled(true);
         enabledTest1.setOrder(1);
-        
+
         when(collectionRepository.findByIdAndUserId(testCollectionId, testUserId)).thenReturn(Optional.of(baseCollection));
         when(collectionTestRepository.findByCollectionIdOrderByOrder(testCollectionId)).thenReturn(Collections.singletonList(enabledTest1));
         when(apiTestService.executeTest(eq(enabledTest1.getTestId()), eq(testUserId), any())).thenReturn(new TestResultResponse());
-        
+
         // Act
         List<TestResultResponse> results = collectionService.executeCollection(testCollectionId, testUserId);
 
@@ -122,7 +122,7 @@ class CollectionServiceTests {
         assertTrue(capturedVars == null || capturedVars.isEmpty(), "Captured variables should be null or empty");
         assertEquals(1, results.size());
     }
-    
+
     @Test
     void executeCollection_invalidVariablesJson_throwsRuntimeExceptionAndDoesNotExecuteTests() throws JsonProcessingException {
         // Arrange
@@ -131,7 +131,7 @@ class CollectionServiceTests {
         CollectionTest enabledTest1 = new CollectionTest();
         enabledTest1.setTestId(UUID.randomUUID());
         enabledTest1.setEnabled(true);
-        
+
         when(collectionRepository.findByIdAndUserId(testCollectionId, testUserId)).thenReturn(Optional.of(baseCollection));
         when(collectionTestRepository.findByCollectionIdOrderByOrder(testCollectionId)).thenReturn(Collections.singletonList(enabledTest1));
         // apiTestService.executeTest should not be called
@@ -173,7 +173,7 @@ class CollectionServiceTests {
         verify(apiTestService, never()).executeTest(eq(disabledTest.getTestId()), any(), anyMap());
         assertEquals(1, results.size(), "Should only have results for enabled tests");
     }
-    
+
     @Test
     void executeCollection_noTestsInCollection_returnsEmptyResults() {
         // Arrange

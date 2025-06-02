@@ -2,243 +2,177 @@ package com.codebridge.server.service;
 
 import com.codebridge.server.dto.remote.CommandRequest;
 import com.codebridge.server.dto.remote.CommandResponse;
+import com.codebridge.server.dto.remote.CommandRequest;
+import com.codebridge.server.dto.remote.CommandResponse;
 import com.codebridge.server.exception.AccessDeniedException;
 import com.codebridge.server.exception.RemoteCommandException;
 import com.codebridge.server.exception.ResourceNotFoundException;
-import com.codebridge.server.model.Server;
-import com.codebridge.server.model.SshKey;
-import com.codebridge.server.model.enums.ServerAuthProvider;
+import com.codebridge.server.model.Server; // Keep for UserSpecificConnectionDetails
+import com.codebridge.server.model.SshKey;   // Keep for UserSpecificConnectionDetails
+import com.codebridge.server.sessions.SessionKey; // For mocking jwtTokenProvider
+import com.codebridge.server.security.jwt.JwtTokenProvider;
 import com.codebridge.server.service.ServerAccessControlService.UserSpecificConnectionDetails;
 
-import com.jcraft.jsch.JSchException; // Import for mocking
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RemoteExecutionServiceTests {
 
     @Mock
-    private ServerAccessControlService serverAccessControlService;
-    
+    private ServerAccessControlService serverAccessControlServiceMock;
     @Mock
-    private ServerActivityLogService serverActivityLogService; // Mock for logging calls
+    private JwtTokenProvider jwtTokenProviderMock;
+    @Mock
+    private RestTemplate restTemplateMock;
+    @Mock
+    private ServerActivityLogService activityLogServiceMock;
 
     @InjectMocks
     private RemoteExecutionService remoteExecutionService;
 
     private UUID testUserId;
     private UUID testServerId;
+    private String testSessionToken;
+    private SessionKey testSessionKey;
     private CommandRequest commandRequest;
-    private UserSpecificConnectionDetails connectionDetails;
-    private Server server;
-    private SshKey decryptedSshKey;
+    private String sessionServiceBaseUrl = "http://fake-session-service/api";
+
 
     @BeforeEach
     void setUp() {
         testUserId = UUID.randomUUID();
         testServerId = UUID.randomUUID();
+        testSessionToken = "test.jwt.token";
+        testSessionKey = new SessionKey(testUserId, testServerId, "SSH");
 
         commandRequest = new CommandRequest();
         commandRequest.setCommand("ls -la");
-        commandRequest.setTimeout(30);
 
-        server = new Server();
-        server.setId(testServerId);
-        server.setHostname("testhost");
-        server.setPort(22);
-        server.setAuthProvider(ServerAuthProvider.SSH_KEY); // Ensure this is set for key-based auth path
+        ReflectionTestUtils.setField(remoteExecutionService, "sessionServiceBaseUrl", sessionServiceBaseUrl);
 
-        decryptedSshKey = new SshKey();
-        decryptedSshKey.setId(UUID.randomUUID());
-        decryptedSshKey.setPrivateKey("decrypted-private-key-content");
-        // Public key might be null if not stored/retrieved, ensure JSch part handles this
-        decryptedSshKey.setPublicKey("ssh-rsa AAA...");
-
-
-        connectionDetails = new UserSpecificConnectionDetails(server, "testremoteuser", decryptedSshKey);
-        
-        // Mock successful log creation
-        doNothing().when(serverActivityLogService).createLog(any(), anyString(), any(), anyString(), anyString(), anyString());
+        // Default behavior for successful log creation
+        doNothing().when(activityLogServiceMock).createLog(any(), anyString(), any(), anyString(), anyString(), anyString());
     }
 
     @Test
-    void executeCommand_successPath_conceptual() {
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenReturn(connectionDetails);
+    void executeCommand_success() {
+        when(jwtTokenProviderMock.validateTokenAndExtractSessionKey(testSessionToken)).thenReturn(Optional.of(testSessionKey));
+        // Assume checkUserAccessAndGetConnectionDetails does not throw for success path
+        when(serverAccessControlServiceMock.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
+            .thenReturn(mock(UserSpecificConnectionDetails.class)); // Content doesn't matter, just that it doesn't throw
 
-        // Conceptual: We cannot easily mock the JSch session and channel execution here
-        // without significant refactoring or PowerMock.
-        // This test will likely attempt a real JSch connection if not stopped.
-        // For a true unit test, we'd mock JSch session/channel or a wrapper.
-        
-        // We expect a RemoteCommandException because a real SSH connection will fail in test environment.
-        // This verifies that the initial setup (fetching details) works before JSch part.
-        RemoteCommandException RCEexception = assertThrows(RemoteCommandException.class, () -> {
-            remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
+        CommandResponse expectedResponseFromSessionService = new CommandResponse("output", "", 0, 100L);
+        ResponseEntity<CommandResponse> responseEntity = new ResponseEntity<>(expectedResponseFromSessionService, HttpStatus.OK);
+
+        when(restTemplateMock.exchange(
+            eq(sessionServiceBaseUrl + "/ops/ssh/" + testSessionToken + "/execute-command"),
+            eq(HttpMethod.POST),
+            any(HttpEntity.class),
+            eq(CommandResponse.class)
+        )).thenReturn(responseEntity);
+
+        CommandResponse actualResponse = remoteExecutionService.executeCommand(testServerId, testSessionToken, commandRequest);
+
+        assertNotNull(actualResponse);
+        assertEquals("output", actualResponse.getStdout());
+        assertEquals(0, actualResponse.getExitStatus());
+
+        verify(jwtTokenProviderMock).validateTokenAndExtractSessionKey(testSessionToken);
+        verify(serverAccessControlServiceMock).checkUserAccessAndGetConnectionDetails(testUserId, testServerId);
+        verify(activityLogServiceMock).createLog(
+            eq(testUserId), eq("EXECUTE_COMMAND_VIA_SESSION_SERVICE"), eq(testServerId),
+            anyString(), eq("SUCCESS"), anyString(), anyString(), eq(0)
+        );
+    }
+
+    @Test
+    void executeCommand_invalidToken_throwsAccessDenied() {
+        when(jwtTokenProviderMock.validateTokenAndExtractSessionKey(testSessionToken)).thenReturn(Optional.empty());
+
+        AccessDeniedException thrown = assertThrows(AccessDeniedException.class, () -> {
+            remoteExecutionService.executeCommand(testServerId, testSessionToken, commandRequest);
         });
-        // The error message will likely be from JSch connection attempt (e.g., "Auth fail", "timeout", "Host not found")
-        assertNotNull(RCEexception.getMessage());
-        
-        // Verify activity log for connection attempt (even if it fails at JSch level)
-        // The exact logging depends on where it's placed if JSch fails.
-        // Currently, logging is after successful command execution or specific JSchException.
-        // If connection fails very early (e.g. getSession), it might throw JSchException before command logging.
-        
-        // To make this test more specific for SUCCESS, we would need to mock JSch execution.
-        // For now, this test path shows that the service attempts connection after getting details.
-        System.out.println("Conceptual SUCCESS test: JSch part threw (as expected in unit test env): " + RCEexception.getMessage());
-         verify(serverActivityLogService, atLeastOnce()).createLog(
-            eq(testUserId), 
-            eq("EXECUTE_COMMAND"), 
-            eq(testServerId), 
-            anyString(), // Details will vary based on actual outcome
-            anyString(), // Status will vary
-            any()        // Error message will vary
-        );
+        assertEquals("Invalid or expired session token.", thrown.getMessage());
+        verify(activityLogServiceMock).createLog(eq(testServerId),isNull(),eq(commandRequest.getCommand()), contains("Invalid or expired session token"), eq("FAILURE"),isNull(), isNull(), isNull());
     }
-    
-    @Test
-    void executeCommand_whenAccessDenied_throwsAccessDeniedException() {
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenThrow(new AccessDeniedException("User does not have access"));
 
-        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> {
-            remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
+    @Test
+    void executeCommand_tokenServerMismatch_throwsAccessDenied() {
+        SessionKey mismatchedKey = new SessionKey(testUserId, UUID.randomUUID(), "SSH"); // Different serverId
+        when(jwtTokenProviderMock.validateTokenAndExtractSessionKey(testSessionToken)).thenReturn(Optional.of(mismatchedKey));
+
+        AccessDeniedException thrown = assertThrows(AccessDeniedException.class, () -> {
+            remoteExecutionService.executeCommand(testServerId, testSessionToken, commandRequest);
         });
-
-        assertEquals("User does not have access", exception.getMessage());
-         verify(serverActivityLogService).createLog(
-            eq(testUserId), 
-            eq("EXECUTE_COMMAND"), 
-            eq(testServerId), 
-            contains("Access denied for command: ls -la"), 
-            eq("FAILURE"), 
-            eq("User does not have access")
-        );
+        assertEquals("Session token mismatch: Token is not valid for the requested server or resource type.", thrown.getMessage());
+         verify(activityLogServiceMock).createLog(eq(testServerId),eq(testUserId),eq(commandRequest.getCommand()), contains("Session token mismatch"), eq("FAILURE"),isNull(), isNull(), isNull());
     }
 
     @Test
-    void executeCommand_whenServerNotFound_throwsResourceNotFoundException() {
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenThrow(new ResourceNotFoundException("Server", "id", testServerId));
+    void executeCommand_authorizationFailed_throwsAccessDenied() {
+        when(jwtTokenProviderMock.validateTokenAndExtractSessionKey(testSessionToken)).thenReturn(Optional.of(testSessionKey));
+        when(serverAccessControlServiceMock.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
+            .thenThrow(new AccessDeniedException("User not authorized for this server."));
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
+        AccessDeniedException thrown = assertThrows(AccessDeniedException.class, () -> {
+            remoteExecutionService.executeCommand(testServerId, testSessionToken, commandRequest);
         });
-
-        assertTrue(exception.getMessage().contains("Server not found with id : '" + testServerId));
-         verify(serverActivityLogService).createLog(
-            eq(testUserId), 
-            eq("EXECUTE_COMMAND"), 
-            eq(testServerId), 
-            contains("Server not found for command: ls -la"), 
-            eq("FAILURE"), 
-            contains("Server not found with id : '" + testServerId)
-        );
+        assertEquals("User not authorized for this server.", thrown.getMessage());
+        verify(activityLogServiceMock).createLog(eq(testServerId),eq(testUserId),eq(commandRequest.getCommand()), contains("Authorization failed: User not authorized for this server."), eq("FAILURE"),isNull(), isNull(), isNull());
     }
-    
-    @Test
-    void executeCommand_serverNotConfiguredForSshKey_throwsRemoteCommandException() {
-        server.setAuthProvider(ServerAuthProvider.PASSWORD); // Set to non-SSH_KEY auth
-        connectionDetails = new UserSpecificConnectionDetails(server, "testremoteuser", null); // SSH key would be null
 
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenReturn(connectionDetails);
-        
-        RemoteCommandException exception = assertThrows(RemoteCommandException.class, () -> {
-            remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
+    @Test
+    void executeCommand_sessionServiceReturnsError_throwsRemoteCommandException() {
+        when(jwtTokenProviderMock.validateTokenAndExtractSessionKey(testSessionToken)).thenReturn(Optional.of(testSessionKey));
+        when(serverAccessControlServiceMock.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
+            .thenReturn(mock(UserSpecificConnectionDetails.class));
+
+        when(restTemplateMock.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(CommandResponse.class)))
+            .thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Session Service Error"));
+
+        RemoteCommandException thrown = assertThrows(RemoteCommandException.class, () -> {
+            remoteExecutionService.executeCommand(testServerId, testSessionToken, commandRequest);
         });
-        assertTrue(exception.getMessage().contains("Server is not configured for SSH Key authentication"));
-         verify(serverActivityLogService).createLog(
-            eq(testUserId), 
-            eq("EXECUTE_COMMAND"), 
-            eq(testServerId), 
-            contains("Unsupported auth provider: PASSWORD"), 
-            eq("FAILURE"), 
-            eq("Command execution failed: Server is not configured for SSH Key authentication.")
-        );
+        assertTrue(thrown.getMessage().contains("Failed to execute command via SessionService: 500 Session Service Error"));
+        verify(activityLogServiceMock).createLog(eq(testServerId),eq(testUserId),eq(commandRequest.getCommand()), contains("SessionService error: 500"), eq("FAILURE"),isNull(), anyString(), isNull());
     }
 
     @Test
-    void executeCommand_sshKeyIdMissing_throwsRemoteCommandException() {
-        // This scenario is now primarily handled by ServerAccessControlService, 
-        // but if it returned a Server object that somehow missed this, RemoteExecutionService would catch it.
-        // Let's assume ServerAccessControlService returns valid Server object but SshKey is null for an SSH_KEY server user grant.
-        server.setAuthProvider(ServerAuthProvider.SSH_KEY); // Server expects SSH Key
-        // Simulate ServerUser record has no SshKeyForUser, so decryptedSshKey is null
-        connectionDetails = new UserSpecificConnectionDetails(server, "testremoteuser", null); 
-                                                            
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenReturn(connectionDetails);
+    void executeCommand_sessionServiceReturnsNullBody_logsAndReturnsNull() {
+        when(jwtTokenProviderMock.validateTokenAndExtractSessionKey(testSessionToken)).thenReturn(Optional.of(testSessionKey));
+        when(serverAccessControlServiceMock.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
+            .thenReturn(mock(UserSpecificConnectionDetails.class));
 
-        RemoteCommandException exception = assertThrows(RemoteCommandException.class, () -> {
-            remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
-        });
-        assertTrue(exception.getMessage().contains("Private key is missing or empty for SSH key"));
-         verify(serverActivityLogService).createLog(
-            eq(testUserId), 
-            eq("EXECUTE_COMMAND"), 
-            eq(testServerId), 
-            contains("Decrypted private key is empty."), 
-            eq("FAILURE"), 
-            contains("Private key is missing or empty for SSH key")
-        );
-    }
-    
-    @Test
-    void executeCommand_decryptedPrivateKeyMissing_throwsRemoteCommandException() {
-        decryptedSshKey.setPrivateKey(null); // Simulate missing private key after decryption
-        connectionDetails = new UserSpecificConnectionDetails(server, "testremoteuser", decryptedSshKey);
+        ResponseEntity<CommandResponse> nullBodyResponse = new ResponseEntity<>(null, HttpStatus.OK);
+        when(restTemplateMock.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(CommandResponse.class)))
+            .thenReturn(nullBodyResponse);
 
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenReturn(connectionDetails);
-        
-        RemoteCommandException exception = assertThrows(RemoteCommandException.class, () -> {
-            remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
-        });
-        assertTrue(exception.getMessage().contains("Private key is missing or empty for SSH key"));
-         verify(serverActivityLogService).createLog(
-            eq(testUserId), 
-            eq("EXECUTE_COMMAND"), 
-            eq(testServerId), 
-            contains("Decrypted private key is empty."), 
-            eq("FAILURE"), 
-            contains("Private key is missing or empty for SSH key")
-        );
-    }
-    
-    // Conceptual test for JSchException during connection
-    @Test
-    void executeCommand_jschConnectionError_throwsRemoteCommandException() {
-        when(serverAccessControlService.checkUserAccessAndGetConnectionDetails(testUserId, testServerId))
-                .thenReturn(connectionDetails);
-        
-        // To properly test this, we'd need to mock JSch's getSession().connect() to throw JSchException.
-        // Since we are not deeply mocking JSch, we acknowledge this test is conceptual.
-        // The current successPath test will likely hit this if example.com is not reachable with the key.
-        assertThrows(RemoteCommandException.class, () -> {
-             remoteExecutionService.executeCommand(testServerId, testUserId, commandRequest);
-        }, "Expected RemoteCommandException due to JSch connection issues in test environment.");
-        
-        // Verification of logging in the actual JSchException catch block
-        // This will only be hit if the JSchException is thrown as expected
-         verify(serverActivityLogService, atLeastOnce()).createLog( // atLeastOnce because other logs might occur first
-            eq(testUserId),
-            eq("EXECUTE_COMMAND"),
-            eq(testServerId),
-            matches("JSchException: .*|SSH connection or command execution error: .*"), // Details will contain JSch specific error
-            eq("FAILURE"),
-            matches("JSchException: .*|SSH connection or command execution error: .*")
-        );
+        CommandResponse actualResponse = remoteExecutionService.executeCommand(testServerId, testSessionToken, commandRequest);
+
+        assertNull(actualResponse); // Or throw an exception based on desired behavior
+        verify(activityLogServiceMock).createLog(eq(testServerId),eq(testUserId),eq(commandRequest.getCommand()), contains("Command execution via SessionService returned null body."), eq("FAILURE"),isNull(), isNull(), isNull());
     }
 }
