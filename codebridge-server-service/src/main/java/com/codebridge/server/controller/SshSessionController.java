@@ -21,11 +21,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication; // Added
+import org.springframework.security.oauth2.jwt.Jwt; // Added to get token value
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-// import java.util.Optional; // No longer directly used from local manager
+// import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -49,26 +51,17 @@ public class SshSessionController {
         this.sshKeyManagementService = sshKeyManagementService;
     }
 
-    // TODO: Replace with actual user ID from Spring Security context
-    private UUID getCurrentPlatformUserId() {
-        // For example, using Spring Security:
-        // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        // if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
-        //     UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        //     // Assuming your UserDetails implementation has a method to get the UUID
-        //     // return ((CustomUserDetails) userDetails).getId();
-        // }
-        return UUID.fromString("00000000-0000-0000-0000-000000000000"); // Placeholder
-    }
+    // getCurrentPlatformUserId() placeholder removed
 
     @PostMapping("/init")
-    public ResponseEntity<SessionResponse> initializeSession(@Valid @RequestBody SshSessionInitRequest request) {
-        UUID platformUserId = getCurrentPlatformUserId();
+    public ResponseEntity<SessionResponse> initializeSession(@Valid @RequestBody SshSessionInitRequest request, Authentication authentication) {
+        String platformUserIdString = authentication.getName();
+        UUID platformUserId = UUID.fromString(platformUserIdString);
         UUID serverId = request.getServerId();
-        log.info("Received request to initialize SSH session for server: {} by user: {}", serverId, platformUserId);
+        log.info("User {} authenticated. Initializing SSH session for server: {}", platformUserId, serverId);
 
         try {
-            // 1. Get connection details (includes authorization check)
+            // 1. Get connection details (includes authorization check) - This uses platformUserId from token
             ServerAccessControlService.UserSpecificConnectionDetails userAccessDetails =
                 serverAccessControlService.checkUserAccessAndGetConnectionDetails(platformUserId, serverId);
 
@@ -92,13 +85,20 @@ public class SshSessionController {
             );
 
             SshSessionServiceInitRequestDto sessionServiceRequest = new SshSessionServiceInitRequestDto(
-                platformUserId,
+                platformUserId, // platformUserId from the validated User JWT
                 serverId,
                 connectionDetailsPayload
             );
 
             String url = sessionServiceBaseUrl + "/lifecycle/ssh/init";
-            ResponseEntity<SessionResponse> responseEntity = restTemplate.postForEntity(url, sessionServiceRequest, SessionResponse.class);
+            HttpHeaders headers = new HttpHeaders();
+            if (authentication.getPrincipal() instanceof Jwt) {
+                Jwt jwt = (Jwt) authentication.getPrincipal();
+                headers.setBearerAuth(jwt.getTokenValue());
+            }
+            HttpEntity<SshSessionServiceInitRequestDto> requestEntity = new HttpEntity<>(sessionServiceRequest, headers);
+
+            ResponseEntity<SessionResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, SessionResponse.class);
 
             // Log successful call to session service before returning its response
             if(responseEntity.getStatusCode() == HttpStatus.CREATED && responseEntity.getBody() != null) {
@@ -121,25 +121,56 @@ public class SshSessionController {
     }
 
     @PostMapping("/{sessionToken}/keepalive")
-    public ResponseEntity<KeepAliveResponse> keepAliveSession(@PathVariable String sessionToken) {
-        log.info("Received request to keep alive SSH session with token: {}", sessionToken);
+    public ResponseEntity<KeepAliveResponse> keepAliveSession(@PathVariable String sessionToken, Authentication authentication) {
+        String platformUserIdString = authentication.getName(); // For logging/auditing
+        log.info("User {} authenticated. Keeping alive SSH session with token: {}", platformUserIdString, sessionToken);
 
-        // Similar to init, keepAliveSshSession in InMemorySessionManagerImpl was designed to use its own
-        // injected sshSessionConfigProperties.
-        Optional<KeepAliveResponse> keepAliveResponseOpt = sshSessionManager.keepAliveSshSession(sessionToken);
+        try {
+            String url = sessionServiceBaseUrl + "/lifecycle/ssh/" + sessionToken + "/keepalive";
+            HttpHeaders headers = new HttpHeaders();
+            if (authentication.getPrincipal() instanceof Jwt) {
+                Jwt jwt = (Jwt) authentication.getPrincipal();
+                headers.setBearerAuth(jwt.getTokenValue());
+            }
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
-        if (keepAliveResponseOpt.isPresent()) {
-            return ResponseEntity.ok(keepAliveResponseOpt.get());
-        } else {
-            log.warn("Keepalive failed for session token: {}. Session not found or expired.", sessionToken);
-            return ResponseEntity.notFound().build();
+            ResponseEntity<KeepAliveResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, KeepAliveResponse.class);
+            log.info("Keepalive call to SessionService for token {} returned status {}", sessionToken, responseEntity.getStatusCode());
+            return responseEntity;
+        } catch (HttpStatusCodeException e) {
+            log.error("Error calling SessionService for SSH keepalive (token: {}): {} - {}", sessionToken, e.getStatusCode(), e.getResponseBodyAsString(), e);
+            return ResponseEntity.status(e.getStatusCode()).body(null);
+        } catch (Exception e) {
+            log.error("Unexpected error during SSH session keepalive for token {}: {}", sessionToken, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @PostMapping("/{sessionToken}/release")
-    public ResponseEntity<Void> releaseSession(@PathVariable String sessionToken) {
-        log.info("Received request to release SSH session with token: {}", sessionToken);
-        sshSessionManager.releaseSshSession(sessionToken);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> releaseSession(@PathVariable String sessionToken, Authentication authentication) {
+        String platformUserIdString = authentication.getName(); // For logging/auditing
+        log.info("User {} authenticated. Releasing SSH session with token: {}", platformUserIdString, sessionToken);
+        try {
+            String url = sessionServiceBaseUrl + "/lifecycle/ssh/" + sessionToken + "/release";
+            HttpHeaders headers = new HttpHeaders();
+            if (authentication.getPrincipal() instanceof Jwt) {
+                Jwt jwt = (Jwt) authentication.getPrincipal();
+                headers.setBearerAuth(jwt.getTokenValue());
+            }
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            restTemplate.exchange(url, HttpMethod.POST, requestEntity, Void.class);
+            log.info("Release call to SessionService for token {} successful", sessionToken);
+            return ResponseEntity.noContent().build();
+        } catch (HttpStatusCodeException e) {
+            log.error("Error calling SessionService for SSH release (token: {}): {} - {}", sessionToken, e.getStatusCode(), e.getResponseBodyAsString(), e);
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                 return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.status(e.getStatusCode()).build();
+        } catch (Exception e) {
+            log.error("Unexpected error during SSH session release for token {}: {}", sessionToken, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

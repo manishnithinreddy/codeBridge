@@ -8,8 +8,9 @@ import com.codebridge.apitest.service.CollectionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication; // New import
+// import org.springframework.security.core.annotation.AuthenticationPrincipal; // Replaced
+// import org.springframework.security.core.userdetails.UserDetails; // Replaced
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,20 +46,22 @@ public class CollectionController {
     @PostMapping
     public ResponseEntity<CollectionResponse> createCollection(
             @Valid @RequestBody CollectionRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        CollectionResponse response = collectionService.createCollection(request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        CollectionResponse response = collectionService.createCollection(request, platformUserId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
      * Get all collections for the authenticated user.
      *
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return list of collections
      */
     @GetMapping
-    public ResponseEntity<List<CollectionResponse>> getAllCollections(@AuthenticationPrincipal UserDetails userDetails) {
-        List<CollectionResponse> collections = collectionService.getAllCollections(UUID.fromString(userDetails.getUsername()));
+    public ResponseEntity<List<CollectionResponse>> getAllCollections(Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        List<CollectionResponse> collections = collectionService.getAllCollections(platformUserId);
         return ResponseEntity.ok(collections);
     }
 
@@ -66,14 +69,15 @@ public class CollectionController {
      * Get collection by ID.
      *
      * @param id the collection ID
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return the collection
      */
     @GetMapping("/{id}")
     public ResponseEntity<CollectionResponse> getCollectionById(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        CollectionResponse collection = collectionService.getCollectionById(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        CollectionResponse collection = collectionService.getCollectionById(id, platformUserId);
         return ResponseEntity.ok(collection);
     }
 
@@ -82,15 +86,16 @@ public class CollectionController {
      *
      * @param id the collection ID
      * @param request the collection request
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return the updated collection
      */
     @PutMapping("/{id}")
     public ResponseEntity<CollectionResponse> updateCollection(
             @PathVariable UUID id,
             @Valid @RequestBody CollectionRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        CollectionResponse response = collectionService.updateCollection(id, request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        CollectionResponse response = collectionService.updateCollection(id, request, platformUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -98,14 +103,15 @@ public class CollectionController {
      * Delete a collection.
      *
      * @param id the collection ID
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return no content response
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCollection(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        collectionService.deleteCollection(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        collectionService.deleteCollection(id, platformUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -114,16 +120,17 @@ public class CollectionController {
      *
      * @param collectionId the collection ID
      * @param request the collection test request
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return the updated collection
      */
     @PostMapping("/{collectionId}/tests")
     public ResponseEntity<CollectionResponse> addTestToCollection(
             @PathVariable UUID collectionId,
             @Valid @RequestBody CollectionTestRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
         CollectionResponse response = collectionService.addTestToCollection(
-                collectionId, request, UUID.fromString(userDetails.getUsername()));
+                collectionId, request, platformUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -132,16 +139,17 @@ public class CollectionController {
      *
      * @param collectionId the collection ID
      * @param testId the test ID
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return the updated collection
      */
     @DeleteMapping("/{collectionId}/tests/{testId}")
     public ResponseEntity<CollectionResponse> removeTestFromCollection(
             @PathVariable UUID collectionId,
             @PathVariable UUID testId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
         CollectionResponse response = collectionService.removeTestFromCollection(
-                collectionId, testId, UUID.fromString(userDetails.getUsername()));
+                collectionId, testId, platformUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -149,14 +157,15 @@ public class CollectionController {
      * Execute all tests in a collection.
      *
      * @param id the collection ID
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return list of test results
      */
     @PostMapping("/{id}/execute")
     public ResponseEntity<List<TestResultResponse>> executeCollection(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<TestResultResponse> results = collectionService.executeCollection(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        List<TestResultResponse> results = collectionService.executeCollection(id, platformUserId);
         return ResponseEntity.ok(results);
     }
 }

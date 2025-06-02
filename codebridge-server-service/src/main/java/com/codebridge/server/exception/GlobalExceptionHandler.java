@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException; // Spring Security specific
+import org.springframework.security.access.AccessDeniedException as SpringSecurityAccessDeniedException; // Spring Security specific
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,6 +30,39 @@ public class GlobalExceptionHandler {
                 request.getDescription(false));
         logger.warn("Resource not found: {}", ex.getMessage());
         return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    }
+
+    // Handler for this service's own custom AccessDeniedException
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorDetails> handleCustomAccessDeniedException(AccessDeniedException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+        logger.warn("Custom Access Denied: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
+    }
+
+    // Handler for Spring Security's AuthenticationException (e.g. invalid JWT)
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorDetails> handleAuthenticationException(AuthenticationException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                new Date(),
+                "Authentication failed: " + ex.getMessage(),
+                request.getDescription(false));
+        logger.warn("Authentication failure: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
+    }
+
+    // Handler for Spring Security's AccessDeniedException (e.g. insufficient permissions after successful auth)
+    @ExceptionHandler(SpringSecurityAccessDeniedException.class)
+    public ResponseEntity<ErrorDetails> handleSpringSecurityAccessDeniedException(SpringSecurityAccessDeniedException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                new Date(),
+                "Access denied: " + ex.getMessage(),
+                request.getDescription(false));
+        logger.warn("Spring Security Access Denied: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(EncryptionOperationNotPossibleException.class)

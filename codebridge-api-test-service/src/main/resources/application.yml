@@ -41,3 +41,9 @@ logging:
     org.springframework.security: INFO
     com.codebridge: DEBUG
 
+codebridge:
+  security:
+    jwt:
+      # Secret key for validating incoming User JWTs from the main platform/IdP
+      # Ensure this is strong and kept secret in production, matching the IdP's signing key
+      shared-secret: "your-VERY-secure-SHARED-secret-for-incoming-user-JWTs-REPLACE-THIS-IN-APITEST-SERVICE"
