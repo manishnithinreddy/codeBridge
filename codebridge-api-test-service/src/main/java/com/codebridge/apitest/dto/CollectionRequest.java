@@ -1,8 +1,10 @@
 package com.codebridge.apitest.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull; // Added for @NotNull
 
 import java.util.Map;
+import java.util.UUID; // Added for UUID
 
 /**
  * Request DTO for collection operations.
@@ -13,6 +15,9 @@ public class CollectionRequest {
     private String name;
 
     private String description;
+
+    @NotNull(message = "Project ID cannot be null") // Added projectId
+    private UUID projectId;                         // Added projectId
 
     private Map<String, String> variables;
 
@@ -68,6 +73,15 @@ public class CollectionRequest {
 
     public void setShared(boolean shared) {
         this.shared = shared;
+    }
+
+    // Getter and Setter for projectId
+    public UUID getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(UUID projectId) {
+        this.projectId = projectId;
     }
 }
 

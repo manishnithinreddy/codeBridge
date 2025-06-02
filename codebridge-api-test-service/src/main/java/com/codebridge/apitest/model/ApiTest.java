@@ -105,17 +105,6 @@ public class ApiTest {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Enumerated(EnumType.STRING)
-    private AuthType authType;
-
-    private String authToken; // For Bearer Token
-
-    private String apiKeyName;      // For API Key (header name or query param name)
-    private String apiKeyValue;     // For API Key (the actual key/value)
-
-    @Enumerated(EnumType.STRING)
-    private ApiKeyLocation apiKeyLocation; // Enum: HEADER, QUERY_PARAMETER
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -317,45 +306,5 @@ public class ApiTest {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public AuthType getAuthType() {
-        return authType;
-    }
-
-    public void setAuthType(AuthType authType) {
-        this.authType = authType;
-    }
-
-    public String getAuthToken() {
-        return authToken;
-    }
-
-    public void setAuthToken(String authToken) {
-        this.authToken = authToken;
-    }
-
-    public String getApiKeyName() {
-        return apiKeyName;
-    }
-
-    public void setApiKeyName(String apiKeyName) {
-        this.apiKeyName = apiKeyName;
-    }
-
-    public String getApiKeyValue() {
-        return apiKeyValue;
-    }
-
-    public void setApiKeyValue(String apiKeyValue) {
-        this.apiKeyValue = apiKeyValue;
-    }
-
-    public ApiKeyLocation getApiKeyLocation() {
-        return apiKeyLocation;
-    }
-
-    public void setApiKeyLocation(ApiKeyLocation apiKeyLocation) {
-        this.apiKeyLocation = apiKeyLocation;
     }
 }

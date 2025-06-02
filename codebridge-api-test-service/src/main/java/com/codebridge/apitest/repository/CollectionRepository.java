@@ -1,6 +1,6 @@
 package com.codebridge.apitest.repository;
 
-import com.codebridge.apitest.model.Collection;
+import com.codebridge.apitester.model.Collection; // Corrected: Point to apitester.model
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,52 +8,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Repository for Collection entities.
- */
 @Repository
 public interface CollectionRepository extends JpaRepository<Collection, UUID> {
 
-    /**
-     * Find collections by user ID.
-     *
-     * @param userId the user ID
-     * @return list of collections
-     */
+    // Finders for standalone collections (not associated with a project)
     List<Collection> findByUserId(UUID userId);
-
-    /**
-     * Find collections by team ID.
-     *
-     * @param teamId the team ID
-     * @return list of collections
-     */
-    List<Collection> findByTeamId(UUID teamId);
-
-    /**
-     * Find collection by ID and user ID.
-     *
-     * @param id the collection ID
-     * @param userId the user ID
-     * @return optional collection
-     */
     Optional<Collection> findByIdAndUserId(UUID id, UUID userId);
 
-    /**
-     * Find shared collections.
-     *
-     * @param shared true for shared collections
-     * @return list of shared collections
-     */
-    List<Collection> findByShared(boolean shared);
+    // Finders for collections associated with a project
+    List<Collection> findByProjectId(UUID projectId);
 
-    /**
-     * Find shared collections by team ID.
-     *
-     * @param teamId the team ID
-     * @param shared true for shared collections
-     * @return list of shared collections
-     */
-    List<Collection> findByTeamIdAndShared(UUID teamId, boolean shared);
+    // Finds collections within a specific project that are also primarily owned by a specific user.
+    // The 'userId' on Collection entity is the direct owner.
+    // This can be useful if you want to find collections in a project that a specific user "owns"
+    // even if they have access to the project via sharing.
+    List<Collection> findByProjectIdAndUserId(UUID projectId, UUID userId);
+
+    // Finds a specific collection by its ID, within a specific project, and owned by a specific user.
+    Optional<Collection> findByIdAndProjectIdAndUserId(UUID id, UUID projectId, UUID userId);
 }
-
