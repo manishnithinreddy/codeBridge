@@ -63,7 +63,7 @@ public class CollectionService {
                 .map(this::mapToCollectionResponse)
                 .collect(Collectors.toList());
     }
-
+    
     @Transactional(readOnly = true)
     public List<CollectionResponse> getAllCollectionsForProject(UUID projectId, UUID platformUserId) {
         // Ensure user owns the project before listing its collections
