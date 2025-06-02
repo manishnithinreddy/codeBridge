@@ -258,8 +258,8 @@ public class CollectionService {
                 
                 // Execute the test
                 TestResultResponse result = apiTestService.executeTest(
-                    test.getTestId(), 
-                    userId, 
+                    test.getTestId(),
+                    userId,
                     collectionVariables // Pass collection variables
                 );
                 results.add(result);

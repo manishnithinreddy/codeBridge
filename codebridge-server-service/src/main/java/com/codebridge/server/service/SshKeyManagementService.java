@@ -7,6 +7,8 @@ import com.codebridge.server.model.SshKey;
 import com.codebridge.server.repository.SshKeyRepository;
 import org.jasypt.encryption.StringEncryptor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,12 +36,13 @@ public class SshKeyManagementService {
         sshKey.setPrivateKey(stringEncryptor.encrypt(requestDto.getPrivateKey()));
         sshKey.setUserId(userId);
         // In a real application, fingerprint would be generated from the public key
-        // sshKey.setFingerprint(generateFingerprint(requestDto.getPublicKey())); 
+        // sshKey.setFingerprint(generateFingerprint(requestDto.getPublicKey()));
         SshKey savedKey = sshKeyRepository.save(sshKey);
         return mapToSshKeyResponse(savedKey);
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "sshKeyById", key = "#keyId.toString()")
     public SshKeyResponse getSshKeyById(UUID keyId, UUID userId) {
         SshKey sshKey = sshKeyRepository.findByIdAndUserId(keyId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("SshKey", "id", keyId));
@@ -54,6 +57,8 @@ public class SshKeyManagementService {
     }
 
     @Transactional
+    @CacheEvict(value = "sshKeyById", key = "#keyId.toString()")
+    @CacheEvict(value="userServerAccessDetails", allEntries=true) // Added for broader eviction
     public void deleteSshKey(UUID keyId, UUID userId) {
         SshKey sshKey = sshKeyRepository.findByIdAndUserId(keyId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("SshKey", "id", keyId));
@@ -76,7 +81,7 @@ public class SshKeyManagementService {
     public SshKey getDecryptedSshKey(UUID keyId, UUID userId) {
         SshKey sshKey = sshKeyRepository.findByIdAndUserId(keyId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("SshKey", "id", keyId + " for user " + userId));
-        
+
         SshKey decryptedKey = new SshKey();
         decryptedKey.setId(sshKey.getId());
         decryptedKey.setName(sshKey.getName());

@@ -11,9 +11,9 @@ public class ServerActivityLog {
     @Id
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "server_id") // Nullable if activity is not server-specific
-    private Server server;
+    // Store only serverId, not the direct entity relationship for logs
+    @Column(name = "server_id") // Nullable if activity is not server-specific
+    private UUID serverId;
 
     @Column(nullable = false)
     private UUID platformUserId; // Who performed the action
@@ -52,12 +52,12 @@ public class ServerActivityLog {
         this.id = id;
     }
 
-    public Server getServer() {
-        return server;
+    public UUID getServerId() {
+        return serverId;
     }
 
-    public void setServer(Server server) {
-        this.server = server;
+    public void setServerId(UUID serverId) {
+        this.serverId = serverId;
     }
 
     public UUID getPlatformUserId() {

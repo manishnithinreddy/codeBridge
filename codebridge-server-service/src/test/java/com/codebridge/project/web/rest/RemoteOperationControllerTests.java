@@ -91,7 +91,7 @@ class RemoteOperationControllerTests {
             .andExpect(jsonPath("$.errors[0].field").value("command"))
             .andExpect(jsonPath("$.errors[0].message").value("Command cannot be blank."));
     }
-    
+
     @Test
     void executeCommand_whenCommandIsNull_shouldReturnBadRequest() throws Exception {
         CommandRequest request = new CommandRequest();

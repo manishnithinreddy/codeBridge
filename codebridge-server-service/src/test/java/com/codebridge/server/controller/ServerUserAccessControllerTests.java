@@ -46,7 +46,7 @@ class ServerUserAccessControllerTests {
 
     @Autowired
     private ObjectMapper objectMapper;
-    
+
     // To mock getCurrentUserId behavior if Spring Security context is not fully available/mocked
     // This is a simplified approach. In a full Spring Security test, you'd use @WithMockUser or similar.
     // For this controller, the placeholder `getCurrentUserId()` returns a fixed UUID. We will assume this.
@@ -110,7 +110,7 @@ class ServerUserAccessControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0]", is("serverId: Server ID cannot be null")));
     }
-    
+
     @Test
     void grantServerAccess_serverNotFound_returns404() throws Exception {
         when(serverAccessControlService.grantServerAccess(eq(mockAdminUserId), any(ServerUserRequest.class)))
@@ -155,7 +155,7 @@ class ServerUserAccessControllerTests {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", is("ServerUser access grant not found")));
     }
-    
+
     @Test
     void revokeServerAccess_adminNotOwner_returns403() throws Exception {
         doThrow(new AccessDeniedException("Admin user does not have rights"))

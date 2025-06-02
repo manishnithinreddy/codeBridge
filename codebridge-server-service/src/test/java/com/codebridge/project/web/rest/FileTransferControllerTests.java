@@ -118,7 +118,7 @@ class FileTransferControllerTests {
                 .andExpect(jsonPath("$.message").value("Server not found"));
         }
     }
-    
+
     @Test
     void listFiles_whenAccessDenied_shouldReturnForbidden() throws Exception {
         String path = ".";
@@ -168,11 +168,11 @@ class FileTransferControllerTests {
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"file.txt\""))
                 .andExpect(content().contentType(MediaType.APPLICATION_OCTET_STREAM))
                 .andReturn();
-            
+
             assertThat(result.getResponse().getContentAsByteArray()).isEqualTo(content);
         }
     }
-    
+
     @Test
     void downloadFile_whenFilePathIsMissing_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(get("/api/servers/{serverId}/files/download", serverId))
@@ -194,7 +194,7 @@ class FileTransferControllerTests {
                 .andExpect(jsonPath("$.message").value("File not found on server"));
         }
     }
-    
+
     @Test
     void downloadFile_whenFileTransferException_shouldReturnInternalServerError() throws Exception {
         String filePath = "/path/to/remote/file.txt";
@@ -230,7 +230,7 @@ class FileTransferControllerTests {
                 .andExpect(content().string("File uploaded successfully to " + remotePath + file.getOriginalFilename()));
         }
     }
-    
+
     @Test
     void uploadFile_whenFileIsEmpty_shouldReturnBadRequest() throws Exception {
         MockMultipartFile emptyFile = new MockMultipartFile("file", "", MediaType.TEXT_PLAIN_VALUE, new byte[0]);
@@ -243,7 +243,7 @@ class FileTransferControllerTests {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.message").value("Uploaded file cannot be empty."));
     }
-    
+
     @Test
     void uploadFile_whenRemotePathIsMissing_shouldUseDefaultAndSucceed() throws Exception {
         // Assuming controller defaults remotePath or service handles null/empty path

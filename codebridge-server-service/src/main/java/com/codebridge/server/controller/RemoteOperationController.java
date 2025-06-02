@@ -19,21 +19,15 @@ public class RemoteOperationController {
         this.remoteExecutionService = remoteExecutionService;
     }
 
-    // Placeholder for userId extraction - replace with actual Spring Security principal
-    private UUID getCurrentUserId() {
-        // In a real app with Spring Security:
-        // UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        // return UUID.fromString(userDetails.getUsername()); // Assuming username is UUID
-        // For now, using a placeholder. This MUST be replaced.
-        return UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"); // Example UUID
-    }
+    // getCurrentUserId() removed as session token will provide user context
 
     @PostMapping("/execute-command")
     public ResponseEntity<CommandResponse> executeCommand(
             @PathVariable UUID serverId,
+            @RequestHeader("X-Session-Token") String sessionToken,
             @Valid @RequestBody CommandRequest commandRequest) {
-        UUID userId = getCurrentUserId(); // Replace with actual user ID from security context
-        CommandResponse response = remoteExecutionService.executeCommand(serverId, userId, commandRequest);
+        // The platformUserId will be extracted from the sessionToken within the service layer
+        CommandResponse response = remoteExecutionService.executeCommand(serverId, sessionToken, commandRequest);
         return ResponseEntity.ok(response);
     }
 }

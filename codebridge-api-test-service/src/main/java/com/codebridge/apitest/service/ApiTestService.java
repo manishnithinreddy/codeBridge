@@ -331,8 +331,8 @@ public class ApiTestService {
                 // or a raw JSON body if the user intends to send that.
                 // Here, we assume if it's GraphQL, the script might want to manipulate query/variables individually
                 // or the whole body. We'll provide the initially resolved body.
-                String bodyForScript = (test.getProtocolType() == ProtocolType.GRAPHQL) ? 
-                                       composeGraphQLBody(initialProcessedGraphQLQuery, initialProcessedGraphQLVars) : 
+                String bodyForScript = (test.getProtocolType() == ProtocolType.GRAPHQL) ?
+                                       composeGraphQLBody(initialProcessedGraphQLQuery, initialProcessedGraphQLVars) :
                                        initialProcessedRequestBody;
 
                 mutableRequestData = new MutableRequestData(
@@ -363,15 +363,15 @@ public class ApiTestService {
                     result.setStatus(TestStatus.ERROR);
                     result.setErrorMessage("Pre-request script execution failed: " + e.getMessage());
                     testResultRepository.save(result);
-                    return mapToTestResultResponse(result); 
+                    return mapToTestResultResponse(result);
                 }
             } else {
                 // If no pre-request script, use the initially processed values
                 processedUrl = initialProcessedUrl;
                 processedHeaders = initialProcessedHeaders;
                 // For GraphQL, compose body from query and variables if not modified by script
-                processedRequestBody = (test.getProtocolType() == ProtocolType.GRAPHQL) ? 
-                                       composeGraphQLBody(initialProcessedGraphQLQuery, initialProcessedGraphQLVars) : 
+                processedRequestBody = (test.getProtocolType() == ProtocolType.GRAPHQL) ?
+                                       composeGraphQLBody(initialProcessedGraphQLQuery, initialProcessedGraphQLVars) :
                                        initialProcessedRequestBody;
                 // processedMethod remains as is from test definition
             }
@@ -538,13 +538,13 @@ public class ApiTestService {
         HttpPost httpPost = (HttpPost) createHttpRequest(
             test.getAuthType(), test.getApiKeyLocation(),
             HttpMethod.POST, // GraphQL is always POST
-            processedUrl, 
+            processedUrl,
             processedHeaders, // These are script-modified headers
             processedRequestBody, // This is the GraphQL JSON payload
             resolvedAuthToken, resolvedApiKeyName, resolvedApiKeyValue,
             test.getTimeoutMs()
         );
-        
+
         // Ensure Content-Type for GraphQL if not already set by script or auth logic
         if (httpPost.getFirstHeader("Content-Type") == null) {
              httpPost.setHeader("Content-Type", ContentType.APPLICATION_JSON.getMimeType());
@@ -642,7 +642,7 @@ public class ApiTestService {
         result.setStatus(TestStatus.ERROR);
         result.setErrorMessage("WebSocket testing is not yet implemented");
     }
-    
+
     private String composeGraphQLBody(String query, String variablesString) throws JsonProcessingException {
         Map<String, Object> graphQLRequestBody = new HashMap<>();
         graphQLRequestBody.put("query", query);
@@ -699,7 +699,7 @@ public class ApiTestService {
             HttpMethod method, String processedUrl, Map<String, String> processedHeaders, String processedRequestBody,
             String resolvedAuthToken, String resolvedApiKeyName, String resolvedApiKeyValue,
             int timeoutMs) throws JsonProcessingException, TestExecutionException {
-        
+
         HttpUriRequestBase request;
         String urlToUse = processedUrl; // Start with the URL potentially modified by pre-request script
 
@@ -783,10 +783,10 @@ public class ApiTestService {
         //         .setResponseTimeout(timeoutMs, TimeUnit.MILLISECONDS) // For HttpClient 5.x
         //         .build();
         // request.setConfig(requestConfig);
-        
+
         return request;
     }
-    
+
     private Map<String, String> parseHeaders(String headersJson) {
         if (headersJson == null || headersJson.isEmpty()) {
             return new HashMap<>();

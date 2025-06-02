@@ -20,6 +20,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -44,10 +46,15 @@ class ServerAccessControlServiceTests {
 
     @Mock
     private SshKeyManagementService sshKeyManagementService;
-    
-    @Mock
-    private ServerActivityLogService serverActivityLogService;
 
+    // ServerActivityLogService is not a direct dependency, removing mock
+    // @Mock
+    // private ServerActivityLogService serverActivityLogService;
+
+    @Mock
+    private CacheManager cacheManagerMock;
+    @Mock
+    private Cache userServerAccessDetailsCacheMock;
 
     @InjectMocks
     private ServerAccessControlService serverAccessControlService;
@@ -98,8 +105,10 @@ class ServerAccessControlServiceTests {
         serverUser.setAccessGrantedBy(adminUserId);
         serverUser.setCreatedAt(LocalDateTime.now());
         serverUser.setUpdatedAt(LocalDateTime.now());
-        
-        doNothing().when(serverActivityLogService).createLog(any(), anyString(), any(), anyString(), anyString(), anyString());
+
+        // Setup CacheManager mock
+        when(cacheManagerMock.getCache("userServerAccessDetails")).thenReturn(userServerAccessDetailsCacheMock);
+        // serverActivityLogService mock removed
     }
 
     @Test
@@ -124,15 +133,11 @@ class ServerAccessControlServiceTests {
         assertEquals("targetRemoteUser", captured.getRemoteUsernameForUser());
         assertEquals(sshKey, captured.getSshKeyForUser());
         assertEquals(adminUserId, captured.getAccessGrantedBy());
-        
-        verify(serverActivityLogService).createLog(
-            eq(adminUserId), 
-            eq("GRANT_SERVER_ACCESS"), 
-            eq(serverId), 
-            contains("Access granted to user " + targetUserId + " for server TestServer by admin " + adminUserId), 
-            eq("SUCCESS"), 
-            isNull()
-        );
+
+        // Verify cache eviction
+        String expectedCacheKey = targetUserId.toString() + ":" + serverId.toString();
+        verify(userServerAccessDetailsCacheMock, times(1)).evict(expectedCacheKey);
+        // serverActivityLogService.createLog verification removed
     }
 
     @Test
@@ -144,16 +149,10 @@ class ServerAccessControlServiceTests {
             serverAccessControlService.grantServerAccess(adminUserId, serverUserRequest);
         });
         assertTrue(exception.getMessage().contains("does not have rights to grant access"));
-        verify(serverActivityLogService).createLog(
-            eq(adminUserId), 
-            eq("GRANT_SERVER_ACCESS"), 
-            eq(serverId), 
-            contains("Attempt to grant access to user " + targetUserId + " for server TestServer by non-owner admin " + adminUserId), 
-            eq("FAILURE"), 
-            isNotNull()
-        );
+        // serverActivityLogService.createLog verification removed
+        verify(userServerAccessDetailsCacheMock, never()).evict(any()); // Eviction should not happen on failure before main logic
     }
-    
+
     @Test
     void grantServerAccess_serverRequiresSshKey_butNoKeyProvided_throwsIllegalArgumentException() {
         server.setAuthProvider(ServerAuthProvider.SSH_KEY);
@@ -176,16 +175,12 @@ class ServerAccessControlServiceTests {
         serverAccessControlService.revokeServerAccess(adminUserId, serverId, targetUserId);
 
         verify(serverUserRepository).delete(serverUser);
-        verify(serverActivityLogService).createLog(
-            eq(adminUserId), 
-            eq("REVOKE_SERVER_ACCESS"), 
-            eq(serverId), 
-            contains("Access revoked for user " + targetUserId + " from server TestServer by admin " + adminUserId), 
-            eq("SUCCESS"), 
-            isNull()
-        );
+        // Verify cache eviction
+        String expectedCacheKey = targetUserId.toString() + ":" + serverId.toString();
+        verify(userServerAccessDetailsCacheMock, times(1)).evict(expectedCacheKey);
+        // serverActivityLogService.createLog verification removed
     }
-    
+
     @Test
     void revokeServerAccess_grantNotFound_throwsResourceNotFoundException() {
         when(serverRepository.findById(serverId)).thenReturn(Optional.of(server));
@@ -197,24 +192,51 @@ class ServerAccessControlServiceTests {
     }
 
 
+    // --- Caching tests for checkUserAccessAndGetConnectionDetails ---
     @Test
-    void checkUserAccessAndGetConnectionDetails_success_withSshKey() {
+    void checkUserAccessAndGetConnectionDetails_whenNotCached_callsServiceAndCaches() {
         when(serverUserRepository.findByServerIdAndPlatformUserId(serverId, targetUserId)).thenReturn(Optional.of(serverUser));
-        when(sshKeyManagementService.getDecryptedSshKey(sshKeyId)).thenReturn(sshKey); // sshKey already has "decrypted-key"
+        // Note: sshKeyManagementService.getDecryptedSshKey is NOT called by checkUserAccessAndGetConnectionDetails anymore
+
+        String expectedCacheKey = targetUserId.toString() + ":" + serverId.toString();
+        when(userServerAccessDetailsCacheMock.get(expectedCacheKey)).thenReturn(null); // Cache miss
+        doNothing().when(userServerAccessDetailsCacheMock).put(eq(expectedCacheKey), any(UserSpecificConnectionDetails.class));
 
         UserSpecificConnectionDetails details = serverAccessControlService.checkUserAccessAndGetConnectionDetails(targetUserId, serverId);
 
         assertNotNull(details);
         assertEquals(server, details.server());
         assertEquals("targetRemoteUser", details.remoteUsername());
-        assertEquals(sshKey, details.decryptedSshKey());
+        assertEquals(sshKeyId, details.sshKeyIdToUse()); // Verify sshKeyIdToUse
+
+        verify(serverUserRepository, times(1)).findByServerIdAndPlatformUserId(serverId, targetUserId);
+        verify(userServerAccessDetailsCacheMock, times(1)).get(expectedCacheKey);
+        verify(userServerAccessDetailsCacheMock, times(1)).put(eq(expectedCacheKey), eq(details));
     }
-    
+
+    @Test
+    void checkUserAccessAndGetConnectionDetails_whenCached_returnsCached() {
+        String expectedCacheKey = targetUserId.toString() + ":" + serverId.toString();
+        UserSpecificConnectionDetails cachedDetails = new UserSpecificConnectionDetails(server, "cachedUser", sshKeyId);
+
+        Cache.ValueWrapper valueWrapper = mock(Cache.ValueWrapper.class);
+        when(valueWrapper.get()).thenReturn(cachedDetails);
+        when(userServerAccessDetailsCacheMock.get(expectedCacheKey)).thenReturn(valueWrapper);
+
+        UserSpecificConnectionDetails details = serverAccessControlService.checkUserAccessAndGetConnectionDetails(targetUserId, serverId);
+
+        assertNotNull(details);
+        assertSame(cachedDetails, details);
+        verify(serverUserRepository, never()).findByServerIdAndPlatformUserId(any(), any());
+        verify(userServerAccessDetailsCacheMock, times(1)).get(expectedCacheKey);
+        verify(userServerAccessDetailsCacheMock, never()).put(anyString(), any());
+    }
+
     @Test
     void checkUserAccessAndGetConnectionDetails_serverIsPasswordAuth_userHasNoKey_success() {
         server.setAuthProvider(ServerAuthProvider.PASSWORD); // Server itself is password based
         serverUser.setSshKeyForUser(null); // User access grant does not specify a key
-        
+
         when(serverUserRepository.findByServerIdAndPlatformUserId(serverId, targetUserId)).thenReturn(Optional.of(serverUser));
 
         UserSpecificConnectionDetails details = serverAccessControlService.checkUserAccessAndGetConnectionDetails(targetUserId, serverId);
@@ -234,12 +256,12 @@ class ServerAccessControlServiceTests {
             serverAccessControlService.checkUserAccessAndGetConnectionDetails(targetUserId, serverId);
         });
     }
-    
+
     @Test
     void checkUserAccessAndGetConnectionDetails_serverRequiresSshKey_userGrantHasNoKey_throwsAccessDenied() {
         server.setAuthProvider(ServerAuthProvider.SSH_KEY); // Server needs SSH
         serverUser.setSshKeyForUser(null); // User grant doesn't have one
-        
+
         when(serverUserRepository.findByServerIdAndPlatformUserId(serverId, targetUserId)).thenReturn(Optional.of(serverUser));
 
         AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> {

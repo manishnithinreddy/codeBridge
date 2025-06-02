@@ -26,6 +26,30 @@ spring:
         jwt:
           issuer-uri: http://localhost:8080/auth/realms/codebridge
           jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+  data:
+    redis:
+      host: localhost # Default, replace with actual Redis host if different
+      port: 6379     # Default Redis port
+      # password: your-redis-password # Uncomment and set if Redis is password protected
+      # ssl: false # Set to true if using SSL/TLS for Redis connection
+      # timeout: 2000 # Connection timeout in ms
+      # lettuce: # Example for Lettuce-specific pool properties if needed later
+      #   pool:
+      #     max-active: 8
+      #     max-idle: 8
+      #     min-idle: 0
+  rabbitmq:
+    host: localhost  # Default, replace with actual RabbitMQ host
+    port: 5672       # Default RabbitMQ port
+    username: guest  # Default, replace with actual username
+    password: guest  # Default, replace with actual password
+    # virtual-host: / # Optional: specify virtual host if not default
+    # ssl:
+    #   enabled: false # Set to true for SSL
+    #   key-store: path/to/keystore.p12
+    #   key-store-password: keystore-password
+    #   trust-store: path/to/truststore.p12
+    #   trust-store-password: truststore-password
 
 server:
   port: 8083
@@ -62,3 +86,21 @@ ssh:
   key-storage:
     path: /tmp/codebridge/ssh-keys
 
+# Properties for Session Management (DB only now locally) and JWT
+codebridge:
+  service-urls:
+    session-service: "http://codebridge-session-service/api" # Using service discovery and assuming /api base path in session-service
+  session:
+    # ssh: # SSH session management is delegated to codebridge-session-service
+      # timeout-ms: 600000
+    db:
+      timeout-ms: 300000 # DB session idle timeout (5 minutes)
+  rabbitmq: # Application-specific AMQP properties
+    activity-log:
+      exchange-name: "codebridge.activitylog.exchange"
+      queue-name: "codebridge.activitylog.queue"
+      routing-key: "codebridge.activitylog.routingkey"
+
+jwt:
+  secret: your-very-secure-and-long-jwt-secret-key-replace-this # Replace this with a strong, environment-specific secret
+  expiration-ms: 600000 # JWT expiration time (10 minutes), can be same as or different from SSH session timeout

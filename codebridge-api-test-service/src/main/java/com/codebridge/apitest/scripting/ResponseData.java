@@ -12,7 +12,7 @@ public class ResponseData {
     public ResponseData(int statusCode, Map<String, String> headers, String body) {
         this.statusCode = statusCode;
         // Ensure headers are stored immutably if the input map is mutable
-        this.headers = Collections.unmodifiableMap(new HashMap<>(headers)); 
+        this.headers = Collections.unmodifiableMap(new HashMap<>(headers));
         this.body = body;
     }
 

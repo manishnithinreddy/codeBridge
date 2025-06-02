@@ -102,7 +102,7 @@ class ServerActivityLogControllerTests {
                 .andExpect(jsonPath("$.totalElements").value(0));
         }
     }
-    
+
     // Consider adding test for ResourceNotFoundException if serverActivityLogService.getLogsForServer could throw it
     // e.g. if the server itself must exist to fetch logs. Often, logs might still exist or return empty.
 
@@ -115,7 +115,7 @@ class ServerActivityLogControllerTests {
             // The controller's SecurityUtils.getCurrentUserId() will be the one performing the action.
             // The {platformUserId} is the target user for the logs.
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(mockAdminUserId));
-            
+
             // This mock implies an admin (mockAdminUserId) is fetching logs for targetUserId
             when(serverActivityLogService.getLogsForUser(eq(targetUserId), any(Pageable.class))).thenReturn(logPage);
 
@@ -128,16 +128,16 @@ class ServerActivityLogControllerTests {
                 .andExpect(jsonPath("$.numberOfElements").value(1));
         }
     }
-    
+
     @Test
     void getLogsForUser_whenFetchingOwnLogs_shouldReturnPageOfLogs() throws Exception {
         Page<ServerActivityLogResponse> logPage = new PageImpl<>(Collections.singletonList(sampleLogResponse()), PageRequest.of(0, 5), 1);
         // In this scenario, the current user IS the target user.
-        String currentUserId = targetUserId; 
+        String currentUserId = targetUserId;
 
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(currentUserId));
-            
+
             when(serverActivityLogService.getLogsForUser(eq(currentUserId), any(Pageable.class))).thenReturn(logPage);
 
             mockMvc.perform(get("/api/activity-logs/user/{platformUserId}", currentUserId)
@@ -152,7 +152,7 @@ class ServerActivityLogControllerTests {
     @Test
     void getLogsForUser_whenNoLogs_shouldReturnEmptyPage() throws Exception {
         Page<ServerActivityLogResponse> emptyPage = Page.empty(PageRequest.of(0,10));
-        
+
         try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
             mockedSecurityUtils.when(SecurityUtils::getCurrentUserId).thenReturn(Optional.of(mockAdminUserId));
             when(serverActivityLogService.getLogsForUser(eq(targetUserId), any(Pageable.class))).thenReturn(emptyPage);

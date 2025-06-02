@@ -12,6 +12,9 @@ import com.codebridge.server.repository.ServerRepository;
 import com.codebridge.server.repository.SshKeyRepository; // Or SshKeyManagementService
 import org.jasypt.encryption.StringEncryptor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +82,7 @@ public class ServerManagementService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "serverById", key = "#serverId.toString()")
     public ServerResponse getServerById(UUID serverId, UUID userId) {
         Server server = serverRepository.findByIdAndUserId(serverId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Server", "id", serverId));
@@ -93,6 +97,7 @@ public class ServerManagementService {
     }
 
     @Transactional
+    @CachePut(value = "serverById", key = "#serverId.toString()")
     public ServerResponse updateServer(UUID serverId, ServerRequest requestDto, UUID userId) {
         Server server = serverRepository.findByIdAndUserId(serverId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Server", "id", serverId));
@@ -101,7 +106,7 @@ public class ServerManagementService {
         server.setHostname(requestDto.getHostname());
         server.setPort(requestDto.getPort() != null ? requestDto.getPort() : 22);
         server.setRemoteUsername(requestDto.getRemoteUsername());
-        
+
         // Auth provider and credentials update logic
         if (requestDto.getAuthProvider() != null) {
             ServerAuthProvider newAuthProvider;
@@ -150,6 +155,8 @@ public class ServerManagementService {
     }
 
     @Transactional
+    @CacheEvict(value = "serverById", key = "#serverId.toString()")
+    @CacheEvict(value="userServerAccessDetails", allEntries=true) // Added for broader eviction
     public void deleteServer(UUID serverId, UUID userId) {
         Server server = serverRepository.findByIdAndUserId(serverId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Server", "id", serverId));

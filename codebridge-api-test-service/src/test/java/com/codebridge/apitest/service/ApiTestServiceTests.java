@@ -54,7 +54,7 @@ class ApiTestServiceTests {
 
     @Mock
     private JavaScriptExecutorService javaScriptExecutorService;
-    
+
     @Spy // Using a real ObjectMapper can be simpler for some tests
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -66,13 +66,13 @@ class ApiTestServiceTests {
 
     @Mock
     private CloseableHttpResponse mockHttpResponse; // For mocking HTTP responses
-    
+
     @Captor
     private ArgumentCaptor<HttpUriRequest> httpRequestCaptor;
 
     @Captor
     private ArgumentCaptor<TestResult> testResultCaptor;
-    
+
     @Captor
     private ArgumentCaptor<Map<String, Object>> bindingsCaptor;
 
@@ -122,13 +122,13 @@ class ApiTestServiceTests {
                 .toArray(org.apache.hc.core5.http.Header[]::new);
         when(mockHttpResponse.getAllHeaders()).thenReturn(responseHeaders);
     }
-    
+
     // Helper to get HttpUriRequest from a mocked HttpClient call
     // This requires a bit more setup, typically by mocking the HttpClient factory or injecting the client.
     // For simplicity, we'll assume executeHttpTest and executeGraphQLTest are structured to allow internal
     // HttpUriRequest creation to be somewhat testable or rely on verifying inputs to createHttpRequest.
     // The provided structure of ApiTestService directly creates HttpClient.
-    // A direct approach is to use a try-with-resources block in the test for the client part, 
+    // A direct approach is to use a try-with-resources block in the test for the client part,
     // but that makes it an integration test for Apache HttpClient.
     // For pure unit testing with mocks, one would refactor ApiTestService to allow HttpClient injection.
     // Given the current structure, we'll focus on what's passed to createHttpRequest and script interactions.
@@ -145,7 +145,7 @@ class ApiTestServiceTests {
         // This requires a way to inject or mock the HttpClient.
         // For now, let's assume we can verify the arguments to createHttpRequest or capture the request.
         // Since createHttpRequest is private, we'll verify its inputs indirectly through executeHttpTest's behavior.
-        
+
         // For this test, we'll assume executeHttpTest correctly calls createHttpRequest.
         // We need to mock the client that executeHttpTest uses.
         // This is tricky because HttpClients.createDefault() is static.
@@ -154,11 +154,11 @@ class ApiTestServiceTests {
         // Let's focus on the JavaScriptExecutorService interaction first.
 
         apiTestService.executeTest(testApiTestId, testUserId, null);
-        
+
         verify(javaScriptExecutorService).executeScript(eq(baseApiTest.getPreRequestScript()), bindingsCaptor.capture());
         Map<String, Object> capturedBindings = bindingsCaptor.getValue();
         MutableRequestData mrd = (MutableRequestData) capturedBindings.get("request");
-        
+
         // Simulate script execution effect on MutableRequestData
         mrd.setUrl(expectedUrl); // This would happen inside the real JS execution
 
@@ -168,7 +168,7 @@ class ApiTestServiceTests {
         // then the test becomes about whether the script correctly modified MutableRequestData.
         // The current test structure doesn't allow easy mocking of HttpClient.
         // So, we will assert the state of MutableRequestData after script execution (as mocked).
-        
+
         assertEquals(expectedUrl, mrd.getUrl());
         // In a real scenario where HttpClient is mockable, we would then execute the call
         // and capture the HttpUriRequest to verify its URI.
@@ -200,13 +200,13 @@ class ApiTestServiceTests {
 
         assertEquals("ValueFromScript", mrd.getHeaders().get("X-Custom-Header"));
         assertEquals("Bearer ScriptToken", mrd.getHeaders().get("Authorization"));
-        
+
         // To verify final headers on actual request:
         // The createHttpRequest method is responsible for applying the "final word" auth headers.
         // We would need to test createHttpRequest or capture its output.
         // For now, we trust that if processedHeaders (from mrd) and auth params are correct, createHttpRequest works.
     }
-    
+
     @Test
     void testExecuteTest_preRequestScriptModifiesBody() throws Exception {
         baseApiTest.setMethod(HttpMethod.POST);
@@ -219,10 +219,10 @@ class ApiTestServiceTests {
         verify(javaScriptExecutorService).executeScript(eq(baseApiTest.getPreRequestScript()), bindingsCaptor.capture());
         Map<String, Object> capturedBindings = bindingsCaptor.getValue();
         MutableRequestData mrd = (MutableRequestData) capturedBindings.get("request");
-        
+
         // Simulate script effect
         mrd.setBody(expectedBody);
-        
+
         assertEquals(expectedBody, mrd.getBody());
     }
 
@@ -238,7 +238,7 @@ class ApiTestServiceTests {
 
         baseApiTest.setPreRequestScript("let newUrl = variables.get('envUrl') + '/test'; request.url = newUrl;");
         String expectedUrl = "http://env.example.com/test";
-        
+
         apiTestService.executeTest(testApiTestId, testUserId, null);
 
         verify(javaScriptExecutorService).executeScript(eq(baseApiTest.getPreRequestScript()), bindingsCaptor.capture());
@@ -279,7 +279,7 @@ class ApiTestServiceTests {
         MutableRequestData mrd = (MutableRequestData) capturedBindings.get("request");
         @SuppressWarnings("unchecked")
         Map<String, String> scriptVars = (Map<String, String>) capturedBindings.get("variables");
-        
+
         assertEquals("http://env.example.com", scriptVars.get("baseUrl"));
         assertEquals("/collectionPath", scriptVars.get("path"));
         assertEquals("collectionValue", scriptVars.get("commonKey")); // Assert override
@@ -288,7 +288,7 @@ class ApiTestServiceTests {
         mrd.setUrl(expectedUrl);
         assertEquals(expectedUrl, mrd.getUrl());
     }
-    
+
     @Test
     void testExecuteTest_preRequestScriptFails_setsErrorStatus() throws Exception {
         baseApiTest.setPreRequestScript("throw new Error('Script failure');");
@@ -299,7 +299,7 @@ class ApiTestServiceTests {
 
         assertEquals(TestStatus.ERROR.name(), testResultResponse.getStatus());
         assertTrue(testResultResponse.getErrorMessage().contains("Pre-request script execution failed: JS Error"));
-        
+
         verify(testResultRepository).save(testResultCaptor.capture());
         assertEquals(TestStatus.ERROR, testResultCaptor.getValue().getStatus());
     }
@@ -316,7 +316,7 @@ class ApiTestServiceTests {
         String expectedBodyAfterScript = "{\"query\":\"query { modified }\",\"variables\":{\"var\":\"modified\"}}";
 
         apiTestService.executeTest(testApiTestId, testUserId, null);
-        
+
         verify(javaScriptExecutorService).executeScript(eq(baseApiTest.getPreRequestScript()), bindingsCaptor.capture());
         Map<String, Object> capturedBindings = bindingsCaptor.getValue();
         MutableRequestData mrd = (MutableRequestData) capturedBindings.get("request");
@@ -324,7 +324,7 @@ class ApiTestServiceTests {
         // Simulate script modifying the body
         mrd.setBody(expectedBodyAfterScript);
         assertEquals(expectedBodyAfterScript, mrd.getBody());
-        
+
         // Further verification would involve capturing the HttpPost's entity if HttpClient was mockable.
     }
 
@@ -333,7 +333,7 @@ class ApiTestServiceTests {
     @Test
     void testExecuteTest_validationScriptReceivesCorrectResponseData() throws Exception {
         baseApiTest.setValidationScript("let status = response.statusCode;"); // Simple script
-        
+
         // Mock the HTTP response that the validation script will see
         String responseBody = "{\"data\":\"test\"}";
         Map<String, String> responseHeadersMap = Collections.singletonMap("X-Test-Header", "TestValue");
@@ -345,7 +345,7 @@ class ApiTestServiceTests {
         // This means we need to mock the actual http client call.
         // This test is becoming more of an integration test for the executeTest flow.
         // Let's assume a successful HTTP call that then runs the validation script.
-        
+
         // For now, let's focus on the call to the validation script itself.
         // We need to ensure executeHttpTest or executeGraphQLTest calls it with correct ResponseData.
         // This is hard to unit test in isolation without refactoring how HttpClient is used.
@@ -364,7 +364,7 @@ class ApiTestServiceTests {
 
         // Test that validation script is called if present
         apiTestService.executeTest(testApiTestId, testUserId, null); // Assuming it makes a successful call internally
-        
+
         // If a validation script exists, it should be called.
         // This verify call assumes the HTTP part completed and now validation script is up.
         // This is a weak test for ResponseData content.
@@ -378,13 +378,13 @@ class ApiTestServiceTests {
     void testExecuteTest_validationScriptPasses_basicValidationPasses_statusSuccess() throws Exception {
         baseApiTest.setExpectedStatusCode(200);
         baseApiTest.setValidationScript("if(response.statusCode !== 200) throw 'Fail';"); // Script also checks
-        
+
         // To make this test meaningful, we need to simulate a successful HTTP call
         // AND successful script execution. This requires mocking HttpClient.
         // For now, let's assume the call to executeHttpTest will internally manage this.
         // And we'll mock the script execution to not throw an error.
         doNothing().when(javaScriptExecutorService).executeScript(eq(baseApiTest.getValidationScript()), anyMap());
-        
+
         // The challenge: executeHttpTest itself makes the actual HTTP call.
         // We cannot easily mock this without refactoring ApiTestService to inject HttpClient,
         // or using PowerMock for the static HttpClients.createDefault().
@@ -397,19 +397,19 @@ class ApiTestServiceTests {
         // This test is more about the logic combining basic and script validation.
         // To do this, we'd need to control the outcome of both.
         // Currently, cannot easily control HTTP response outcome without significant mocking/refactoring.
-        
+
         // Placeholder: This test needs proper HttpClient mocking to be effective.
         assertTrue(true, "Test needs proper HttpClient mocking to be effective for combined validation status.");
     }
-    
+
     // More validation script tests (failure cases, etc.) would follow a similar pattern
     // and face the same HttpClient mocking challenge.
-    
+
     // --- Variable Integration Tests ---
     // `resolveVariablesInString` and `resolveVariablesInHeaders` are private.
     // We test them indirectly via their usage in pre-request script variable access
     // and initial processing of URL/headers/body.
-    
+
     @Test
     void testVariableResolution_EnvAndCollection_PrecedenceInPreRequestScriptBindings() throws Exception {
         // This was effectively tested in:
@@ -424,7 +424,7 @@ class ApiTestServiceTests {
         baseApiTest.setUrl("http://{{host}}/{{path}}");
         Map<String, String> envVars = Collections.singletonMap("host", "env.example.com");
         Map<String, String> collVars = Collections.singletonMap("path", "collPath");
-        
+
         // Expected URL after initial resolution before pre-request script
         String expectedInitialUrl = "http://env.example.com/collPath";
 
@@ -438,7 +438,7 @@ class ApiTestServiceTests {
         // verify(javaScriptExecutorService).executeScript(anyString(), bindingsCaptor.capture());
         // MutableRequestData mrd = (MutableRequestData) bindingsCaptor.getValue().get("request");
         // assertEquals(expectedInitialUrl, mrd.getUrl());
-        
+
         // Since there's no script, the `initialProcessedUrl` inside executeTest should be this.
         // We can't directly assert that private variable.
         // This test relies on the logic that if pre-request script variables are resolved correctly,
@@ -461,7 +461,7 @@ class ApiTestServiceTests {
     void testAuth_BearerToken_HeaderSetCorrectly() throws Exception {
         baseApiTest.setAuthType(AuthType.BEARER_TOKEN);
         baseApiTest.setAuthToken("test-bearer-token");
-        
+
         // If we could capture the HttpUriRequest from a mocked HttpClient:
         // apiTestService.executeTest(testApiTestId, testUserId, null);
         // verify(mockHttpClient).execute(httpRequestCaptor.capture());
@@ -488,22 +488,22 @@ class ApiTestServiceTests {
         baseApiTest.setApiKeyName("api_key_query");
         baseApiTest.setApiKeyValue("query-key-value");
         baseApiTest.setUrl("http://example.com/api?existingParam=true");
-        
+
         // Expected URL: http://example.com/api?existingParam=true&api_key_query=query-key-value
         // Capture HttpUriRequest and check request.getURI().toString().
         assertTrue(true, "Auth API Key (Query) test requires HttpClient mocking or refactor.");
     }
-    
+
     @Test
     void testAuth_VariablesResolvedInAuthFields() throws Exception {
         baseApiTest.setAuthType(AuthType.BEARER_TOKEN);
         baseApiTest.setAuthToken("{{myToken}}");
         Map<String, String> scriptVars = Collections.singletonMap("myToken", "resolved-super-secret-token");
-        
+
         // In executeTest, resolvedAuthToken should become "resolved-super-secret-token"
         // This resolved token would then be passed to createHttpRequest.
         // This test ensures that the variable resolution step happens before auth application.
-        
+
         // To test this, we need to see what's passed to createHttpRequest or capture the final request.
         // This is again reliant on HttpClient mocking or refactoring.
         assertTrue(true, "Auth variable resolution test requires HttpClient mocking or refactor.");
@@ -520,7 +520,7 @@ class ApiTestServiceTests {
         // Capture HttpUriRequest and verify.
         assertTrue(true, "Auth precedence test requires HttpClient mocking or refactor.");
     }
-    
+
     // --- Mocking HTTP Client Calls ---
     // The current structure of ApiTestService (using HttpClients.createDefault() directly in
     // executeHttpTest/executeGraphQLTest) makes it hard to inject a mock HttpClient
