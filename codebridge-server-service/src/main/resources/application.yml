@@ -62,3 +62,35 @@ ssh:
   key-storage:
     path: /tmp/codebridge/ssh-keys
 
+jasypt:
+  encryptor:
+    # Ensure this password is set via environment variable or a secure configuration method in real deployments
+    # For local development, it can be set here, but avoid committing real passwords.
+    password: "YOUR_JASYPT_ENCRYPTOR_MASTER_PASSWORD_PLACEHOLDER" 
+
+# RabbitMQ Configuration (appended to spring block or at root level with full path)
+# For clarity, adding spring.rabbitmq under the existing spring: block.
+# If appending at root, it would be spring.rabbitmq.host etc.
+# Let's find the end of the spring block.
+# Based on current file, jasypt is last under spring.
+# The following should be correctly indented under 'spring:'
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest # Default, change in production
+    password: guest # Default, change in production
+    # virtual-host: / # Optional, uncomment if needed
+
+# Application-specific AMQP properties
+codebridge:
+  security: # New block for security properties
+    jwt:
+      shared-secret: "YOUR_VERY_SECURE_AND_LONG_SHARED_SECRET_FOR_USER_JWTS_CHANGE_ME" # Placeholder
+  service-urls: # New block for service URLs
+    session-service: "http://codebridge-session-service/api/sessions" # Base URL for session service
+  rabbitmq:
+    activity-log:
+      exchange-name: "codebridge.activitylog.exchange"
+      queue-name: "codebridge.activitylog.queue"
+      routing-key: "codebridge.activitylog.routingkey"
+
