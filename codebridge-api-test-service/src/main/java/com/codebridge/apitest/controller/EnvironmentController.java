@@ -6,8 +6,9 @@ import com.codebridge.apitest.service.EnvironmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication; // New import
+// import org.springframework.security.core.annotation.AuthenticationPrincipal; // Replaced
+// import org.springframework.security.core.userdetails.UserDetails; // Replaced
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,20 +44,22 @@ public class EnvironmentController {
     @PostMapping
     public ResponseEntity<EnvironmentResponse> createEnvironment(
             @Valid @RequestBody EnvironmentRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        EnvironmentResponse response = environmentService.createEnvironment(request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        EnvironmentResponse response = environmentService.createEnvironment(request, platformUserId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
      * Get all environments for the authenticated user.
      *
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return list of environments
      */
     @GetMapping
-    public ResponseEntity<List<EnvironmentResponse>> getAllEnvironments(@AuthenticationPrincipal UserDetails userDetails) {
-        List<EnvironmentResponse> environments = environmentService.getAllEnvironments(UUID.fromString(userDetails.getUsername()));
+    public ResponseEntity<List<EnvironmentResponse>> getAllEnvironments(Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        List<EnvironmentResponse> environments = environmentService.getAllEnvironments(platformUserId);
         return ResponseEntity.ok(environments);
     }
 
@@ -64,14 +67,15 @@ public class EnvironmentController {
      * Get environment by ID.
      *
      * @param id the environment ID
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return the environment
      */
     @GetMapping("/{id}")
     public ResponseEntity<EnvironmentResponse> getEnvironmentById(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        EnvironmentResponse environment = environmentService.getEnvironmentById(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        EnvironmentResponse environment = environmentService.getEnvironmentById(id, platformUserId);
         return ResponseEntity.ok(environment);
     }
 
@@ -80,15 +84,16 @@ public class EnvironmentController {
      *
      * @param id the environment ID
      * @param request the environment request
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return the updated environment
      */
     @PutMapping("/{id}")
     public ResponseEntity<EnvironmentResponse> updateEnvironment(
             @PathVariable UUID id,
             @Valid @RequestBody EnvironmentRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        EnvironmentResponse response = environmentService.updateEnvironment(id, request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        EnvironmentResponse response = environmentService.updateEnvironment(id, request, platformUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -96,14 +101,15 @@ public class EnvironmentController {
      * Delete an environment.
      *
      * @param id the environment ID
-     * @param userDetails the authenticated user details
+     * @param authentication the authenticated user principal
      * @return no content response
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEnvironment(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        environmentService.deleteEnvironment(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        UUID platformUserId = UUID.fromString(authentication.getName());
+        environmentService.deleteEnvironment(id, platformUserId);
         return ResponseEntity.noContent().build();
     }
 }

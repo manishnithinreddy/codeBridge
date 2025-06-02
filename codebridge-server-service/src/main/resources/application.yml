@@ -93,13 +93,18 @@ codebridge:
   session:
     # ssh: # SSH session management is delegated to codebridge-session-service
       # timeout-ms: 600000
-    db:
-      timeout-ms: 300000 # DB session idle timeout (5 minutes)
+    # db: # DB session management is delegated to codebridge-session-service
+      # timeout-ms: 300000
   rabbitmq: # Application-specific AMQP properties
     activity-log:
       exchange-name: "codebridge.activitylog.exchange"
       queue-name: "codebridge.activitylog.queue"
       routing-key: "codebridge.activitylog.routingkey"
+  security:
+    jwt:
+      # Secret key for validating incoming User JWTs from the main platform/IdP
+      # Ensure this is strong and kept secret in production, matching the IdP's signing key
+      shared-secret: "your-VERY-secure-SHARED-secret-for-incoming-user-JWTs-REPLACE-THIS-IN-SERVER-SERVICE"
 
 jwt:
   secret: your-very-secure-and-long-jwt-secret-key-replace-this # Replace this with a strong, environment-specific secret

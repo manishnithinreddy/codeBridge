@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException; // Spring Security specific
+import org.springframework.security.access.AccessDeniedException as SpringSecurityAccessDeniedException; // Spring Security specific
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -46,6 +48,29 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getDescription(false));
         logger.warn("Access Denied: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
+    }
+
+    // Handler for Spring Security's AuthenticationException (e.g. invalid JWT)
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorDetails> handleAuthenticationException(AuthenticationException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                new Date(),
+                "Authentication failed: " + ex.getMessage(),
+                request.getDescription(false));
+        logger.warn("Authentication failure: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
+    }
+
+    // Handler for Spring Security's AccessDeniedException (e.g. insufficient permissions after successful auth)
+    // This is different from our custom com.codebridge.session.exception.AccessDeniedException
+    @ExceptionHandler(SpringSecurityAccessDeniedException.class)
+    public ResponseEntity<ErrorDetails> handleSpringSecurityAccessDeniedException(SpringSecurityAccessDeniedException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                new Date(),
+                "Access denied: " + ex.getMessage(),
+                request.getDescription(false));
+        logger.warn("Spring Security Access Denied: {}", ex.getMessage());
         return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
     }
 

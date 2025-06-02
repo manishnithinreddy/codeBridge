@@ -55,6 +55,11 @@ codebridge:
       timeout-ms: 600000 # SSH session idle timeout (10 minutes)
     db:
       timeout-ms: 300000 # DB session idle timeout (5 minutes)
+  security:
+    jwt:
+      # Secret key for validating incoming User JWTs from the main platform/IdP
+      # Ensure this is strong and kept secret in production, matching the IdP's signing key
+      shared-secret: "your-VERY-secure-SHARED-secret-for-incoming-user-JWTs-REPLACE-THIS"
 
 jwt:
   secret: your-very-secure-and-long-jwt-secret-key-replace-this # IMPORTANT: Use a unique, strong secret per environment

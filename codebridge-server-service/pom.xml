@@ -63,12 +63,12 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <!-- Version managed by Spring Boot parent POM -->
-            <scope>runtime</scope> <!-- Explicitly runtime as it's a driver for dynamic loading -->
-        </dependency>
+        <!-- MySQL driver removed as DB session management is delegated to SessionService -->
+        <!-- <dependency> -->
+            <!-- <groupId>com.mysql</groupId> -->
+            <!-- <artifactId>mysql-connector-j</artifactId> -->
+            <!-- <scope>runtime</scope> -->
+        <!-- </dependency> -->
 
         <!-- SSH Client -->
         <dependency>

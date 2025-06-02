@@ -37,6 +37,7 @@ public class SshSessionLifecycleManager {
     private final JwtTokenProvider jwtTokenProvider;
     private final SshSessionConfigProperties sshSessionConfigProperties;
     private final JwtConfigProperties jwtConfigProperties;
+    private final CustomJschHostKeyRepository customJschHostKeyRepository; // New dependency
 
     private final ConcurrentMap<SessionKey, SshSessionWrapper> localActiveSshSessions = new ConcurrentHashMap<>();
     private final String applicationInstanceId;
@@ -49,14 +50,16 @@ public class SshSessionLifecycleManager {
             JwtTokenProvider jwtTokenProvider,
             SshSessionConfigProperties sshSessionConfigProperties,
             JwtConfigProperties jwtConfigProperties,
-            ApplicationInstanceIdProvider instanceIdProvider) { // Injected provider
+            ApplicationInstanceIdProvider instanceIdProvider,
+            CustomJschHostKeyRepository customJschHostKeyRepository) { // Injected provider and new repo
         this.sessionKeyRedisTemplate = sessionKeyRedisTemplate;
         this.sshSessionMetadataRedisTemplate = sshSessionMetadataRedisTemplate;
         this.jwtTokenProvider = jwtTokenProvider;
         this.sshSessionConfigProperties = sshSessionConfigProperties;
         this.jwtConfigProperties = jwtConfigProperties;
         this.applicationInstanceId = instanceIdProvider.getInstanceId() + ":ssh"; // Use provider and append type
-        log.info("SshSessionLifecycleManager initialized with applicationInstanceId: {}", this.applicationInstanceId);
+        this.customJschHostKeyRepository = customJschHostKeyRepository; // Store new repo
+        log.info("SshSessionLifecycleManager initialized with applicationInstanceId: {} and CustomJschHostKeyRepository", this.applicationInstanceId);
     }
 
     // --- Redis Key Helpers ---
@@ -82,6 +85,8 @@ public class SshSessionLifecycleManager {
         Supplier<SshSessionWrapper> sshSessionFactory = () -> {
             try {
                 JSch jsch = new JSch();
+                jsch.setHostKeyRepository(customJschHostKeyRepository); // Set custom HostKeyRepository
+
                 // Add identity: null for name (JSch generates one), no passphrase for key for now
                 jsch.addIdentity(
                     UUID.randomUUID().toString(), // Unique name for identity
@@ -95,9 +100,9 @@ public class SshSessionLifecycleManager {
                     connectionDetails.getHostname(),
                     connectionDetails.getPort()
                 );
-                jschSession.setConfig("StrictHostKeyChecking", "no"); // TODO: Make configurable or use known_hosts
+                // Removed: jschSession.setConfig("StrictHostKeyChecking", "no");
                 jschSession.setTimeout(JSCH_SESSION_CONNECT_TIMEOUT_MS);
-                log.debug("Attempting JSch session.connect() for key {}", sessionKey);
+                log.debug("Attempting JSch session.connect() for key {} with custom host key verification", sessionKey);
                 jschSession.connect();
                 log.info("JSch session connected successfully for key {} on instance {}", sessionKey, applicationInstanceId);
                 return new SshSessionWrapper(sessionKey, jschSession);
