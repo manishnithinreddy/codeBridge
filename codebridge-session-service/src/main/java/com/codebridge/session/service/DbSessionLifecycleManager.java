@@ -27,6 +27,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Properties;
+import com.codebridge.session.dto.schema.ColumnSchemaInfo; // Added
+import com.codebridge.session.dto.schema.DbSchemaInfoResponse; // Added
+import com.codebridge.session.dto.schema.TableSchemaInfo; // Added
+import java.sql.DatabaseMetaData; // Added
+import java.sql.ResultSet; // Added
+import java.util.ArrayList; // Added
+import java.util.List; // Added
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -282,6 +289,54 @@ public class DbSessionLifecycleManager {
             dbSessionMetadataRedisTemplate.opsForValue().set(dbSessionMetadataRedisKey(key), updatedMetadata, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
         } else {
             logger.warn("No metadata found in Redis to update access time for DB session key: {}", key);
+        }
+    }
+
+    public DbSchemaInfoResponse getDetailedSchemaInfo(Connection connection) {
+        DbSchemaInfoResponse response = new DbSchemaInfoResponse();
+        try {
+            DatabaseMetaData metaData = connection.getMetaData();
+
+            response.setDatabaseProductName(metaData.getDatabaseProductName());
+            response.setDatabaseProductVersion(metaData.getDatabaseProductVersion());
+            response.setDriverName(metaData.getDriverName());
+            response.setDriverVersion(metaData.getDriverVersion());
+
+            String catalog = connection.getCatalog();
+            String schema = connection.getSchema(); // May return null for some DBs, or need specific schema pattern
+
+            logger.debug("Fetching tables for catalog: '{}', schema: '{}'", catalog, schema);
+
+            // Get tables and views
+            try (ResultSet tablesRs = metaData.getTables(catalog, schema, "%", new String[]{"TABLE", "VIEW"})) {
+                while (tablesRs.next()) {
+                    String tableName = tablesRs.getString("TABLE_NAME");
+                    String tableType = tablesRs.getString("TABLE_TYPE");
+                    String remarks = tablesRs.getString("REMARKS");
+
+                    TableSchemaInfo tableInfo = new TableSchemaInfo(tableName, tableType, remarks);
+                    logger.debug("Fetching columns for table: '{}' (Type: {})", tableName, tableType);
+
+                    // Get columns for each table
+                    try (ResultSet columnsRs = metaData.getColumns(catalog, schema, tableName, "%")) {
+                        while (columnsRs.next()) {
+                            String columnName = columnsRs.getString("COLUMN_NAME");
+                            String columnTypeName = columnsRs.getString("TYPE_NAME");
+                            int nullableInt = columnsRs.getInt("NULLABLE");
+                            boolean isNullable = nullableInt == DatabaseMetaData.columnNullable;
+                            Integer columnSize = columnsRs.getObject("COLUMN_SIZE", Integer.class);
+                            Integer decimalDigits = columnsRs.getObject("DECIMAL_DIGITS", Integer.class);
+
+                            tableInfo.addColumn(new ColumnSchemaInfo(columnName, columnTypeName, isNullable, columnSize, decimalDigits));
+                        }
+                    }
+                    response.addTable(tableInfo);
+                }
+            }
+            return response;
+        } catch (SQLException e) {
+            logger.error("SQLException while fetching detailed schema info: {}", e.getMessage(), e);
+            throw new RemoteOperationException("Failed to retrieve detailed database schema information: " + e.getMessage(), e);
         }
     }
 }
