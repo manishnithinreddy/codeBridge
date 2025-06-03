@@ -88,6 +88,7 @@ codebridge:
       shared-secret: "YOUR_VERY_SECURE_AND_LONG_SHARED_SECRET_FOR_USER_JWTS_CHANGE_ME" # Placeholder
   service-urls: # New block for service URLs
     session-service: "http://codebridge-session-service/api/sessions" # Base URL for session service
+    ai-db-agent-service: "http://codebridge-ai-db-agent-service/api/ai-db-agent" # Base path for AI agent queries
   rabbitmq:
     activity-log:
       exchange-name: "codebridge.activitylog.exchange"
