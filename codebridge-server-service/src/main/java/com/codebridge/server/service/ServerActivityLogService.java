@@ -28,14 +28,14 @@ public class ServerActivityLogService {
     private final ServerActivityLogRepository serverActivityLogRepository; // Still needed for read operations
     private final ServerRepository serverRepository; // To fetch server name for responses
     private final RabbitTemplate rabbitTemplate; // Added
-    
+
     @Value("${codebridge.rabbitmq.activity-log.exchange-name}")
     private String activityLogExchangeName; // Added
 
     @Value("${codebridge.rabbitmq.activity-log.routing-key}")
     private String activityLogRoutingKey; // Added
 
-    public ServerActivityLogService(ServerActivityLogRepository serverActivityLogRepository, 
+    public ServerActivityLogService(ServerActivityLogRepository serverActivityLogRepository,
                                     ServerRepository serverRepository,
                                     RabbitTemplate rabbitTemplate) { // Added rabbitTemplate
         this.serverActivityLogRepository = serverActivityLogRepository;
@@ -88,7 +88,7 @@ public class ServerActivityLogService {
             Optional<Server> serverOpt = serverRepository.findById(log.getServerId());
             serverName = serverOpt.map(Server::getName).orElse(null);
         }
-        
+
         // Assuming platformUsername would be fetched from a UserService if available, for now null
         return new ServerActivityLogResponse(
                 log.getId(),

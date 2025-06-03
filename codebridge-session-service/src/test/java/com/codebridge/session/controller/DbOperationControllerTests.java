@@ -45,7 +45,7 @@ class DbOperationControllerTests {
     @Mock private Connection mockJdbcConnection;
     @Mock private DatabaseMetaData mockDatabaseMetaData;
     @Mock private DbSessionWrapper mockDbWrapper;
-    
+
     private String validSessionToken = "valid-db-ops-token";
     private UUID platformUserId = UUID.randomUUID();
     private UUID resourceId = UUID.randomUUID(); // Represents db alias hash
@@ -60,17 +60,17 @@ class DbOperationControllerTests {
 
         when(jwtTokenProvider.validateToken(validSessionToken)).thenReturn(true);
         when(jwtTokenProvider.getClaimsFromToken(validSessionToken)).thenReturn(claims);
-        
-        DbSessionMetadata metadata = new DbSessionMetadata(sessionKey, System.currentTimeMillis(), System.currentTimeMillis(), 
-            System.currentTimeMillis() + 3600000, validSessionToken, "test-db-instance", 
+
+        DbSessionMetadata metadata = new DbSessionMetadata(sessionKey, System.currentTimeMillis(), System.currentTimeMillis(),
+            System.currentTimeMillis() + 3600000, validSessionToken, "test-db-instance",
             "POSTGRESQL", "localhost", "testdb", "user");
         when(dbLifecycleManager.getSessionMetadata(sessionKey)).thenReturn(Optional.of(metadata));
         when(instanceIdProvider.getInstanceId()).thenReturn("test-db-instance");
-        
+
         when(mockDbWrapper.isValid(anyInt())).thenReturn(true);
         when(mockDbWrapper.getConnection()).thenReturn(mockJdbcConnection);
         when(dbLifecycleManager.getLocalSession(sessionKey)).thenReturn(Optional.of(mockDbWrapper));
-        
+
         when(mockJdbcConnection.getMetaData()).thenReturn(mockDatabaseMetaData);
     }
 

@@ -68,7 +68,7 @@ class ApiTestControllerTests {
                                          // If the controller/service isn't fully implemented, this might fail.
                                          // For now, just checking if endpoint is secured.
     }
-    
+
     @Test
     void createApiTest_unauthenticated_returnsUnauthorized() throws Exception {
         ApiTestRequest requestDto = new ApiTestRequest("My API Test", "Some details");
@@ -83,7 +83,7 @@ class ApiTestControllerTests {
     void getApiTestById_authenticated_returnsOk() throws Exception {
         UUID testId = UUID.randomUUID();
         ApiTestResponse responseDto = new ApiTestResponse(testId, "My API Test", "Some details", MOCK_USER_ID_UUID);
-        
+
         // when(apiTestService.getApiTestById(eq(testId), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(get("/api/tests/{testId}", testId) // Assuming this endpoint

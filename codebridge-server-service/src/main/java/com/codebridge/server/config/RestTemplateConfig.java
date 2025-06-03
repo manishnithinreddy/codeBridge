@@ -21,7 +21,7 @@ public class RestTemplateConfig {
             // .setReadTimeout(Duration.ofSeconds(30))
             .build();
     }
-    
+
     // If a non-load-balanced RestTemplate is also needed for specific external calls:
     /*
     @Bean("externalRestTemplate")

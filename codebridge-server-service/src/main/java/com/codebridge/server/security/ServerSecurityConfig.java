@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) 
+@EnableMethodSecurity(prePostEnabled = true)
 public class ServerSecurityConfig {
 
     private final IncomingUserJwtConfigProperties jwtConfigProperties;
@@ -36,8 +36,8 @@ public class ServerSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/actuator/**",
-                    "/v3/api-docs/**", 
-                    "/swagger-ui/**",  
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
                     "/swagger-ui.html"
                     // "/h2-console/**" // Uncomment if H2 console is used and needs to be public
                 ).permitAll()
@@ -66,13 +66,13 @@ public class ServerSecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         // If User JWTs have roles in a "roles" or "authorities" claim, configure here:
-        // grantedAuthoritiesConverter.setAuthoritiesClaimName("roles"); 
+        // grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
         // grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_"); // Or "" if no prefix
 
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         // Set the principal name to be the 'sub' claim (platformUserId)
-        jwtAuthenticationConverter.setPrincipalClaimName("sub"); 
+        jwtAuthenticationConverter.setPrincipalClaimName("sub");
         return jwtAuthenticationConverter;
     }
 }

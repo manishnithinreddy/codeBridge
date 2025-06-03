@@ -37,7 +37,7 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
             logger.warn("Could not determine key type for host {} during check.", host);
             return NOT_INCLUDED; // Or treat as error
         }
-        
+
         // JSch might pass host as "[hostname]:port"
         String hostname = host;
         int port = 22; // Default SSH port
@@ -59,7 +59,7 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
         }
 
 
-        Optional<KnownSshHostKey> existingKeyOpt = 
+        Optional<KnownSshHostKey> existingKeyOpt =
             knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(hostname, port, keyType);
 
         if (existingKeyOpt.isPresent()) {
@@ -105,7 +105,7 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
         // TOFU: Trust On First Use.
         // If ui is null or doesn't prompt, we might auto-accept.
         // For a backend service, auto-accepting is common for the first connection.
-        boolean trusted = true; 
+        boolean trusted = true;
         if (ui != null) {
             // Example prompt, though for backend, this might be pre-approved or logged
             String message = String.format("The authenticity of host '[%s]:%d' can't be established.%n" +
@@ -155,14 +155,14 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
                 hostname = host.substring(0, host.indexOf(":"));
             } catch (NumberFormatException e) { /* use default */ }
         }
-        
+
         String keyTypeToRemove = type;
         if (key != null && type == null) { // If type is null, try to derive from key
             keyTypeToRemove = getKeyTypeFromBytes(key);
         }
 
         if (keyTypeToRemove != null) {
-            Optional<KnownSshHostKey> existingKeyOpt = 
+            Optional<KnownSshHostKey> existingKeyOpt =
                 knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(hostname, port, keyTypeToRemove);
             existingKeyOpt.ifPresent(knownSshHostKeyRepository::delete);
             logger.info("Removed host key from database for [{}:{}] type {}", hostname, port, keyTypeToRemove);
@@ -225,7 +225,7 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
             return null;
         }
     }
-    
+
     private String getKeyTypeFromBytes(byte[] keyBytes) {
         // This is a simplified way; JSch does this internally more robustly.
         // For common types:

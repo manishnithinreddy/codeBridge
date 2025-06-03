@@ -59,7 +59,7 @@ public class ServerAccessControlService {
         if (!server.getUserId().equals(adminUserId)) {
             throw new AccessDeniedException("User " + adminUserId + " does not own server " + serverId + ". Cannot grant access.");
         }
-        
+
         if (adminUserId.equals(requestDto.getPlatformUserId())) {
             throw new IllegalArgumentException("Cannot grant server access to the server owner via ServerUser record. Owner has implicit access.");
         }
@@ -74,7 +74,7 @@ public class ServerAccessControlService {
         }
 
         Optional<ServerUser> existingGrantOpt = serverUserRepository.findByServerIdAndPlatformUserId(serverId, requestDto.getPlatformUserId());
-        
+
         ServerUser serverUser = existingGrantOpt.orElse(new ServerUser());
         serverUser.setServer(server);
         serverUser.setPlatformUserId(requestDto.getPlatformUserId());
@@ -116,7 +116,7 @@ public class ServerAccessControlService {
 
             ServerUser serverUser = serverUserRepository.findByServerIdAndPlatformUserId(serverId, targetPlatformUserId)
                     .orElseThrow(() -> new ResourceNotFoundException("ServerUser grant not found for user " + targetPlatformUserId + " on server " + serverId));
-            
+
             serverUserRepository.delete(serverUser);
             logStatus = "SUCCESS";
             details = String.format("Access revoked for user %s from server %s (ID: %s) by user %s",
@@ -185,7 +185,7 @@ public class ServerAccessControlService {
             // Otherwise, it's an ill-defined state for this method if server's default is password.
             // For now, if no sshKeyForUser, authProvider might be inherited but credentials are not set in DTO.
              if (server.getAuthProvider() == ServerAuthProvider.PASSWORD) {
-                 throw new AccessDeniedException("User " + platformUserId + " has a grant for server " + serverId + 
+                 throw new AccessDeniedException("User " + platformUserId + " has a grant for server " + serverId +
                                                  " but no specific SSH key, and server's default is PASSWORD auth. User-specific password auth not supported via ServerUser grant in this version.");
              } else if (server.getAuthProvider() == ServerAuthProvider.SSH_KEY && server.getSshKey() == null) {
                  throw new AccessDeniedException("User " + platformUserId + " has a grant for server " + serverId +

@@ -49,9 +49,9 @@ class SshLifecycleControllerTests {
         UUID serverId = UUID.randomUUID();
         UserProvidedConnectionDetails connDetails = new UserProvidedConnectionDetails("host", 22, "user", ServerAuthProvider.PASSWORD);
         connDetails.setDecryptedPassword("password");
-        
+
         SshSessionServiceApiInitRequest requestDto = new SshSessionServiceApiInitRequest(platformUserId, serverId, connDetails);
-        
+
         SessionResponse sessionResponse = new SessionResponse("test-token", "SSH", "ACTIVE", System.currentTimeMillis(), System.currentTimeMillis() + 3600000);
         when(sshLifecycleManager.initSshSession(platformUserId, serverId, any(UserProvidedConnectionDetails.class)))
             .thenReturn(sessionResponse);
@@ -64,7 +64,7 @@ class SshLifecycleControllerTests {
             .andExpect(jsonPath("$.sessionToken").value("test-token"))
             .andExpect(jsonPath("$.type").value("SSH"));
     }
-    
+
     @Test
     void keepAliveSshSession_validToken_returnsOk() throws Exception {
         String sessionToken = "test-session-token";

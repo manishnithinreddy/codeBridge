@@ -37,7 +37,7 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims().setSubject(platformUserId.toString());
         claims.put("sessionId", sessionKey.toString()); // Or individual fields of SessionKey
         claims.put("resourceId", sessionKey.resourceId().toString());
-        claims.put("type", sessionKey.sessionType()); 
+        claims.put("type", sessionKey.sessionType());
         // Add other claims as needed, e.g., "instanceId" if relevant for token
 
         return Jwts.builder()
@@ -59,7 +59,7 @@ public class JwtTokenProvider {
         } catch (Exception e) {
             logger.error("Error parsing JWT token: {}", e.getMessage());
             // Depending on strictness, could throw custom exception or return null/empty claims
-            return null; 
+            return null;
         }
     }
 
@@ -73,7 +73,7 @@ public class JwtTokenProvider {
         }
         return false;
     }
-    
+
     public Date getExpiryDateFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims != null ? claims.getExpiration() : null;

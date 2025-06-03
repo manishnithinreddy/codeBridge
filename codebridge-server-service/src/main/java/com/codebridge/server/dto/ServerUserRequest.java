@@ -15,7 +15,7 @@ public class ServerUserRequest {
     private String remoteUsernameForUser;
 
     // Optional: if this user should use a specific SSH key different from server's default
-    private UUID sshKeyIdForUser; 
+    private UUID sshKeyIdForUser;
 
     // serverId will be typically from path variable in controller
 

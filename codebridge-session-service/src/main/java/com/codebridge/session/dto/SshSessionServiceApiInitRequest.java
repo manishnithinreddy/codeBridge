@@ -24,7 +24,7 @@ public class SshSessionServiceApiInitRequest implements Serializable {
         this.serverId = serverId;
         this.connectionDetails = connectionDetails;
     }
-    
+
     // Getters and Setters
     public UUID getPlatformUserId() {
         return platformUserId;

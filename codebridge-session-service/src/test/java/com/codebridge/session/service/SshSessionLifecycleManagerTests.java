@@ -43,7 +43,7 @@ class SshSessionLifecycleManagerTests {
     @Mock private SshSessionConfigProperties sshConfig;
     @Mock private JwtConfigProperties jwtConfig; // For session token expiry
     @Mock private ApplicationInstanceIdProvider instanceIdProvider;
-    
+
     @Mock private ValueOperations<String, SessionKey> valueOpsSessionKey;
     @Mock private ValueOperations<String, SshSessionMetadata> valueOpsSshMetadata;
 
@@ -63,7 +63,7 @@ class SshSessionLifecycleManagerTests {
         serverId = UUID.randomUUID();
         connectionDetails = new UserProvidedConnectionDetails("host", 22, "user", ServerAuthProvider.PASSWORD);
         connectionDetails.setDecryptedPassword("password");
-        
+
         sessionKey = new SessionKey(platformUserId, serverId, "SSH");
 
         lenient().when(jwtToSessionKeyRedisTemplate.opsForValue()).thenReturn(valueOpsSessionKey);
@@ -71,7 +71,7 @@ class SshSessionLifecycleManagerTests {
         lenient().when(instanceIdProvider.getInstanceId()).thenReturn("test-instance-1");
         lenient().when(jwtConfig.getExpirationMs()).thenReturn(3600000L); // 1 hour
         lenient().when(sshConfig.getDefaultTimeoutMs()).thenReturn(300000L); // 5 minutes
-        
+
         // This is a simplified mock setup for JSch Session.
         // In a real test, you might need a more sophisticated mock or to use a test JSch server.
         // For now, just mocking isConnected() and disconnect().
@@ -100,16 +100,16 @@ class SshSessionLifecycleManagerTests {
         // to make JSch session creation injectable/mockable.
         // Given the constraints, we'll proceed acknowledging this limitation for a pure unit test.
         // A more integration-style test would be better here.
-        
+
         // Act - This will likely fail if JSch() cannot be instantiated or connect in test env.
         // SessionResponse response = sshSessionLifecycleManager.initSshSession(platformUserId, serverId, connectionDetails);
-        
+
         // Assert
         // assertNotNull(response);
         // assertEquals(fakeToken, response.sessionToken());
         // verify(valueOpsSessionKey).set(eq("session:ssh:token:" + fakeToken), any(SessionKey.class), anyLong(), any(TimeUnit.class));
         // verify(valueOpsSshMetadata).set(anyString(), any(SshSessionMetadata.class), anyLong(), any(TimeUnit.class));
-        
+
         // Due to JSch instantiation, this test is more of an integration test component.
         // For now, we'll just assert it runs without error if JSch could be mocked.
         // This highlights the challenge of testing code with direct `new` of external libraries.
@@ -123,19 +123,19 @@ class SshSessionLifecycleManagerTests {
         Claims claims = new DefaultClaims().setSubject(platformUserId.toString());
         claims.put("resourceId", serverId.toString());
         claims.put("type", "SSH");
-        
+
         when(jwtTokenProvider.getClaimsFromToken(token)).thenReturn(claims);
         when(valueOpsSessionKey.get(anyString())).thenReturn(sessionKey);
-        
+
         SshSessionWrapper mockWrapper = mock(SshSessionWrapper.class);
         when(mockWrapper.isConnected()).thenReturn(true);
         sshSessionLifecycleManager.localActiveSshSessions.put(sessionKey, mockWrapper);
-        
-        SshSessionMetadata mockMetadata = new SshSessionMetadata(platformUserId, serverId, token, 
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000, 
+
+        SshSessionMetadata mockMetadata = new SshSessionMetadata(platformUserId, serverId, token,
+            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000,
             System.currentTimeMillis() + 3600000, "test-instance-1");
         when(valueOpsSshMetadata.get(anyString())).thenReturn(mockMetadata);
-        
+
         String newToken = "new-refreshed-token";
         when(jwtTokenProvider.generateToken(sessionKey, platformUserId)).thenReturn(newToken);
 
@@ -147,7 +147,7 @@ class SshSessionLifecycleManagerTests {
         verify(mockWrapper).updateLastAccessedTime();
         verify(valueOpsSshMetadata).set(anyString(), any(SshSessionMetadata.class), anyLong(), any(TimeUnit.class));
     }
-    
+
     @Test
     void releaseSshSession_validToken() {
         String token = "valid-token-to-release";
@@ -157,12 +157,12 @@ class SshSessionLifecycleManagerTests {
 
         when(jwtTokenProvider.getClaimsFromToken(token)).thenReturn(claims);
         when(valueOpsSessionKey.get(sshSessionLifecycleManager.sshTokenRedisKey(token))).thenReturn(sessionKey);
-        
+
         SshSessionWrapper mockWrapper = mock(SshSessionWrapper.class);
         sshSessionLifecycleManager.localActiveSshSessions.put(sessionKey, mockWrapper);
-        
-        SshSessionMetadata mockMetadata = new SshSessionMetadata(platformUserId, serverId, token, 
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000, 
+
+        SshSessionMetadata mockMetadata = new SshSessionMetadata(platformUserId, serverId, token,
+            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000,
             System.currentTimeMillis() + 3600000, "test-instance-1");
         when(valueOpsSshMetadata.get(sshSessionLifecycleManager.sshSessionMetadataRedisKey(sessionKey))).thenReturn(mockMetadata);
 

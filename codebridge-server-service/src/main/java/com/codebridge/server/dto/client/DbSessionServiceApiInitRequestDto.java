@@ -11,13 +11,13 @@ public class DbSessionServiceApiInitRequestDto {
     private UUID platformUserId;
 
     @NotBlank // User-defined alias for this DB connection profile
-    private String dbConnectionAlias; 
+    private String dbConnectionAlias;
 
     @NotNull
     private DbSessionCredentials credentials;
-    
+
     // Optional: If this DB session is tied to a specific managed Server entity in ServerService
-    private UUID serverId; 
+    private UUID serverId;
 
     // Constructors, Getters, Setters
     public DbSessionServiceApiInitRequestDto() {}

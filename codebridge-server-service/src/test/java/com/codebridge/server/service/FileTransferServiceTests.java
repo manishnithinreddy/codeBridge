@@ -52,13 +52,13 @@ class FileTransferServiceTests {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(fileTransferService, "sessionServiceBaseUrl", sessionServiceBaseUrl);
-        
+
         // Mocking for validateTokenAndAuthorize helper method (implicitly)
         Claims mockClaims = Jwts.claims().setSubject(platformUserId.toString());
         mockClaims.put("resourceId", serverId.toString());
         mockClaims.put("type", "SSH"); // SFTP uses SSH sessions
         // We assume JwtUtil works for parsing; direct mocking is hard here.
-        
+
         when(serverAccessControlService.getValidatedConnectionDetails(platformUserId, serverId))
             .thenReturn(mock(UserSpecificConnectionDetailsDto.class)); // Non-null to pass validation
     }
@@ -101,7 +101,7 @@ class FileTransferServiceTests {
         assertArrayEquals(fileContent, actualContent);
         verify(activityLogService).createLog(eq(platformUserId), eq("FILE_DOWNLOAD_PROXY"), eq(serverId), anyString(), eq("SUCCESS"), eq(null));
     }
-    
+
     @Test
     void uploadFile_success() throws IOException {
         InputStream inputStream = new ByteArrayInputStream("upload content".getBytes());
@@ -114,7 +114,7 @@ class FileTransferServiceTests {
             any(HttpEntity.class), // Check for HttpEntity<MultiValueMap<String, Object>>
             eq(Void.class)))
             .thenReturn(responseEntity);
-            
+
         fileTransferService.uploadFile(serverId, sessionToken, remotePath, inputStream, remoteFileName);
 
         verify(activityLogService).createLog(eq(platformUserId), eq("FILE_UPLOAD_PROXY"), eq(serverId), anyString(), eq("SUCCESS"), eq(null));

@@ -48,7 +48,7 @@ class SshKeyManagementServiceCachingTests {
         // ... other fields
 
         sshKeyResponseDto = new SshKeyResponse(keyId, "test-key", "pub-key", "fingerprint", userId, null, null);
-        
+
         when(cacheManager.getCache("sshKeyById")).thenReturn(cache);
     }
 
@@ -56,7 +56,7 @@ class SshKeyManagementServiceCachingTests {
     void getSshKeyById_whenNotInCache_fetchesFromDbAndCaches() {
         when(cache.get(keyId.toString())).thenReturn(null); // Not in cache
         when(sshKeyRepository.findById(keyId)).thenReturn(Optional.of(sshKeyEntity));
-        
+
         SshKeyResponse result = sshKeyManagementService.getSshKeyById(keyId, userId);
 
         assertNotNull(result);

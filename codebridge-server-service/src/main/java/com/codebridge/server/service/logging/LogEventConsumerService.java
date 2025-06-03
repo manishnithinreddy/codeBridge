@@ -41,7 +41,7 @@ public class LogEventConsumerService {
         logger.debug("Received log event: {}", logEventMessage);
         try {
             ServerActivityLog logEntity = mapToEntity(logEventMessage);
-            
+
             synchronized (logBatch) {
                 logBatch.add(logEntity);
                 if (logBatch.size() >= BATCH_SIZE) {
@@ -61,7 +61,7 @@ public class LogEventConsumerService {
         logger.debug("Scheduled log batch flush triggered.");
         flushLogBatch();
     }
-    
+
     // Public synchronized method for explicit flush if needed, or for @Scheduled
     public void flushLogBatch() {
         synchronized (logBatch) {
@@ -79,7 +79,7 @@ public class LogEventConsumerService {
 
         List<ServerActivityLog> batchToSave = new ArrayList<>(logBatch); // Copy to avoid ConcurrentModification if save is slow
         logBatch.clear();
-        
+
         logger.info("Flushing {} log events to database.", batchToSave.size());
         try {
             serverActivityLogRepository.saveAll(batchToSave);

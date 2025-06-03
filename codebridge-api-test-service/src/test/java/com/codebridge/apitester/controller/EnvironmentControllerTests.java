@@ -75,12 +75,12 @@ class EnvironmentControllerTests {
                 .content(objectMapper.writeValueAsString(requestDto)))
             .andExpect(status().isUnauthorized());
     }
-    
+
     @Test
     void getEnvironmentById_authenticated_returnsOk() throws Exception {
         UUID environmentId = UUID.randomUUID();
         EnvironmentResponse responseDto = new EnvironmentResponse(environmentId, "Dev Env", Collections.emptyMap(), MOCK_USER_ID_UUID);
-        
+
         // when(environmentService.getEnvironmentById(eq(environmentId), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(get("/api/environments/{environmentId}", environmentId) // Assuming this endpoint

@@ -33,14 +33,14 @@ class LogEventConsumerServiceTests {
     void setUp() {
         ReflectionTestUtils.setField(logEventConsumerService, "BATCH_SIZE", BATCH_SIZE);
         // Ensure logBatch list is clean before each test if it's not re-injected
-        logEventConsumerService.logBatch.clear(); 
+        logEventConsumerService.logBatch.clear();
     }
 
     @Test
     void receiveLogEvent_addsToBatch_andFlushesWhenBatchSizeReached() {
         for (int i = 0; i < BATCH_SIZE; i++) {
             LogEventMessage message = new LogEventMessage(
-                UUID.randomUUID(), "ACTION_" + i, UUID.randomUUID(), 
+                UUID.randomUUID(), "ACTION_" + i, UUID.randomUUID(),
                 "Details " + i, "SUCCESS", null, System.currentTimeMillis()
             );
             logEventConsumerService.receiveLogEvent(message);
@@ -55,7 +55,7 @@ class LogEventConsumerServiceTests {
     @Test
     void receiveLogEvent_addsToBatch_doesNotFlushIfBatchSizeNotReached() {
         LogEventMessage message = new LogEventMessage(
-            UUID.randomUUID(), "SINGLE_ACTION", UUID.randomUUID(), 
+            UUID.randomUUID(), "SINGLE_ACTION", UUID.randomUUID(),
             "Single Detail", "SUCCESS", null, System.currentTimeMillis()
         );
         logEventConsumerService.receiveLogEvent(message);
@@ -63,15 +63,15 @@ class LogEventConsumerServiceTests {
         verify(serverActivityLogRepository, never()).saveAll(any());
         assertEquals(1, logEventConsumerService.logBatch.size());
     }
-    
+
     @Test
     void scheduledFlush_flushesNonEmptyBatch() {
         LogEventMessage message = new LogEventMessage(
-            UUID.randomUUID(), "SCHEDULED_ACTION", UUID.randomUUID(), 
+            UUID.randomUUID(), "SCHEDULED_ACTION", UUID.randomUUID(),
             "Scheduled Detail", "SUCCESS", null, System.currentTimeMillis()
         );
         logEventConsumerService.receiveLogEvent(message); // Add one item
-        
+
         assertEquals(1, logEventConsumerService.logBatch.size());
 
         logEventConsumerService.scheduledFlush(); // Trigger flush
@@ -87,14 +87,14 @@ class LogEventConsumerServiceTests {
         logEventConsumerService.scheduledFlush();
         verify(serverActivityLogRepository, never()).saveAll(any());
     }
-    
+
     @Test
     void mapToEntity_correctlyMapsMessage() {
         long timestampMillis = System.currentTimeMillis();
         UUID platformId = UUID.randomUUID();
         UUID serverId = UUID.randomUUID();
         LogEventMessage message = new LogEventMessage(
-            platformId, "MAP_TEST", serverId, 
+            platformId, "MAP_TEST", serverId,
             "Map Details", "PENDING", "Error XYZ", timestampMillis
         );
 

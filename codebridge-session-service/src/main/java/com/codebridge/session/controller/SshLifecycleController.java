@@ -35,7 +35,7 @@ public class SshLifecycleController {
 
         UUID tokenPlatformUserId = UUID.fromString(authentication.getName());
         if (!tokenPlatformUserId.equals(request.getPlatformUserId())) {
-            logger.warn("Access denied for SSH init: Token platformUserId {} does not match request platformUserId {}.", 
+            logger.warn("Access denied for SSH init: Token platformUserId {} does not match request platformUserId {}.",
                         tokenPlatformUserId, request.getPlatformUserId());
             throw new AccessDeniedException("Authenticated user does not match platformUserId in request.");
         }

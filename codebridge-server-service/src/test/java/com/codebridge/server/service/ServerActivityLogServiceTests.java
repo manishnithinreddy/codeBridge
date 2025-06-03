@@ -38,7 +38,7 @@ class ServerActivityLogServiceTests {
 
     @InjectMocks
     private ServerActivityLogService serverActivityLogService;
-    
+
     private final String exchangeName = "test.exchange";
     private final String routingKey = "test.routingkey";
 
@@ -57,7 +57,7 @@ class ServerActivityLogServiceTests {
 
         ArgumentCaptor<LogEventMessage> captor = ArgumentCaptor.forClass(LogEventMessage.class);
         verify(rabbitTemplate).convertAndSend(eq(exchangeName), eq(routingKey), captor.capture());
-        
+
         LogEventMessage publishedMessage = captor.getValue();
         assertEquals(platformUserId, publishedMessage.platformUserId());
         assertEquals(action, publishedMessage.action());
@@ -77,7 +77,7 @@ class ServerActivityLogServiceTests {
         log.setPlatformUserId(UUID.randomUUID());
         log.setStatus("SUCCESS");
         log.setTimestamp(LocalDateTime.now());
-        
+
         Server server = new Server();
         server.setId(serverId);
         server.setName("TestServer");

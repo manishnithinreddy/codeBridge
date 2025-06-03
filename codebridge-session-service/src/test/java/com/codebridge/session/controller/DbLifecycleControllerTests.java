@@ -55,8 +55,8 @@ class DbLifecycleControllerTests {
         credentials.setPassword("pass");
 
         DbSessionInitRequest requestDto = new DbSessionInitRequest(platformUserId, dbAlias, credentials);
-        
-        SessionResponse sessionResponse = new SessionResponse("db-test-token", "DB:POSTGRESQL", "ACTIVE", 
+
+        SessionResponse sessionResponse = new SessionResponse("db-test-token", "DB:POSTGRESQL", "ACTIVE",
                                                             System.currentTimeMillis(), System.currentTimeMillis() + 1800000);
         when(dbLifecycleManager.initDbSession(platformUserId, dbAlias, any(DbSessionCredentials.class)))
             .thenReturn(sessionResponse);

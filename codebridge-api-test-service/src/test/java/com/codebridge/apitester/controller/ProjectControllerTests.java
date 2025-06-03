@@ -65,7 +65,7 @@ class ProjectControllerTests {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Test Project"));
     }
-    
+
     @Test
     void createProject_unauthenticated_returnsUnauthorized() throws Exception {
         ProjectRequest requestDto = new ProjectRequest();
@@ -90,7 +90,7 @@ class ProjectControllerTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(projectId.toString()));
     }
-    
+
     @Test
     void listProjects_authenticated_returnsProjectList() throws Exception {
         ProjectResponse responseDto = new ProjectResponse(UUID.randomUUID(), "Test Project", "Desc", MOCK_USER_ID_UUID, LocalDateTime.now(), LocalDateTime.now());
@@ -102,7 +102,7 @@ class ProjectControllerTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].name").value("Test Project"));
     }
-    
+
     @Test
     void updateProject_authenticated_returnsUpdatedProject() throws Exception {
         UUID projectId = UUID.randomUUID();

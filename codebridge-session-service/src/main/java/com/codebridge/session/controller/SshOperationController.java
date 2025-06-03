@@ -85,11 +85,11 @@ public class SshOperationController {
         }
 
         if (!applicationInstanceId.equals(metadata.hostingInstanceId())) {
-            logger.warn("Session for {} is not hosted on this instance. Key: {}, Expected Host: {}, Actual Host: {}.", 
+            logger.warn("Session for {} is not hosted on this instance. Key: {}, Expected Host: {}, Actual Host: {}.",
                         operationName, sessionKey, metadata.hostingInstanceId(), applicationInstanceId);
             throw new AccessDeniedException("Session is not active on this service instance. Please reconnect or try another instance.");
         }
-        
+
         if (metadata.expiresAt() < Instant.now().toEpochMilli()) {
             logger.warn("Session for {} has expired based on metadata. Key: {}, Token: {}", operationName, sessionKey, sessionToken);
             sessionLifecycleManager.forceReleaseSshSessionByKey(sessionKey, true); // Clean up
@@ -111,7 +111,7 @@ public class SshOperationController {
     public ResponseEntity<CommandResponse> executeCommand(
             @PathVariable String sessionToken,
             @Valid @RequestBody CommandRequest commandRequest) {
-        
+
         long startTime = System.currentTimeMillis();
         Session jschSession = getValidatedLocalSshSession(sessionToken, "execute-command");
         ChannelExec channel = null;
@@ -141,7 +141,7 @@ public class SshOperationController {
                 logger.warn("Command timeout for session token {}: {}", sessionToken, commandRequest.getCommand());
                 throw new RemoteOperationException("Command execution timed out after " + timeout + "ms.");
             }
-            
+
             exitStatus = channel.getExitStatus();
             stdoutString = stdoutStream.toString(StandardCharsets.UTF_8);
             stderrString = stderrStream.toString(StandardCharsets.UTF_8);
@@ -177,7 +177,7 @@ public class SshOperationController {
         try {
             channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
             channelSftp.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
-            
+
             @SuppressWarnings("unchecked")
             Vector<ChannelSftp.LsEntry> entries = channelSftp.ls(remotePath);
             for (ChannelSftp.LsEntry entry : entries) {
@@ -209,13 +209,13 @@ public class SshOperationController {
         try {
             channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
             channelSftp.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
-            
+
             SftpATTRS attrs = channelSftp.lstat(remotePath); // Check if it's a directory
             if (attrs.isDir()) {
                 throw new RemoteOperationException("Specified remote path is a directory, not a file for download.");
             }
             channelSftp.get(remotePath, baos);
-            
+
             ByteArrayResource resource = new ByteArrayResource(baos.toByteArray());
             String filename = remotePath.substring(remotePath.lastIndexOf('/') + 1);
             String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
@@ -247,11 +247,11 @@ public class SshOperationController {
             throw new RemoteOperationException("Cannot upload an empty file.");
         }
         String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "uploaded_file";
-        
+
         try (InputStream inputStream = file.getInputStream()) {
             channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
             channelSftp.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
-            
+
             // Ensure remotePath is a directory and ends with a slash
             String targetDir = remotePath.endsWith("/") ? remotePath : remotePath + "/";
             try {
@@ -270,7 +270,7 @@ public class SshOperationController {
             }
             channelSftp.cd(targetDir); // Change to target directory
             channelSftp.put(inputStream, originalFilename);
-            
+
             return ResponseEntity.ok().build();
         } catch (JSchException | SftpException | IOException e) {
             logger.error("SFTP upload error for session token {}: {}", sessionToken, e.getMessage(), e);

@@ -30,7 +30,7 @@ public class Server {
     private String name;
 
     @NotBlank
-    @Size(max = 255) 
+    @Size(max = 255)
     @Column(nullable = false)
     private String hostname;
 
@@ -50,12 +50,12 @@ public class Server {
     @Column(nullable = false)
     private ServerAuthProvider authProvider;
 
-    @Lob 
+    @Lob
     @Column(columnDefinition = "TEXT")
     private String password; // Placeholder for encrypted password, nullable
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ssh_key_id") 
+    @JoinColumn(name = "ssh_key_id")
     private SshKey sshKey;
 
     @NotNull
@@ -64,7 +64,7 @@ public class Server {
     private ServerStatus status;
 
     @Size(max = 255)
-    private String operatingSystem; 
+    private String operatingSystem;
 
     @Enumerated(EnumType.STRING) // Nullable by default
     private ServerCloudProvider cloudProvider;
