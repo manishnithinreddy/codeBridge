@@ -64,7 +64,7 @@ class ProjectSharingControllerTests {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.granteeUserId").value(granteeUserId.toString()));
     }
-    
+
     @Test
     void grantProjectAccess_unauthenticated_returnsUnauthorized() throws Exception {
         ShareGrantRequest requestDto = new ShareGrantRequest();

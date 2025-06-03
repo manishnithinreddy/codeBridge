@@ -76,12 +76,12 @@
             <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
-        
+
         <!-- Jasypt for configuration encryption -->
         <dependency>
             <groupId>com.github.ulisesbocchio</groupId>
             <artifactId>jasypt-spring-boot-starter</artifactId>
-            <version>3.0.5</version> 
+            <version>3.0.5</version>
         </dependency>
 
         <!-- Lombok -->
@@ -102,7 +102,7 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-        
+
         <!-- Jackson Datatype JSR310 for Java 8 Time -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>

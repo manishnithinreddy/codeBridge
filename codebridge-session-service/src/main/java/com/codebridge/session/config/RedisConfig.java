@@ -45,7 +45,7 @@ public class RedisConfig {
         RedisTemplate<String, SshSessionMetadata> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         // SessionKey.toString() can be used as the key, or a custom serializer
-        template.setKeySerializer(new StringRedisSerializer()); 
+        template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
         return template;
     }
@@ -56,20 +56,20 @@ public class RedisConfig {
             RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, DbSessionMetadata> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new StringRedisSerializer()); 
+        template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
         return template;
     }
-    
+
     // CacheManager bean (copied from ServerService's RedisConfig, can be used if @Cacheable needed here)
     /*
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
-        GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer = 
+        GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer =
             new GenericJackson2JsonRedisSerializer(objectMapper);
 
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-            .entryTtl(Duration.ofMinutes(10)) 
+            .entryTtl(Duration.ofMinutes(10))
             .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
             .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer))
             .disableCachingNullValues();

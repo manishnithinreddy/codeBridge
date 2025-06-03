@@ -46,7 +46,7 @@ class DbSessionProxyControllerTests {
     private SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor defaultUserJwt() {
         return SecurityMockMvcRequestPostProcessors.jwt().jwt(builder -> builder.subject(MOCK_USER_ID_STR)).authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
-    
+
     @Test
     void initDbSession_validRequest_proxiesToSessionService() throws Exception {
         DbSessionProxyController.DbSessionClientInitRequest clientRequest = new DbSessionProxyController.DbSessionClientInitRequest();
@@ -61,14 +61,14 @@ class DbSessionProxyControllerTests {
         // clientRequest.platformUserId is not in DbSessionClientInitRequest, it's from JWT
 
         Map<String, Object> mockSessionServiceResponse = Map.of(
-            "sessionToken", "mock-db-session-token", 
-            "type", "DB:POSTGRESQL", 
+            "sessionToken", "mock-db-session-token",
+            "type", "DB:POSTGRESQL",
             "status", "ACTIVE"
         );
         ResponseEntity<Map> responseEntity = new ResponseEntity<>(mockSessionServiceResponse, HttpStatus.CREATED);
 
         when(restTemplate.postForEntity(
-            eq(sessionServiceBaseUrl + "/lifecycle/db/init"), 
+            eq(sessionServiceBaseUrl + "/lifecycle/db/init"),
             any(HttpEntity.class), // Check HttpEntity<DbSessionServiceApiInitRequestDto>
             eq(Map.class)))
             .thenReturn(responseEntity);

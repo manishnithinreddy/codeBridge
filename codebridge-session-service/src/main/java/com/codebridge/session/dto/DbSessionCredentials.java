@@ -24,7 +24,7 @@ public class DbSessionCredentials implements Serializable {
     private String username;
 
     // Password can be blank for some auth methods or if not required by DB
-    private String password; 
+    private String password;
 
     @NotBlank(message = "Database name cannot be blank")
     private String databaseName;

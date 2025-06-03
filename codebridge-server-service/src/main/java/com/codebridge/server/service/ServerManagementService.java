@@ -82,7 +82,7 @@ public class ServerManagementService {
         try {
             Server server = serverRepository.findByIdAndUserId(serverId, userId)
                     .orElseThrow(() -> new ResourceNotFoundException("Server", "id", serverId + " for user " + userId));
-            
+
             mapDtoToServer(dto, server, userId); // Re-use mapping logic
             // Status might be updated by a different process (e.g., connectivity check)
             // For now, direct status update from request is not included, could be added if needed.

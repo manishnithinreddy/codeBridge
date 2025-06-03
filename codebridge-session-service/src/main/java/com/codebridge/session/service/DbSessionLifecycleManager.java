@@ -72,7 +72,7 @@ public class DbSessionLifecycleManager {
         // Ensure consistent key format, resourceId here is derived from dbConnectionAlias
         return "session:db:metadata:" + sessionKey.platformUserId() + ":" + sessionKey.resourceId() + ":" + sessionKey.sessionType();
     }
-    
+
     // --- Public API Methods ---
 
     public SessionResponse initDbSession(UUID platformUserId, String dbConnectionAlias, DbSessionCredentials credentials) {
@@ -81,7 +81,7 @@ public class DbSessionLifecycleManager {
         UUID resourceId = UUID.nameUUIDFromBytes(dbConnectionAlias.getBytes(StandardCharsets.UTF_8));
         String sessionType = "DB:" + credentials.getDbType().name();
         SessionKey sessionKey = new SessionKey(platformUserId, resourceId, sessionType);
-        
+
         logger.info("Initializing DB session for key: {}, Alias: {}", sessionKey, dbConnectionAlias);
 
         forceReleaseDbSessionByKey(sessionKey, false); // Clean up any stale session for this exact key
@@ -106,10 +106,10 @@ public class DbSessionLifecycleManager {
                 sessionKey, currentTime, currentTime, expiresAt, sessionToken, applicationInstanceId,
                 credentials.getDbType().name(), credentials.getHost(), credentials.getDatabaseName(), credentials.getUsername()
         );
-        
+
         jwtToSessionKeyRedisTemplate.opsForValue().set(dbTokenRedisKey(sessionToken), sessionKey, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
         dbSessionMetadataRedisTemplate.opsForValue().set(dbSessionMetadataRedisKey(sessionKey), metadata, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
-        
+
         logger.info("DB session initialized successfully for {}. Token: {}", sessionKey, sessionToken);
         return new SessionResponse(sessionToken, sessionType, "ACTIVE", currentTime, expiresAt);
     }
@@ -143,7 +143,7 @@ public class DbSessionLifecycleManager {
         } else {
              wrapper.updateLastAccessedTime();
         }
-        
+
         String newSessionToken = jwtTokenProvider.generateToken(sessionKey, sessionKey.platformUserId());
         long currentTime = Instant.now().toEpochMilli();
         long newExpiresAt = currentTime + jwtConfig.getExpirationMs();
@@ -155,12 +155,12 @@ public class DbSessionLifecycleManager {
         String dbUsername = currentMetadata != null ? currentMetadata.dbUsername() : "";
 
         DbSessionMetadata newMetadata = new DbSessionMetadata(
-            sessionKey, 
-            (currentMetadata != null ? currentMetadata.createdAt() : currentTime), 
+            sessionKey,
+            (currentMetadata != null ? currentMetadata.createdAt() : currentTime),
             currentTime, newExpiresAt, newSessionToken, applicationInstanceId,
             dbType, dbHost, dbName, dbUsername
         );
-        
+
         jwtToSessionKeyRedisTemplate.opsForValue().set(dbTokenRedisKey(newSessionToken), sessionKey, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
         dbSessionMetadataRedisTemplate.opsForValue().set(dbSessionMetadataRedisKey(sessionKey), newMetadata, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
         if (!sessionToken.equals(newSessionToken)) {
@@ -170,7 +170,7 @@ public class DbSessionLifecycleManager {
         logger.info("DB session keepalive successful for {}. New token issued.", sessionKey);
         return new KeepAliveResponse(newSessionToken, "ACTIVE", newExpiresAt);
     }
-    
+
     public void releaseDbSession(String sessionToken) {
         Claims claims = jwtTokenProvider.getClaimsFromToken(sessionToken);
         if (claims == null) {
@@ -201,7 +201,7 @@ public class DbSessionLifecycleManager {
             dbSessionMetadataRedisTemplate.delete(dbSessionMetadataRedisKey(key));
             logger.debug("Deleted DB session metadata from Redis for key: {}", key);
         }
-        
+
         if (tokenToDelete != null) { // Always try to delete token mapping if metadata existed or was token based
              jwtToSessionKeyRedisTemplate.delete(dbTokenRedisKey(tokenToDelete));
              logger.debug("Deleted DB token-to-key mapping from Redis for token: {}", tokenToDelete);
@@ -224,7 +224,7 @@ public class DbSessionLifecycleManager {
             }
         });
     }
-    
+
     // --- Helper Methods ---
     private Connection createJdbcConnection(DbSessionCredentials creds) throws SQLException, ClassNotFoundException {
         // Basic JDBC URL construction. Production systems might use a more robust factory.
@@ -237,7 +237,7 @@ public class DbSessionLifecycleManager {
             // case ORACLE -> String.format("jdbc:oracle:thin:@//%s:%d/%s", creds.getHost(), creds.getPort(), creds.getDatabaseName());
             default -> throw new UnsupportedOperationException("DB Type not supported for direct JDBC URL construction: " + creds.getDbType());
         };
-        
+
         Properties props = new Properties();
         props.setProperty("user", creds.getUsername());
         props.setProperty("password", creds.getPassword());
@@ -252,10 +252,10 @@ public class DbSessionLifecycleManager {
 
         // Ensure driver is loaded (optional for modern JDBC, but good practice for some environments)
         // Class.forName(getDriverClassName(creds.getDbType()));
-        
+
         return DriverManager.getConnection(jdbcUrl, props);
     }
-    
+
     // private String getDriverClassName(DbType dbType) throws ClassNotFoundException { ... } // Helper if Class.forName needed
 
     // --- Getters for internal components (e.g., for operational services) ---
@@ -266,16 +266,16 @@ public class DbSessionLifecycleManager {
     public Optional<DbSessionMetadata> getSessionMetadata(SessionKey key) {
         return Optional.ofNullable(dbSessionMetadataRedisTemplate.opsForValue().get(dbSessionMetadataRedisKey(key)));
     }
-    
+
     public void updateSessionAccessTime(SessionKey key, DbSessionWrapper wrapper) {
         if (wrapper == null || !wrapper.isValid(DB_VALIDATION_TIMEOUT_SECONDS)) return;
 
-        wrapper.updateLastAccessedTime(); 
-        
+        wrapper.updateLastAccessedTime();
+
         DbSessionMetadata currentMetadata = dbSessionMetadataRedisTemplate.opsForValue().get(dbSessionMetadataRedisKey(key));
         if (currentMetadata != null) {
             DbSessionMetadata updatedMetadata = new DbSessionMetadata(
-                currentMetadata.sessionKey(), currentMetadata.createdAt(), Instant.now().toEpochMilli(), 
+                currentMetadata.sessionKey(), currentMetadata.createdAt(), Instant.now().toEpochMilli(),
                 currentMetadata.expiresAt(), currentMetadata.sessionToken(), this.applicationInstanceId,
                 currentMetadata.dbType(), currentMetadata.dbHost(), currentMetadata.dbName(), currentMetadata.dbUsername()
             );

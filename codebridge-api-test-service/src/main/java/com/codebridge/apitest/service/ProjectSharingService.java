@@ -109,7 +109,7 @@ public class ProjectSharingService {
                 .map(this::mapToShareGrantResponse)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional
     public void deleteAllGrantsForProject(UUID projectId) {
         // This method is typically called by ProjectService when a project is deleted.

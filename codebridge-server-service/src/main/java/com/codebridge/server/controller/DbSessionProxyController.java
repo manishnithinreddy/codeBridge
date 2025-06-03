@@ -78,7 +78,7 @@ public class DbSessionProxyController {
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","User JWT not found in request."));
         }
-        
+
         HttpEntity<DbSessionServiceApiInitRequestDto> entity = new HttpEntity<>(sessionServiceRequest, headers);
         String url = sessionServiceBaseUrl + "/lifecycle/db/init";
 

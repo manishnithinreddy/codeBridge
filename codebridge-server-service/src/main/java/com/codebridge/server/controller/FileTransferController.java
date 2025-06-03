@@ -52,9 +52,9 @@ public class FileTransferController {
             Authentication authentication) {
         UUID platformUserId = getPlatformUserId(authentication);
         byte[] fileData = fileTransferService.downloadFile(serverId, platformUserId, remotePath);
-        
+
         ByteArrayResource resource = new ByteArrayResource(fileData);
-        
+
         String filename = remotePath.substring(remotePath.lastIndexOf('/') + 1);
         // Ensure filename is properly encoded for the Content-Disposition header
         String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
@@ -76,7 +76,7 @@ public class FileTransferController {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().build(); // Or throw custom exception
         }
-        
+
         String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "uploaded_file";
 
         fileTransferService.uploadFile(

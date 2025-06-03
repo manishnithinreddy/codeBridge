@@ -52,7 +52,7 @@ class ServerManagementServiceCachingTests {
         // ... other necessary fields
 
         // This mapping should match what mapToServerResponse does
-        serverResponseDto = new ServerResponse(serverId, "test-server", "host", 22, "user", 
+        serverResponseDto = new ServerResponse(serverId, "test-server", "host", 22, "user",
                                              null, null, null, null, null, null, userId, null, null);
 
         serverRequestDto = new ServerRequest(); // Populate if needed for update test
@@ -66,7 +66,7 @@ class ServerManagementServiceCachingTests {
     void getServerById_whenNotInCache_fetchesFromDbAndCaches() {
         when(cache.get(serverId.toString())).thenReturn(null); // Not in cache
         when(serverRepository.findByIdAndUserId(serverId, userId)).thenReturn(Optional.of(serverEntity));
-        
+
         ServerResponse result = serverManagementService.getServerById(serverId, userId);
 
         assertNotNull(result);
@@ -92,7 +92,7 @@ class ServerManagementServiceCachingTests {
     void updateServer_updatesDbAndCache() {
         when(serverRepository.findByIdAndUserId(serverId, userId)).thenReturn(Optional.of(serverEntity));
         when(serverRepository.save(any(Server.class))).thenReturn(serverEntity); // Assume save returns updated entity
-        
+
         // mapDtoToServer will be called internally, ensure its dependencies (like sshKeyRepo) are mocked if it makes calls.
         // For this test, we focus on the @CachePut behavior.
 
@@ -106,7 +106,7 @@ class ServerManagementServiceCachingTests {
         verify(cache).put(eq(serverId.toString()), eq(result)); // CachePut ensures the result is cached
         verify(activityLogService).createLog(any(), eq("SERVER_UPDATE"), eq(serverId), anyString(), eq("SUCCESS"), eq(null));
     }
-    
+
     @Test
     void deleteServer_evictsFromCache() {
         when(serverRepository.findByIdAndUserId(serverId, userId)).thenReturn(Optional.of(serverEntity));

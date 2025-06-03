@@ -23,7 +23,7 @@ public class SshSessionServiceApiInitRequestDto {
         this.serverId = serverId;
         this.connectionDetails = connectionDetails;
     }
-    
+
     public UUID getPlatformUserId() {
         return platformUserId;
     }

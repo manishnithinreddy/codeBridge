@@ -5,7 +5,7 @@ import java.util.UUID;
 
 // Using a record for conciseness and automatic hashCode/equals/toString
 public record SessionKey(
-    UUID platformUserId, 
+    UUID platformUserId,
     UUID resourceId, // e.g., Server ID for SSH, could be DB alias ID for DB
     String sessionType // e.g., "SSH", "DB_POSTGRESQL"
 ) implements Serializable {

@@ -8,7 +8,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 // Import AccessDeniedException if specific check is needed beyond Spring Security's default
-// import com.codebridge.server.exception.AccessDeniedException; 
+// import com.codebridge.server.exception.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -54,7 +54,7 @@ public class ServerActivityLogController {
         if (!authenticatedUserId.equals(logUserId)) {
             // Consider throwing Spring's AccessDeniedException or a custom one
             // For now, returning forbidden, but GlobalExceptionHandler might handle it more gracefully
-             return ResponseEntity.status(403).build(); 
+             return ResponseEntity.status(403).build();
             // throw new com.codebridge.server.exception.AccessDeniedException("You are not authorized to view logs for user " + logUserId);
         }
 

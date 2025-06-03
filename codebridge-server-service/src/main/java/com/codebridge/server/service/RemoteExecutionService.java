@@ -28,7 +28,7 @@ public class RemoteExecutionService {
     // Removed JSch related constants
 
     private final RestTemplate restTemplate;
-    private final ServerAccessControlService serverAccessControlService; 
+    private final ServerAccessControlService serverAccessControlService;
     private final ServerActivityLogService activityLogService;
     private final String sessionServiceBaseUrl;
     // Assuming a JwtUtil for parsing SessionService issued JWTs (sessionToken)
@@ -82,14 +82,14 @@ public class RemoteExecutionService {
             // No need to propagate original User JWT here.
             HttpEntity<CommandRequest> entity = new HttpEntity<>(commandRequest, headers);
 
-            ResponseEntity<CommandResponse> response = 
+            ResponseEntity<CommandResponse> response =
                 restTemplate.exchange(url, HttpMethod.POST, entity, CommandResponse.class);
 
             logStatus = response.getBody() != null && response.getBody().getExitStatus() == 0 ? "SUCCESS" : "FAILED_WITH_STDERR";
             if (response.getBody() != null && response.getBody().getExitStatus() != 0) {
                 errorMessage = response.getBody().getStderr();
             }
-            
+
             activityLogService.createLog(platformUserIdFromToken, "REMOTE_COMMAND_EXECUTE_PROXY", serverId, logDetails, logStatus, errorMessage);
             return response.getBody();
 

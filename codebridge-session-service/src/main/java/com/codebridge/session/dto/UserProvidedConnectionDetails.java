@@ -8,11 +8,11 @@ public class UserProvidedConnectionDetails implements Serializable {
 
     private String hostname;
     private int port;
-    private String username; 
+    private String username;
     private ServerAuthProvider authProvider;
-    private String decryptedPassword; 
-    private String decryptedPrivateKey; 
-    private String sshKeyName; 
+    private String decryptedPassword;
+    private String decryptedPrivateKey;
+    private String sshKeyName;
 
     // Constructors
     public UserProvidedConnectionDetails() {}
@@ -23,7 +23,7 @@ public class UserProvidedConnectionDetails implements Serializable {
         this.username = username;
         this.authProvider = authProvider;
     }
-    
+
     // Getters and Setters
     public String getHostname() {
         return hostname;
