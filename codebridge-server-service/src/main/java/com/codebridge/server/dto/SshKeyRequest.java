@@ -11,7 +11,7 @@ public class SshKeyRequest {
 
     // Public key is often provided by user, private key might be generated or also provided (carefully)
     @NotBlank(message = "Public key cannot be blank")
-    private String publicKey; 
+    private String publicKey;
 
     // Private key is sensitive, handle with extreme care.
     // Often, for requests, you might not want to accept it directly, or only for specific import flows.

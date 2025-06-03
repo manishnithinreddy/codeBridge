@@ -35,11 +35,11 @@ public class DbLifecycleController {
 
         UUID tokenPlatformUserId = UUID.fromString(authentication.getName());
         if (!tokenPlatformUserId.equals(request.getPlatformUserId())) {
-            logger.warn("Access denied for DB init: Token platformUserId {} does not match request platformUserId {}.", 
+            logger.warn("Access denied for DB init: Token platformUserId {} does not match request platformUserId {}.",
                         tokenPlatformUserId, request.getPlatformUserId());
             throw new AccessDeniedException("Authenticated user does not match platformUserId in request.");
         }
-        
+
         logger.info("Received DB session init request for user {} and alias {}", request.getPlatformUserId(), request.getDbConnectionAlias());
         SessionResponse sessionResponse = dbLifecycleManager.initDbSession(
                 request.getPlatformUserId(), // Validated platformUserId

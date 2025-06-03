@@ -29,7 +29,7 @@ public class SessionServiceSecurityConfig {
     public SessionServiceSecurityConfig(IncomingUserJwtConfigProperties userJwtConfigProperties) {
         this.userJwtConfigProperties = userJwtConfigProperties;
     }
-    
+
     // SecurityFilterChain for validating INCOMING USER JWTs (e.g., for /api/lifecycle/** endpoints)
     // This assumes User JWTs are passed in Authorization header for these calls.
     @Bean
@@ -47,19 +47,19 @@ public class SessionServiceSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/actuator/**",
-                    "/v3/api-docs/**", 
-                    "/swagger-ui/**",  
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
                 // Secure lifecycle endpoints with User JWT validation
-                .requestMatchers("/api/lifecycle/**").authenticated() 
+                .requestMatchers("/api/lifecycle/**").authenticated()
                 // For /ops/** endpoints, authentication is primarily via the sessionToken in the path.
                 // If we want to also require a User JWT for /ops/**, they'd also be .authenticated().
                 // For now, let's assume /ops/** are handled by their token-in-path validation logic
                 // and do not strictly require an additional User JWT in Authorization header.
                 // If they DO, then .anyRequest().authenticated() would cover them.
                 // Let's go with .anyRequest().authenticated() for defense in depth, as per prompt's refined decision.
-                .anyRequest().authenticated() 
+                .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
@@ -83,7 +83,7 @@ public class SessionServiceSecurityConfig {
     public JwtAuthenticationConverter userJwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         // Configure for User JWT roles/authorities if they exist and are needed by SessionService
-        // grantedAuthoritiesConverter.setAuthoritiesClaimName("roles"); 
+        // grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
         // grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
 
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();

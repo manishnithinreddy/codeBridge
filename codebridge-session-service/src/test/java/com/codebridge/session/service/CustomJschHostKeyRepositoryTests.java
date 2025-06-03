@@ -43,10 +43,10 @@ class CustomJschHostKeyRepositoryTests {
         // For a real test, you'd use actual key material.
         testKeyBase64 = "AAAAC3NzaC1lZDI1NTE5AAAAIGgc9n3k+k2A+X2J+v0K+p7p+q8G+pWj+p7G+X2J+v0K";
         testKeyBytes = Base64.getDecoder().decode(testKeyBase64);
-        
+
         // JSch HostKey constructor might need different params depending on how it parses host
         // For testing 'add', we often create it like JSch would after parsing a line or getting from agent
-        testJschHostKey = new HostKey(testHost, testPort, HostKey.GUESS, testKeyBytes); 
+        testJschHostKey = new HostKey(testHost, testPort, HostKey.GUESS, testKeyBytes);
         // JSch might internally convert testHost to "[localhost]:2222"
     }
 
@@ -57,7 +57,7 @@ class CustomJschHostKeyRepositoryTests {
         knownKey.setPort(testPort);
         knownKey.setKeyType(testJschHostKey.getType()); // Use type derived by JSch's HostKey
         knownKey.setHostKeyBase64(testKeyBase64);
-        
+
         when(knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(testHost, testPort, testJschHostKey.getType()))
             .thenReturn(Optional.of(knownKey));
 
@@ -72,14 +72,14 @@ class CustomJschHostKeyRepositoryTests {
         knownKey.setPort(testPort);
         knownKey.setKeyType(testJschHostKey.getType());
         knownKey.setHostKeyBase64("DIFFERENT_KEY_BASE64"); // Different key
-        
+
         when(knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(testHost, testPort, testJschHostKey.getType()))
             .thenReturn(Optional.of(knownKey));
 
         int result = customJschHostKeyRepository.check(String.format("%s:%d",testHost,testPort), testKeyBytes);
         assertEquals(HostKeyRepository.CHANGED, result);
     }
-    
+
     @Test
     void check_hostKeyNotExists_returnsNotIncluded() {
          when(knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(anyString(), anyInt(), anyString()))
@@ -101,7 +101,7 @@ class CustomJschHostKeyRepositoryTests {
 
         ArgumentCaptor<KnownSshHostKey> captor = ArgumentCaptor.forClass(KnownSshHostKey.class);
         verify(knownSshHostKeyRepository).save(captor.capture());
-        
+
         KnownSshHostKey savedKey = captor.getValue();
         assertEquals(testHost, savedKey.getHostname());
         assertEquals(testPort, savedKey.getPort());

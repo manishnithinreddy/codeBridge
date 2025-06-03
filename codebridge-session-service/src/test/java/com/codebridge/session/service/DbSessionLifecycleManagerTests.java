@@ -45,7 +45,7 @@ class DbSessionLifecycleManagerTests {
 
     @Mock private ValueOperations<String, SessionKey> valueOpsSessionKey;
     @Mock private ValueOperations<String, DbSessionMetadata> valueOpsDbMetadata;
-    
+
     @Mock private Connection mockJdbcConnection; // For DbSessionWrapper
 
     @InjectMocks
@@ -87,7 +87,7 @@ class DbSessionLifecycleManagerTests {
         // For now, asserting structure and interactions.
         String fakeToken = "fake-db-jwt-token";
         when(jwtTokenProvider.generateToken(any(SessionKey.class), any(UUID.class))).thenReturn(fakeToken);
-        
+
         // Act - This will fail if DriverManager.getConnection is called without proper setup/mocking.
         // SessionResponse response = dbSessionLifecycleManager.initDbSession(platformUserId, dbConnectionAlias, credentials);
 
@@ -98,28 +98,28 @@ class DbSessionLifecycleManagerTests {
         // verify(valueOpsDbMetadata).set(anyString(), any(DbSessionMetadata.class), anyLong(), any(TimeUnit.class));
         assertTrue(true, "Test structure in place for DB init. Actual JDBC connection mocking is complex for this scope.");
     }
-    
+
     @Test
     void keepAliveDbSession_validToken_localSession() throws SQLException {
         String token = "valid-db-token";
         Claims claims = new DefaultClaims().setSubject(platformUserId.toString());
         claims.put("resourceId", resourceId.toString());
         claims.put("type", "DB:POSTGRESQL");
-        
+
         when(jwtTokenProvider.getClaimsFromToken(token)).thenReturn(claims);
         when(valueOpsSessionKey.get(anyString())).thenReturn(sessionKey);
-        
+
         DbSessionWrapper mockWrapper = mock(DbSessionWrapper.class);
         // when(mockWrapper.getConnection()).thenReturn(mockJdbcConnection); // Not strictly needed for this test path
         when(mockWrapper.isValid(anyInt())).thenReturn(true);
         dbSessionLifecycleManager.localActiveDbSessions.put(sessionKey, mockWrapper);
-        
-        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey, 
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000, 
+
+        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey,
+            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000,
             System.currentTimeMillis() + 3600000, token, "test-instance-db-1",
             "POSTGRESQL", "host", "db", "user");
         when(valueOpsDbMetadata.get(anyString())).thenReturn(mockMetadata);
-        
+
         String newToken = "new-db-refreshed-token";
         when(jwtTokenProvider.generateToken(sessionKey, platformUserId)).thenReturn(newToken);
 
@@ -131,7 +131,7 @@ class DbSessionLifecycleManagerTests {
         verify(mockWrapper).updateLastAccessedTime();
         verify(valueOpsDbMetadata).set(anyString(), any(DbSessionMetadata.class), anyLong(), any(TimeUnit.class));
     }
-    
+
     @Test
     void releaseDbSession_validToken() {
         String token = "valid-db-token-to-release";
@@ -141,12 +141,12 @@ class DbSessionLifecycleManagerTests {
 
         when(jwtTokenProvider.getClaimsFromToken(token)).thenReturn(claims);
         when(valueOpsSessionKey.get(dbSessionLifecycleManager.dbTokenRedisKey(token))).thenReturn(sessionKey);
-        
+
         DbSessionWrapper mockWrapper = mock(DbSessionWrapper.class);
         dbSessionLifecycleManager.localActiveDbSessions.put(sessionKey, mockWrapper);
-        
-        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey, 
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000, 
+
+        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey,
+            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000,
             System.currentTimeMillis() + 3600000, token, "test-instance-db-1",
              "POSTGRESQL", "host", "db", "user");
         when(valueOpsDbMetadata.get(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey))).thenReturn(mockMetadata);

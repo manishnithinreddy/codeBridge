@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
             this.message = message;
             this.details = details;
         }
-        
+
         public ErrorDetails(Date timestamp, String message, String details, Map<String, String> fieldErrors) {
             this(timestamp, message, details);
             this.fieldErrors = fieldErrors;
@@ -66,11 +66,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> jasyptEncryptionException(EncryptionOperationNotPossibleException ex, WebRequest request) {
         logger.error("Jasypt encryption/decryption error: {}", ex.getMessage());
         ErrorDetails errorDetails = new ErrorDetails(new Date(), "Encryption/Decryption error. Please check server configuration.", request.getDescription(false));
-        // Could be BAD_REQUEST if it's due to bad input for decryption, 
+        // Could be BAD_REQUEST if it's due to bad input for decryption,
         // or INTERNAL_SERVER_ERROR if it's a configuration problem (e.g. wrong password)
-        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR); 
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    
+
     @ExceptionHandler(SpringAccessDeniedException.class) // Handles Spring Security's own AccessDeniedException
     public ResponseEntity<?> springAccessDeniedException(SpringAccessDeniedException ex, WebRequest request) {
         logger.warn("Access Denied by Spring Security: {}", ex.getMessage());
@@ -97,7 +97,7 @@ public class GlobalExceptionHandler {
         ErrorDetails errorDetails = new ErrorDetails(new Date(), "Validation Failed", request.getDescription(false), errors);
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
-    
+
     @ExceptionHandler(IllegalStateException.class) // Catch-all for now for things like auth principal not found
     public ResponseEntity<?> illegalStateException(IllegalStateException ex, WebRequest request) {
         logger.error("Illegal state: {}", ex.getMessage(), ex);

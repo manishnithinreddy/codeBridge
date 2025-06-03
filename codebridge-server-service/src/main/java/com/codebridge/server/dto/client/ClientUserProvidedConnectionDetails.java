@@ -23,7 +23,7 @@ public class ClientUserProvidedConnectionDetails {
         this.username = username;
         this.authProvider = authProvider;
     }
-    
+
     public String getHostname() {
         return hostname;
     }

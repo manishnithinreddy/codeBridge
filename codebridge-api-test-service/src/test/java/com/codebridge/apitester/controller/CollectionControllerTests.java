@@ -47,7 +47,7 @@ class CollectionControllerTests {
         CollectionRequest requestDto = new CollectionRequest();
         requestDto.setName("Test Collection");
         // projectId is set from path in controller, but DTO might also carry it for service
-        requestDto.setProjectId(projectId); 
+        requestDto.setProjectId(projectId);
 
         CollectionResponse responseDto = new CollectionResponse(); // Populate as needed
         responseDto.setId(UUID.randomUUID());
@@ -66,12 +66,12 @@ class CollectionControllerTests {
             .andExpect(jsonPath("$.name").value("Test Collection"))
             .andExpect(jsonPath("$.projectId").value(projectId.toString()));
     }
-    
+
     @Test
     void createCollection_unauthenticated_returnsUnauthorized() throws Exception {
          CollectionRequest requestDto = new CollectionRequest();
         requestDto.setName("Test Collection");
-        requestDto.setProjectId(projectId); 
+        requestDto.setProjectId(projectId);
 
         mockMvc.perform(post("/api/projects/{projectId}/collections", projectId)
                 // No JWT
@@ -88,7 +88,7 @@ class CollectionControllerTests {
         responseDto.setId(collectionId);
         responseDto.setName("Test Collection");
         responseDto.setProjectId(projectId); // Important for the check in controller
-        
+
         when(collectionService.getCollectionByIdForUser(collectionId, MOCK_USER_ID_UUID)).thenReturn(responseDto);
 
         mockMvc.perform(get("/api/projects/{projectId}/collections/{collectionId}", projectId, collectionId)

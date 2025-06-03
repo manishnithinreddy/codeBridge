@@ -28,7 +28,7 @@ public class JwtUtil {
         if (i > -1) {
              unsafeToken = token.substring(0, i+1); // Keep the last dot for structure if needed by parser
         }
-        
+
         JwtParser parser = Jwts.parserBuilder().build();
 
         try {

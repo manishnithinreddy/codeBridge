@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
         ErrorDetails errorDetails = new ErrorDetails(new Date(), ex.getMessage(), request.getDescription(false));
         return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
     }
-    
+
     @ExceptionHandler(SpringAccessDeniedException.class) // Spring Security's AccessDeniedException
     public ResponseEntity<ErrorDetails> springSecurityAccessDeniedException(SpringAccessDeniedException ex, WebRequest request) {
         logger.warn("Access Denied by Spring Security: {}", ex.getMessage());
@@ -61,7 +61,7 @@ public class GlobalExceptionHandler {
         ErrorDetails errorDetails = new ErrorDetails(new Date(), ex.getMessage(), request.getDescription(false));
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorDetails> illegalArgumentException(IllegalArgumentException ex, WebRequest request) {
         logger.warn("Illegal argument: {}", ex.getMessage());

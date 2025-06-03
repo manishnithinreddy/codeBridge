@@ -14,6 +14,6 @@ public interface KnownSshHostKeyRepository extends JpaRepository<KnownSshHostKey
     Optional<KnownSshHostKey> findByHostnameAndPortAndKeyType(String hostname, int port, String keyType);
 
     List<KnownSshHostKey> findByHostnameAndPort(String hostname, int port);
-    
+
     Optional<KnownSshHostKey> findByFingerprintSha256(String fingerprintSha256);
 }

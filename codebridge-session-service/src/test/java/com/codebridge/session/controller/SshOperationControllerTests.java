@@ -54,7 +54,7 @@ class SshOperationControllerTests {
     @Mock private SshSessionWrapper mockSshWrapper;
     @Mock private ChannelExec mockChannelExec;
     @Mock private ChannelSftp mockChannelSftp;
-    
+
     private String validSessionToken = "valid-ssh-ops-token";
     private UUID platformUserId = UUID.randomUUID();
     private UUID serverId = UUID.randomUUID();
@@ -69,12 +69,12 @@ class SshOperationControllerTests {
 
         when(jwtTokenProvider.validateToken(validSessionToken)).thenReturn(true);
         when(jwtTokenProvider.getClaimsFromToken(validSessionToken)).thenReturn(claims);
-        
-        SshSessionMetadata metadata = new SshSessionMetadata(platformUserId, serverId, validSessionToken, 
+
+        SshSessionMetadata metadata = new SshSessionMetadata(platformUserId, serverId, validSessionToken,
             System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis() + 3600000, "test-instance");
         when(sessionLifecycleManager.getSessionMetadata(sessionKey)).thenReturn(metadata);
         when(instanceIdProvider.getInstanceId()).thenReturn("test-instance");
-        
+
         when(mockSshWrapper.isConnected()).thenReturn(true);
         when(mockSshWrapper.getJschSession()).thenReturn(mockJschSession);
         when(sessionLifecycleManager.getLocalSession(sessionKey)).thenReturn(mockSshWrapper);
@@ -98,12 +98,12 @@ class SshOperationControllerTests {
             .andExpect(jsonPath("$.stdout").exists())
             .andExpect(jsonPath("$.exitStatus").isNumber());
     }
-    
+
     @Test
     void listFiles_validSession_returnsRemoteFileEntries() throws Exception {
         String remotePath = "/home/user";
         when(mockJschSession.openChannel("sftp")).thenReturn(mockChannelSftp);
-        
+
         Vector<ChannelSftp.LsEntry> lsEntries = new Vector<>();
         // Mock LsEntry and SftpATTRS
         ChannelSftp.LsEntry mockEntry = mock(ChannelSftp.LsEntry.class);
@@ -115,7 +115,7 @@ class SshOperationControllerTests {
         when(mockAttrs.getMTime()).thenReturn((int) (System.currentTimeMillis()/1000));
         when(mockAttrs.getPermissionsString()).thenReturn("-rw-r--r--");
         lsEntries.add(mockEntry);
-        
+
         when(mockChannelSftp.ls(remotePath)).thenReturn(lsEntries);
 
         mockMvc.perform(get("/ops/ssh/{sessionToken}/sftp/list", validSessionToken)
@@ -134,7 +134,7 @@ class SshOperationControllerTests {
         SftpATTRS mockAttrs = mock(SftpATTRS.class);
         when(mockAttrs.isDir()).thenReturn(false);
         when(mockChannelSftp.lstat(remotePath)).thenReturn(mockAttrs);
-        
+
         // Mock the 'get' operation
         doAnswer(invocation -> {
             ByteArrayOutputStream baos = invocation.getArgument(1);

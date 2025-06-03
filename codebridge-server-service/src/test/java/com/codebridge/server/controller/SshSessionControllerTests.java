@@ -48,7 +48,7 @@ class SshSessionControllerTests {
 
     @Value("${codebridge.service-urls.session-service}")
     private String sessionServiceBaseUrl;
-    
+
     private final String MOCK_USER_ID_STR = UUID.randomUUID().toString();
     private final UUID MOCK_USER_ID_UUID = UUID.fromString(MOCK_USER_ID_STR);
     private final UUID serverId = UUID.randomUUID();
@@ -78,15 +78,15 @@ class SshSessionControllerTests {
         // Populate expectedRequestToSessionService based on connDetailsDto and platformUserId, serverId
 
         Map<String, Object> mockSessionServiceResponse = Map.of(
-            "sessionToken", "mock-session-token", 
-            "type", "SSH", 
+            "sessionToken", "mock-session-token",
+            "type", "SSH",
             "status", "ACTIVE"
         );
         ResponseEntity<Map> responseEntity = new ResponseEntity<>(mockSessionServiceResponse, HttpStatus.CREATED);
 
         when(restTemplate.postForEntity(
-            eq(sessionServiceBaseUrl + "/lifecycle/ssh/init"), 
-            any(HttpEntity.class), 
+            eq(sessionServiceBaseUrl + "/lifecycle/ssh/init"),
+            any(HttpEntity.class),
             eq(Map.class)))
             .thenReturn(responseEntity);
 
@@ -97,7 +97,7 @@ class SshSessionControllerTests {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.sessionToken").value("mock-session-token"));
     }
-    
+
     @Test
     void keepAliveSshSession_proxiesToSessionService() throws Exception {
         String sessionToken = "mock-ssh-token-keepalive";

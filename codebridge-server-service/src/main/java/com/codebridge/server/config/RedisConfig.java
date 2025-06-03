@@ -33,7 +33,7 @@ public class RedisConfig {
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
         // Use the ObjectMapper bean defined above
-        GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer = 
+        GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer =
             new GenericJackson2JsonRedisSerializer(objectMapper);
 
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()

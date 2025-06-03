@@ -13,15 +13,15 @@ public class DbSessionInitRequest implements Serializable {
     private UUID platformUserId;
 
     @NotBlank(message = "Database connection alias cannot be blank")
-    private String dbConnectionAlias; 
+    private String dbConnectionAlias;
 
     @NotNull(message = "Database credentials cannot be null")
     @Valid // Enable validation for nested DbSessionCredentials fields
     private DbSessionCredentials credentials;
-    
+
     // Optional: If this DB session is related to a managed Server entity in ServerService,
     // its ID could be passed for context or logging.
-    private UUID serverId; 
+    private UUID serverId;
 
     // Constructors
     public DbSessionInitRequest() {}

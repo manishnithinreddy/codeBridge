@@ -73,18 +73,18 @@ public class FileTransferService {
         String logDetails = String.format("Path: '%s'", remotePath);
         try {
             platformUserId = validateTokenAndAuthorize(serverId, sessionToken);
-            
+
             String url = UriComponentsBuilder.fromHttpUrl(sessionServiceBaseUrl)
                 .pathSegment("ops", "ssh", sessionToken, "sftp", "list")
                 .queryParam("remotePath", remotePath)
                 .toUriString();
-            
+
             HttpHeaders headers = new HttpHeaders(); // No User JWT propagation for ops endpoints
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<RemoteFileEntry>> response = restTemplate.exchange(
                 url, HttpMethod.GET, entity, new ParameterizedTypeReference<List<RemoteFileEntry>>() {});
-            
+
             logStatus = "SUCCESS";
             activityLogService.createLog(platformUserId, "FILE_LIST_PROXY", serverId, logDetails, logStatus, null);
             return response.getBody();
@@ -149,7 +149,7 @@ public class FileTransferService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            
+
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             // Wrap InputStream in a Resource that RestTemplate can handle for multipart
             // Important: RestTemplate needs a resource with a filename for multipart.

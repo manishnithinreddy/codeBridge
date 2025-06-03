@@ -83,8 +83,8 @@ class ServerAccessControlServiceCachingTests {
         if (serverEntity.getUserId().equals(platformUserId)) { // Test owner path
              when(sshKeyManagementService.getDecryptedSshKey(any(), eq(platformUserId))).thenReturn(new SshKey());
         } else { // Test grantee path
-            ServerUser grant = new ServerUser(); 
-            grant.setServer(serverEntity); 
+            ServerUser grant = new ServerUser();
+            grant.setServer(serverEntity);
             grant.setRemoteUsernameForUser("grantee_user");
             // grant.setSshKeyForUser(...); // if specific key for grantee
             when(serverUserRepository.findByServerIdAndPlatformUserId(serverId, platformUserId)).thenReturn(Optional.of(grant));
@@ -116,7 +116,7 @@ class ServerAccessControlServiceCachingTests {
         ServerUserRequest requestDto = new ServerUserRequest();
         requestDto.setPlatformUserId(platformUserId); // Grantee
         requestDto.setRemoteUsernameForUser("newuser");
-        
+
         String grantCacheKey = requestDto.getPlatformUserId().toString() + ":" + serverId.toString();
 
         when(serverRepository.findById(serverId)).thenReturn(Optional.of(serverEntity));
@@ -133,7 +133,7 @@ class ServerAccessControlServiceCachingTests {
     void revokeServerAccess_evictsCache() {
         UUID targetPlatformUserId = platformUserId; // User whose access is revoked
         String revokeCacheKey = targetPlatformUserId.toString() + ":" + serverId.toString();
-        
+
         ServerUser grantToRevoke = new ServerUser(); // Populate as needed
         when(serverRepository.findById(serverId)).thenReturn(Optional.of(serverEntity));
         when(serverUserRepository.findByServerIdAndPlatformUserId(serverId, targetPlatformUserId)).thenReturn(Optional.of(grantToRevoke));

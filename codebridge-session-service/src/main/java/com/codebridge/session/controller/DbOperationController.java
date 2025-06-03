@@ -60,7 +60,7 @@ public class DbOperationController {
             UUID.fromString(claims.get("resourceId", String.class)), // resourceId (dbAlias hash)
             claims.get("type", String.class) // Should start with "DB:"
         );
-        
+
         if (!sessionKey.sessionType().startsWith("DB:")) {
              throw new AccessDeniedException("Invalid session type for " + operationName + ". Expected DB session.");
         }
@@ -72,11 +72,11 @@ public class DbOperationController {
             });
 
         if (!applicationInstanceId.equals(metadata.hostingInstanceId())) {
-            logger.warn("DB Session for {} is not hosted on this instance. Key: {}, Expected Host: {}, Actual Host: {}.", 
+            logger.warn("DB Session for {} is not hosted on this instance. Key: {}, Expected Host: {}, Actual Host: {}.",
                         operationName, sessionKey, metadata.hostingInstanceId(), applicationInstanceId);
             throw new AccessDeniedException("DB Session is not active on this service instance. Please reconnect or try another instance.");
         }
-        
+
         if (metadata.expiresAt() < Instant.now().toEpochMilli()) {
             logger.warn("DB Session for {} has expired based on metadata. Key: {}, Token: {}", operationName, sessionKey, sessionToken);
             dbLifecycleManager.forceReleaseDbSessionByKey(sessionKey, true); // Clean up

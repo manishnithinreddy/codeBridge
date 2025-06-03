@@ -48,7 +48,7 @@ public class ServerUserAccessController {
         serverAccessControlService.revokeServerAccess(adminUserId, serverId, granteePlatformUserId);
         return ResponseEntity.noContent().build();
     }
-    
+
     // Optional: Endpoint to list users who have access to a server (for admin)
     // This would require a new method in ServerAccessControlService like `listGrantedUsersForServer(UUID serverId, UUID adminUserId)`
     /*

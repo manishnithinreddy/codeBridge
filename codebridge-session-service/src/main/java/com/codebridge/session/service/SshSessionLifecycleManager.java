@@ -74,7 +74,7 @@ public class SshSessionLifecycleManager {
     private String sshSessionMetadataRedisKey(SessionKey sessionKey) {
         return "session:ssh:metadata:" + sessionKey.platformUserId() + ":" + sessionKey.resourceId() + ":" + sessionKey.sessionType();
     }
-    
+
     // --- Public API Methods ---
 
     public SessionResponse initSshSession(UUID platformUserId, UUID serverId, UserProvidedConnectionDetails connDetails) {
@@ -85,7 +85,7 @@ public class SshSessionLifecycleManager {
         // if (localActiveSshSessions.size() >= sshConfig.getMaxSessionsPerUserPerServer()) { // This is instance local, not global
         //    throw new RemoteOperationException("Max active SSH sessions reached for this user/server on this instance.");
         // }
-        
+
         forceReleaseSshSessionByKey(sessionKey, false); // Clean up any stale session for this exact key
 
         Session jschSession;
@@ -107,10 +107,10 @@ public class SshSessionLifecycleManager {
 
         SshSessionMetadata metadata = new SshSessionMetadata(
                 platformUserId, serverId, sessionToken, currentTime, currentTime, expiresAt, applicationInstanceId);
-        
+
         jwtToSessionKeyRedisTemplate.opsForValue().set(sshTokenRedisKey(sessionToken), sessionKey, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
         sessionMetadataRedisTemplate.opsForValue().set(sshSessionMetadataRedisKey(sessionKey), metadata, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
-        
+
         logger.info("SSH session initialized successfully for {}. Token: {}", sessionKey, sessionToken);
         return new SessionResponse(sessionToken, SSH_SESSION_TYPE, "ACTIVE", currentTime, expiresAt);
     }
@@ -142,18 +142,18 @@ public class SshSessionLifecycleManager {
         } else {
              wrapper.updateLastAccessedTime(); // Update local access time
         }
-        
+
         // Regardless of local presence, refresh token and metadata in Redis
         String newSessionToken = jwtTokenProvider.generateToken(sessionKey, sessionKey.platformUserId());
         long currentTime = Instant.now().toEpochMilli();
         long newExpiresAt = currentTime + jwtConfig.getExpirationMs();
 
         SshSessionMetadata newMetadata = new SshSessionMetadata(
-            sessionKey.platformUserId(), sessionKey.resourceId(), newSessionToken, 
+            sessionKey.platformUserId(), sessionKey.resourceId(), newSessionToken,
             (wrapper != null ? wrapper.getSessionKey().hashCode() : currentTime), // Use original creation if available, else current for metadata creation time
             currentTime, newExpiresAt, applicationInstanceId // This instance claims it now
         );
-        
+
         // Update Redis: new token maps to key, metadata updated with new token and expiry
         jwtToSessionKeyRedisTemplate.opsForValue().set(sshTokenRedisKey(newSessionToken), sessionKey, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
         sessionMetadataRedisTemplate.opsForValue().set(sshSessionMetadataRedisKey(sessionKey), newMetadata, jwtConfig.getExpirationMs(), TimeUnit.MILLISECONDS);
@@ -165,7 +165,7 @@ public class SshSessionLifecycleManager {
         logger.info("SSH session keepalive successful for {}. New token issued.", sessionKey);
         return new KeepAliveResponse(newSessionToken, "ACTIVE", newExpiresAt);
     }
-    
+
     public void releaseSshSession(String sessionToken) {
         Claims claims = jwtTokenProvider.getClaimsFromToken(sessionToken);
         if (claims == null) {
@@ -197,7 +197,7 @@ public class SshSessionLifecycleManager {
             sessionMetadataRedisTemplate.delete(sshSessionMetadataRedisKey(key));
             logger.debug("Deleted session metadata from Redis for key: {}", key);
         }
-        
+
         if (wasTokenBasedRelease) {
             // The token used for release is implicitly handled if it's the one in metadata.
             // If it was a different (older) token for the same sessionKey, this logic is fine.
@@ -230,12 +230,12 @@ public class SshSessionLifecycleManager {
                 forceReleaseSshSessionByKey(key, false); // Not token-based, so find token via metadata
             }
         });
-        
+
         // Additional Redis-only cleanup for sessions potentially managed by other (dead) instances
         // This is more complex: requires iterating Redis keys (scan) or a different strategy (e.g. Redis TTLs being primary mechanism)
         // For now, local cleanup is the focus of this scheduled task. Redis TTLs on metadata and token keys handle Redis-side expiry.
     }
-    
+
     // --- Helper Methods ---
     private Session createJschSession(UserProvidedConnectionDetails connDetails) throws JSchException {
         JSch jsch = new JSch();
@@ -256,7 +256,7 @@ public class SshSessionLifecycleManager {
             }
             session.setPassword(connDetails.getDecryptedPassword());
         }
-        
+
         java.util.Properties config = new java.util.Properties();
         // config.put("StrictHostKeyChecking", "no"); // Removed, handled by CustomJschHostKeyRepository
         config.put("PreferredAuthentications", "publickey,password"); // Allow both, JSch will try based on what's available
@@ -272,14 +272,14 @@ public class SshSessionLifecycleManager {
     public SshSessionMetadata getSessionMetadata(SessionKey key) {
         return sessionMetadataRedisTemplate.opsForValue().get(sshSessionMetadataRedisKey(key));
     }
-    
+
     // This method is crucial for the hybrid model when an operation happens on an instance
     // that holds the live JSch session.
     public void updateSessionAccessTime(SessionKey key, SshSessionWrapper wrapper) {
         if (wrapper == null || !wrapper.isConnected()) return;
 
         wrapper.updateLastAccessedTime(); // Update local
-        
+
         // Update Redis metadata, including setting this instance as the host
         SshSessionMetadata currentMetadata = sessionMetadataRedisTemplate.opsForValue().get(sshSessionMetadataRedisKey(key));
         if (currentMetadata != null) {

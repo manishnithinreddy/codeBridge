@@ -46,7 +46,7 @@ public class SshSessionController {
         }
         return UUID.fromString(authentication.getName());
     }
-    
+
     private String extractJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
@@ -61,7 +61,7 @@ public class SshSessionController {
                                             Authentication authentication,
                                             HttpServletRequest request) {
         UUID platformUserId = getPlatformUserId(authentication);
-        UserSpecificConnectionDetailsDto connDetailsDto = 
+        UserSpecificConnectionDetailsDto connDetailsDto =
             serverAccessControlService.getValidatedConnectionDetails(platformUserId, serverId);
 
         ClientUserProvidedConnectionDetails clientDetails = new ClientUserProvidedConnectionDetails(
@@ -86,8 +86,8 @@ public class SshSessionController {
         } else {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Unsupported auth provider for SSH session init."));
         }
-        
-        SshSessionServiceApiInitRequestDto sessionServiceRequest = 
+
+        SshSessionServiceApiInitRequestDto sessionServiceRequest =
             new SshSessionServiceApiInitRequestDto(platformUserId, serverId, clientDetails);
 
         HttpHeaders headers = new HttpHeaders();

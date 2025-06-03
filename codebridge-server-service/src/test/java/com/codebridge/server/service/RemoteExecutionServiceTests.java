@@ -36,13 +36,13 @@ class RemoteExecutionServiceTests {
     @Mock private RestTemplate restTemplate;
     @Mock private ServerAccessControlService serverAccessControlService;
     @Mock private ServerActivityLogService activityLogService;
-    
+
     // @Spy allows partial mocking if needed, or just use @Mock if JwtUtil is simple enough
     // For this placeholder JwtUtil, direct instantiation in service means we can't easily mock it here
     // without PowerMock or refactoring service to inject JwtUtil.
     // We will assume JwtUtil works as expected for parsing.
-    // @Spy private JwtUtil jwtUtil = new JwtUtil(); 
-    
+    // @Spy private JwtUtil jwtUtil = new JwtUtil();
+
     @InjectMocks
     private RemoteExecutionService remoteExecutionService;
 
@@ -72,7 +72,7 @@ class RemoteExecutionServiceTests {
         Claims mockClaims = Jwts.claims().setSubject(platformUserId.toString());
         mockClaims.put("resourceId", serverId.toString());
         mockClaims.put("type", "SSH");
-        
+
         // This is a workaround because JwtUtil is new'ed up. Ideally it's injected.
         // We can't directly mock `jwtUtil.extractAllClaims` here.
         // So, we rely on the fact that if token is bad, it would throw earlier.
@@ -98,7 +98,7 @@ class RemoteExecutionServiceTests {
         assertEquals("output", actualResponse.getStdout());
         verify(activityLogService).createLog(eq(platformUserId), eq("REMOTE_COMMAND_EXECUTE_PROXY"), eq(serverId), anyString(), eq("SUCCESS"), eq(null));
     }
-    
+
     @Test
     void executeCommand_sessionTokenInvalidType_throwsAccessDenied() {
         // Similar to above, mocking JwtUtil directly is hard.
