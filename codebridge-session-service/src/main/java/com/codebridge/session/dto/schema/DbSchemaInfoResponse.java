@@ -1,6 +1,8 @@
-package com.codebridge.session.dto.ops;
+package com.codebridge.session.dto.schema;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DbSchemaInfoResponse implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -9,13 +11,10 @@ public class DbSchemaInfoResponse implements Serializable {
     private String databaseProductVersion;
     private String driverName;
     private String driverVersion;
-    // Add more fields from DatabaseMetaData as needed:
-    // private String userName;
-    // private String url;
-    // private boolean readOnly;
-    // private int defaultTransactionIsolation;
+    private List<TableSchemaInfo> tables;
 
     public DbSchemaInfoResponse() {
+        this.tables = new ArrayList<>();
     }
 
     public DbSchemaInfoResponse(String databaseProductName, String databaseProductVersion, String driverName, String driverVersion) {
@@ -23,6 +22,7 @@ public class DbSchemaInfoResponse implements Serializable {
         this.databaseProductVersion = databaseProductVersion;
         this.driverName = driverName;
         this.driverVersion = driverVersion;
+        this.tables = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -56,5 +56,17 @@ public class DbSchemaInfoResponse implements Serializable {
 
     public void setDriverVersion(String driverVersion) {
         this.driverVersion = driverVersion;
+    }
+
+    public List<TableSchemaInfo> getTables() {
+        return tables;
+    }
+
+    public void setTables(List<TableSchemaInfo> tables) {
+        this.tables = tables;
+    }
+
+    public void addTable(TableSchemaInfo table) {
+        this.tables.add(table);
     }
 }

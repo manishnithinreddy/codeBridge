@@ -1,8 +1,11 @@
 package com.codebridge.session.controller;
 
 import com.codebridge.session.config.ApplicationInstanceIdProvider;
+import com.codebridge.session.config.ApplicationInstanceIdProvider;
 import com.codebridge.session.dto.DbSessionMetadata;
-import com.codebridge.session.dto.ops.DbSchemaInfoResponse;
+import com.codebridge.session.dto.schema.DbSchemaInfoResponse; // Updated DTO path
+import com.codebridge.session.dto.sql.SqlExecutionRequest; // Added
+import com.codebridge.session.dto.sql.SqlExecutionResponse; // Added
 import com.codebridge.session.exception.AccessDeniedException;
 import com.codebridge.session.exception.RemoteOperationException;
 import com.codebridge.session.exception.ResourceNotFoundException;
@@ -18,9 +21,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
+import java.sql.*; // Added for Statement, ResultSet, ResultSetMetaData
 import java.time.Instant;
+import java.util.ArrayList; // Added
+import java.util.List; // Added
 import java.util.Map;
 import java.util.UUID;
 
@@ -121,21 +125,90 @@ public class DbOperationController {
     @GetMapping("/get-schema-info")
     public ResponseEntity<DbSchemaInfoResponse> getSchemaInfo(@PathVariable String sessionToken) {
         Connection connection = getValidatedLocalDbConnection(sessionToken, "get-schema-info");
-        try {
-            DatabaseMetaData metaData = connection.getMetaData();
-            DbSchemaInfoResponse response = new DbSchemaInfoResponse(
-                metaData.getDatabaseProductName(),
-                metaData.getDatabaseProductVersion(),
-                metaData.getDriverName(),
-                metaData.getDriverVersion()
-            );
-            // Populate more fields if added to DbSchemaInfoResponse
-            // response.setUserName(metaData.getUserName());
-            // response.setUrl(metaData.getURL());
-            return ResponseEntity.ok(response);
-        } catch (SQLException e) {
-            logger.error("Error retrieving DB schema info for session token {}: {}", sessionToken, e.getMessage(), e);
-            throw new RemoteOperationException("Failed to retrieve database schema information: " + e.getMessage(), e);
+        // The service method now handles SQLException and throws RemoteOperationException
+        DbSchemaInfoResponse schemaInfo = dbLifecycleManager.getDetailedSchemaInfo(connection);
+        return ResponseEntity.ok(schemaInfo);
+    }
+
+    private boolean containsDmlKeywords(String sql) {
+        if (sql == null) return false;
+        String upperSql = sql.toUpperCase();
+        // Basic keyword check, not foolproof for complex SQL or comments.
+        return upperSql.contains("INSERT ") || upperSql.contains("UPDATE ") || upperSql.contains("DELETE ") ||
+               upperSql.contains("DROP ") || upperSql.contains("CREATE ") || upperSql.contains("ALTER ") ||
+               upperSql.contains("TRUNCATE ") || upperSql.contains("MERGE ");
+    }
+
+    @PostMapping("/execute-sql")
+    public ResponseEntity<SqlExecutionResponse> executeSql(
+            @PathVariable String sessionToken,
+            @RequestBody @jakarta.validation.Valid SqlExecutionRequest request) { // Added @Valid
+
+        long startTime = System.currentTimeMillis();
+        Connection connection = getValidatedLocalDbConnection(sessionToken, "execute-sql");
+        SqlExecutionResponse responseDto = new SqlExecutionResponse();
+
+        // TODO: Implement robust SQL validation/sanitization here before execution!
+        // This is a critical security measure.
+        if (request.isReadOnly() && containsDmlKeywords(request.getSqlQuery())) {
+            logger.warn("DML keyword detected in read-only query for session token {}: {}", sessionToken, request.getSqlQuery());
+            // For now, throwing an exception. Could also set error in responseDto.
+            throw new IllegalArgumentException("Only SELECT queries are allowed in read-only mode. Detected potential DML/DDL keywords.");
         }
+
+        try (Statement stmt = connection.createStatement()) {
+            // TODO: Implement parameter binding for PreparedStatement if request.getParameters() is not empty.
+            // For now, direct execution (vulnerable to SQL injection if not carefully controlled upstream).
+            boolean isResultSet = stmt.execute(request.getSqlQuery());
+
+            if (isResultSet) {
+                try (ResultSet rs = stmt.getResultSet()) {
+                    ResultSetMetaData rsmd = rs.getMetaData();
+                    int columnCount = rsmd.getColumnCount();
+                    List<String> columnNames = new ArrayList<>();
+                    for (int i = 1; i <= columnCount; i++) {
+                        columnNames.add(rsmd.getColumnLabel(i)); // Use getColumnLabel for aliases
+                    }
+                    responseDto.setColumnNames(columnNames);
+
+                    List<List<Object>> rows = new ArrayList<>();
+                    while (rs.next()) {
+                        List<Object> row = new ArrayList<>();
+                        for (int i = 1; i <= columnCount; i++) {
+                            row.add(rs.getObject(i)); // getObject tries to map to appropriate Java type
+                        }
+                        rows.add(row);
+                    }
+                    responseDto.setRows(rows);
+                    responseDto.setRowsAffected(0); // Typically 0 for SELECT unless driver reports otherwise
+                }
+            } else {
+                responseDto.setRowsAffected(stmt.getUpdateCount());
+            }
+
+            // Check for warnings
+            SQLWarning warning = stmt.getWarnings();
+            if (warning != null) {
+                StringBuilder warningMessages = new StringBuilder();
+                while (warning != null) {
+                    warningMessages.append(warning.getMessage()).append("; ");
+                    warning = warning.getNextWarning();
+                }
+                responseDto.setWarnings(warningMessages.toString());
+                logger.warn("SQL Warnings for session token {}: {}", sessionToken, warningMessages.toString());
+            }
+            // responseDto.setError(null); // Explicitly null if successful
+        } catch (SQLException e) {
+            logger.error("SQLException during SQL execution for session token {}: {}", sessionToken, e.getMessage(), e);
+            responseDto.setError("SQL Error: " + e.getErrorCode() + " - " + e.getMessage());
+            // For some errors, could return different HTTP status, e.g. BAD_REQUEST if query is malformed.
+            // For now, returning 200 OK with error in DTO.
+        } catch (Exception e) {
+            logger.error("Unexpected error during SQL execution for session token {}: {}", sessionToken, e.getMessage(), e);
+            responseDto.setError("Unexpected error: " + e.getMessage());
+        } finally {
+            responseDto.setExecutionTimeMs(System.currentTimeMillis() - startTime);
+        }
+        return ResponseEntity.ok(responseDto);
     }
 }
