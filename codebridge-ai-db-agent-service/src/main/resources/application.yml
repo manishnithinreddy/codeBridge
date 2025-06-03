@@ -1,0 +1,32 @@
+server:
+  port: 8085 # Unique port for this service
+
+spring:
+  application:
+    name: codebridge-ai-db-agent-service
+
+# Eureka client configuration (if service discovery is used)
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/ # Default Eureka server URL
+  instance:
+    preferIpAddress: true
+
+# Basic Logging (optional, Spring Boot provides defaults)
+logging:
+  level:
+    com.codebridge.aidb: DEBUG
+    org.springframework.web: INFO
+    # org.springframework.cloud.client.discovery: TRACE # For debugging Eureka registration
+
+# Placeholder for future AI service client configurations
+codebridge:
+  ai:
+    text-to-sql:
+      # User will replace this with actual Gemini/LLM API endpoint
+      endpoint-url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent" # Placeholder
+      # User will replace this with their actual API key
+      api-key: "YOUR_GOOGLE_AI_API_KEY_PLACEHOLDER"
+  service-urls:
+    session-service-api-base-url: "http://codebridge-session-service/api" # Base URL for SessionService (not including /sessions)
