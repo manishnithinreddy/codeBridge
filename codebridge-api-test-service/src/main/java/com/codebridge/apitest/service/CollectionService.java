@@ -2,8 +2,11 @@ package com.codebridge.apitest.service;
 
 import com.codebridge.apitester.model.Collection; // Corrected model import
 import com.codebridge.apitester.model.Project;   // Corrected model import
+import com.codebridge.apitester.model.enums.SharePermissionLevel; // Added
 import com.codebridge.apitest.dto.CollectionRequest;
 import com.codebridge.apitest.dto.CollectionResponse;
+import com.codebridge.apitest.dto.ProjectResponse; // Added for listSharedProjectsForUser
+import com.codebridge.apitest.exception.AccessDeniedException; // Added
 import com.codebridge.apitest.exception.ResourceNotFoundException;
 import com.codebridge.apitest.repository.CollectionRepository; // Repository from apitest
 import com.codebridge.apitest.repository.ProjectRepository;   // Repository from apitest
@@ -13,26 +16,38 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Set; // Added
+import java.util.HashSet; // Added
+import java.util.ArrayList; // Added
+import java.util.Comparator; // Added for sorting
 
 @Service
 public class CollectionService {
 
     private final CollectionRepository collectionRepository;
-    private final ProjectRepository projectRepository; // Added ProjectRepository
+    private final ProjectRepository projectRepository;
+    private final ProjectSharingService projectSharingService; // Added
 
-    public CollectionService(CollectionRepository collectionRepository, ProjectRepository projectRepository) {
+    public CollectionService(CollectionRepository collectionRepository,
+                             ProjectRepository projectRepository,
+                             ProjectSharingService projectSharingService) { // Added
         this.collectionRepository = collectionRepository;
         this.projectRepository = projectRepository;
+        this.projectSharingService = projectSharingService; // Added
     }
 
     @Transactional
     public CollectionResponse createCollection(CollectionRequest collectionRequest, UUID platformUserId) {
-        // Validate project existence and ownership
-        Project project = projectRepository.findByIdAndPlatformUserId(
-                collectionRequest.getProjectId(), platformUserId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Project not found with id " + collectionRequest.getProjectId() + " for this user. Cannot create collection."
-                ));
+        UUID projectId = collectionRequest.getProjectId();
+        SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
+
+        if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
+            throw new AccessDeniedException("User does not have permission to add collections to project " + projectId);
+        }
+
+        // Fetch project after permission check
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
 
         Collection collection = new Collection();
         collection.setName(collectionRequest.getName());
@@ -49,28 +64,65 @@ public class CollectionService {
 
     @Transactional(readOnly = true)
     public CollectionResponse getCollectionByIdForUser(UUID collectionId, UUID platformUserId) {
-        // This method currently assumes direct ownership for standalone collections or collections where userId matches.
-        // For project-based collections, access might be via project ownership/sharing (handled in later phase).
-        Collection collection = collectionRepository.findByIdAndUserId(collectionId, platformUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId + " for this user."));
+        Collection collection = collectionRepository.findById(collectionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId));
+
+        if (collection.getProject() != null) {
+            UUID projectId = collection.getProject().getId();
+            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
+            if (effectivePermission == null) { // Needs at least VIEW_ONLY
+                throw new ResourceNotFoundException("Collection not found or access denied to its project.");
+            }
+        } else { // Standalone collection
+            if (!collection.getUserId().equals(platformUserId)) {
+                throw new ResourceNotFoundException("Collection not found or access denied.");
+            }
+        }
         return mapToCollectionResponse(collection);
     }
 
     @Transactional(readOnly = true)
     public List<CollectionResponse> getAllCollectionsForUser(UUID platformUserId) {
-        // This lists collections directly owned by the user, not yet considering project sharing.
-        return collectionRepository.findByUserId(platformUserId).stream()
+        Set<CollectionResponse> resultSet = new HashSet<>();
+
+        // Directly owned standalone collections (project is null)
+        collectionRepository.findByUserId(platformUserId).stream()
+            .filter(c -> c.getProject() == null)
+            .map(this::mapToCollectionResponse)
+            .forEach(resultSet::add);
+
+        // Collections from owned projects
+        projectRepository.findByPlatformUserId(platformUserId).forEach(project ->
+            collectionRepository.findByProjectId(project.getId()).stream()
                 .map(this::mapToCollectionResponse)
-                .collect(Collectors.toList());
+                .forEach(resultSet::add)
+        );
+
+        // Collections from shared projects
+        List<ProjectResponse> sharedProjects = projectSharingService.listSharedProjectsForUser(platformUserId);
+        for (ProjectResponse sharedProject : sharedProjects) {
+            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(sharedProject.getId(), platformUserId);
+            if (effectivePermission != null) { // Any permission level allows viewing collections
+                collectionRepository.findByProjectId(sharedProject.getId()).stream()
+                    .map(this::mapToCollectionResponse)
+                    .forEach(resultSet::add);
+            }
+        }
+
+        List<CollectionResponse> finalResult = new ArrayList<>(resultSet);
+        finalResult.sort(Comparator.comparing(CollectionResponse::getName, String.CASE_INSENSITIVE_ORDER));
+        return finalResult;
     }
 
     @Transactional(readOnly = true)
     public List<CollectionResponse> getAllCollectionsForProject(UUID projectId, UUID platformUserId) {
-        // Ensure user owns the project before listing its collections
-        projectRepository.findByIdAndPlatformUserId(projectId, platformUserId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Project not found with id " + projectId + " for this user. Cannot list collections."
-                ));
+        SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
+        if (effectivePermission == null) { // Needs at least VIEW_ONLY
+            throw new AccessDeniedException("User does not have permission to view collections in project " + projectId);
+        }
+        // User has some permission, allow fetching collections for the project
+        projectRepository.findById(projectId) // Ensure project exists, though permission check implies it
+             .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
 
         return collectionRepository.findByProjectId(projectId).stream()
                 .map(this::mapToCollectionResponse)
@@ -80,32 +132,40 @@ public class CollectionService {
 
     @Transactional
     public CollectionResponse updateCollection(UUID collectionId, CollectionRequest collectionRequest, UUID platformUserId) {
-        Collection collection = collectionRepository.findByIdAndUserId(collectionId, platformUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId + " for this user, cannot update."));
+        Collection collection = collectionRepository.findById(collectionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId));
 
-        // If collection is part of a project, ensure the project ID in request matches (or handle project change)
         if (collection.getProject() != null) {
-            if (!collection.getProject().getId().equals(collectionRequest.getProjectId())) {
-                // This logic might need refinement: are we allowing moving collection between projects?
-                // For now, let's assume projectId in request should match existing project if collection is already associated.
-                // Or, if it's for associating an unassigned collection:
-                Project project = projectRepository.findByIdAndPlatformUserId(
-                        collectionRequest.getProjectId(), platformUserId)
-                        .orElseThrow(() -> new ResourceNotFoundException(
-                                "Project not found with id " + collectionRequest.getProjectId() + " for this user."
-                        ));
-                collection.setProject(project);
+            UUID projectId = collection.getProject().getId();
+            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
+            if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
+                throw new AccessDeniedException("User does not have permission to update collections in project " + projectId);
             }
-        } else if (collectionRequest.getProjectId() != null) { // If it was a standalone collection and now gets a project
-             Project project = projectRepository.findByIdAndPlatformUserId(
-                        collectionRequest.getProjectId(), platformUserId)
-                        .orElseThrow(() -> new ResourceNotFoundException(
-                                "Project not found with id " + collectionRequest.getProjectId() + " for this user."
-                        ));
-             collection.setProject(project);
+            // If projectId in request differs, it implies moving the collection.
+            // This logic needs careful consideration: should user have CAN_EDIT on both old and new project?
+            // For now, assume if collectionRequest.projectId is set and different, it's an attempt to move.
+            // The current logic in controller sets collectionRequest.projectId from path, so it should match collection.getProject().getId().
+            // If we want to support moving, the controller and this service method need more advanced logic.
+            // Sticking to updating within the same project for now.
+            if (collectionRequest.getProjectId() != null && !collectionRequest.getProjectId().equals(projectId)) {
+                 throw new IllegalArgumentException("Moving collections between projects is not supported via this method.");
+            }
+
+        } else { // Standalone collection
+            if (!collection.getUserId().equals(platformUserId)) {
+                throw new AccessDeniedException("User does not have permission to update this standalone collection.");
+            }
+            // Potentially associating a standalone collection with a project
+            if (collectionRequest.getProjectId() != null) {
+                 SharePermissionLevel projectAccess = projectSharingService.getEffectivePermission(collectionRequest.getProjectId(), platformUserId);
+                 if (projectAccess == null || projectAccess.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
+                     throw new AccessDeniedException("User does not have permission to move this collection to project " + collectionRequest.getProjectId());
+                 }
+                 Project project = projectRepository.findById(collectionRequest.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Target project not found with id " + collectionRequest.getProjectId()));
+                 collection.setProject(project);
+            }
         }
-
-
         collection.setName(collectionRequest.getName());
         // collection.setDescription(collectionRequest.getDescription()); // if description is in CollectionRequest & Collection model
 
@@ -115,8 +175,20 @@ public class CollectionService {
 
     @Transactional
     public void deleteCollection(UUID collectionId, UUID platformUserId) {
-        Collection collection = collectionRepository.findByIdAndUserId(collectionId, platformUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId + " for this user, cannot delete."));
+        Collection collection = collectionRepository.findById(collectionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId));
+
+        if (collection.getProject() != null) {
+            UUID projectId = collection.getProject().getId();
+            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
+            if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) { // Or a more specific CAN_DELETE_COLLECTION if exists
+                throw new AccessDeniedException("User does not have permission to delete collections in project " + projectId);
+            }
+        } else { // Standalone collection
+            if (!collection.getUserId().equals(platformUserId)) {
+                throw new AccessDeniedException("User does not have permission to delete this standalone collection.");
+            }
+        }
         collectionRepository.delete(collection);
     }
 
