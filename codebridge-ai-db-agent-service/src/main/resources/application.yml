@@ -28,5 +28,11 @@ codebridge:
       endpoint-url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent" # Placeholder
       # User will replace this with their actual API key
       api-key: "YOUR_GOOGLE_AI_API_KEY_PLACEHOLDER"
+    sql-validation:
+      denied-keywords: "DROP,DELETE,INSERT,UPDATE,CREATE,ALTER,TRUNCATE,GRANT,REVOKE,COMMIT,ROLLBACK,SAVEPOINT,SHUTDOWN,EXEC,EXECUTE"
+      allow-only-select-for-readonly: true
+  security: # For User JWT validation
+    jwt:
+      shared-secret: "YOUR_VERY_SECURE_AND_LONG_SHARED_SECRET_FOR_USER_JWTS_CHANGE_ME" # Must match other services
   service-urls:
     session-service-api-base-url: "http://codebridge-session-service/api" # Base URL for SessionService (not including /sessions)

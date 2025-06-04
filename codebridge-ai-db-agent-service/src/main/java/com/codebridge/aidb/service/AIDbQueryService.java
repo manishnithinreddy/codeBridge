@@ -6,9 +6,11 @@ import com.codebridge.aidb.dto.NaturalLanguageQueryResponse;
 import com.codebridge.aidb.dto.client.ClientSqlExecutionRequest;
 import com.codebridge.aidb.dto.client.ClientSqlExecutionResponse;
 import com.codebridge.aidb.dto.client.DbSchemaInfoResponse; // Local stub
-import com.codebridge.aidb.dto.client.TableSchemaInfo; // Local stub
-import com.codebridge.aidb.dto.client.ColumnSchemaInfo; // Local stub
+import com.codebridge.aidb.dto.client.TableSchemaInfo;
+import com.codebridge.aidb.dto.client.ColumnSchemaInfo;
 import com.codebridge.aidb.exception.AIServiceException;
+import com.codebridge.aidb.exception.InvalidSqlException;
+import com.codebridge.aidb.util.SchemaToStringFormatter; // Added
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -29,14 +31,20 @@ public class AIDbQueryService {
     private final AIServiceClient aiServiceClient;
     private final WebClient.Builder webClientBuilder;
     private final SessionServiceConfigProperties sessionServiceConfigProperties;
+    private final SqlSafetyValidator sqlSafetyValidator;
+    private final SchemaToStringFormatter schemaFormatter; // Added
     private WebClient sessionServiceClient;
 
     public AIDbQueryService(AIServiceClient aiServiceClient,
                             WebClient.Builder webClientBuilder,
-                            SessionServiceConfigProperties sessionServiceConfigProperties) {
+                            SessionServiceConfigProperties sessionServiceConfigProperties,
+                            SqlSafetyValidator sqlSafetyValidator,
+                            SchemaToStringFormatter schemaFormatter) { // Added
         this.aiServiceClient = aiServiceClient;
         this.webClientBuilder = webClientBuilder;
         this.sessionServiceConfigProperties = sessionServiceConfigProperties;
+        this.sqlSafetyValidator = sqlSafetyValidator;
+        this.schemaFormatter = schemaFormatter; // Added
     }
 
     @PostConstruct
@@ -47,30 +55,8 @@ public class AIDbQueryService {
             .build();
     }
 
-    private String formatSchemaForPrompt(DbSchemaInfoResponse schemaInfo) {
-        if (schemaInfo == null || schemaInfo.getTables() == null || schemaInfo.getTables().isEmpty()) {
-            return "No schema information available.";
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("Database Product: ").append(schemaInfo.getDatabaseProductName())
-          .append(" Version: ").append(schemaInfo.getDatabaseProductVersion()).append("\n");
-
-        for (TableSchemaInfo table : schemaInfo.getTables()) {
-            sb.append(String.format("Table %s (%s):\n", table.getTableName(), table.getTableType()));
-            if (table.getRemarks() != null && !table.getRemarks().isBlank()) {
-                 sb.append(String.format("  Description: %s\n", table.getRemarks()));
-            }
-            for (ColumnSchemaInfo column : table.getColumns()) {
-                sb.append(String.format("  - Column %s: Type=%s, Nullable=%s",
-                                        column.getName(), column.getDataType(), column.isNullable()));
-                if (column.getColumnSize() != null) sb.append(", Size=").append(column.getColumnSize());
-                if (column.getDecimalDigits() != null) sb.append(", DecimalDigits=").append(column.getDecimalDigits());
-                sb.append("\n");
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
+    // Removed local formatSchemaForPrompt, will use SchemaToStringFormatter
+    // private String formatSchemaForPrompt(DbSchemaInfoResponse schemaInfo) { ... }
 
     private String mapDbProductNameToDbType(String dbProductName) {
         if (dbProductName == null) return "SQL"; // Generic default
@@ -111,21 +97,23 @@ public class AIDbQueryService {
             .onErrorMap(e -> new AIServiceException("Failed to fetch database schema: " + e.getMessage(), e))
             .flatMap(schemaInfo -> {
                 // 2. Call AIServiceClient
-                String dbType = mapDbProductNameToDbType(schemaInfo.getDatabaseProductName());
-                String formattedSchema = formatSchemaForPrompt(schemaInfo);
+                String dbTypeForPrompt = mapDbProductNameToDbType(schemaInfo.getDatabaseProductName());
+                String formattedSchema = schemaFormatter.formatSchema(schemaInfo, dbTypeForPrompt); // Use injected formatter
 
-                return aiServiceClient.convertTextToSql(naturalLanguageQuery, dbType, formattedSchema) // Pass formatted schema
+                return aiServiceClient.convertTextToSql(naturalLanguageQuery, dbTypeForPrompt, formattedSchema)
                     .flatMap(generatedSql -> {
                         finalResponse.setGeneratedSql(generatedSql);
                         logger.info("Generated SQL for token {}: {}", dbSessionToken, generatedSql);
 
-                        // 3. CRITICAL: SQL Validation/Sanitization Placeholder
-                        // TODO: Implement robust SQL validation, sanitization, and restriction layer here!
-                        if (isPotentiallyUnsafeSql(generatedSql)) {
-                            logger.warn("Generated SQL contains restricted keywords: {}", generatedSql);
-                            finalResponse.setProcessingError("Generated SQL contains restricted keywords and was not executed.");
-                            // Alternatively, could throw new AIServiceException here
-                            return Mono.just(finalResponse);
+                        // 3. SQL Validation/Sanitization
+                        try {
+                            // Assuming readOnly=true for AI generated queries by default for safety
+                            sqlSafetyValidator.validateSqlQuery(generatedSql, true);
+                            logger.info("AI-generated SQL passed safety validation: {}", generatedSql);
+                        } catch (InvalidSqlException e) {
+                            logger.warn("AI-generated SQL failed safety validation. SQL: [{}], Reason: {}", generatedSql, e.getMessage());
+                            // Propagate as an error that GlobalExceptionHandler can catch
+                            return Mono.error(e);
                         }
 
                         // 4. Execute SQL via SessionService
