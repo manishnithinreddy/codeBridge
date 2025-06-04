@@ -1,27 +1,28 @@
 package com.codebridge.aidb.dto.ai;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
+import java.util.List;
 
+// Placeholder for PromptFeedbackDto if needed later
+// class PromptFeedbackDto implements Serializable { /* ... */ }
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AiTextToSqlResponseDto implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String generatedSql;
-    private String error;
+    private List<GeminiCandidateDto> candidates;
+    private String error; // For high-level errors (e.g., API key issue, quota)
+    // private PromptFeedbackDto promptFeedback;
 
-    public AiTextToSqlResponseDto() {
+    public AiTextToSqlResponseDto() {}
+
+    public List<GeminiCandidateDto> getCandidates() {
+        return candidates;
     }
 
-    public AiTextToSqlResponseDto(String generatedSql, String error) {
-        this.generatedSql = generatedSql;
-        this.error = error;
-    }
-
-    public String getGeneratedSql() {
-        return generatedSql;
-    }
-
-    public void setGeneratedSql(String generatedSql) {
-        this.generatedSql = generatedSql;
+    public void setCandidates(List<GeminiCandidateDto> candidates) {
+        this.candidates = candidates;
     }
 
     public String getError() {
@@ -31,4 +32,6 @@ public class AiTextToSqlResponseDto implements Serializable {
     public void setError(String error) {
         this.error = error;
     }
+
+    // Add getter/setter for promptFeedback if included
 }
