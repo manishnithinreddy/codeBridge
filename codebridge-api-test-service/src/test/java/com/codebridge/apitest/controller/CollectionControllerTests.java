@@ -1,8 +1,8 @@
-package com.codebridge.apitester.controller;
+package com.codebridge.apitest.controller;
 
-import com.codebridge.apitester.dto.CollectionRequest;
-import com.codebridge.apitester.dto.CollectionResponse;
-import com.codebridge.apitester.service.CollectionService;
+import com.codebridge.apitest.dto.CollectionRequest;
+import com.codebridge.apitest.dto.CollectionResponse;
+import com.codebridge.apitest.service.CollectionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
