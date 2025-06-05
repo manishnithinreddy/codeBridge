@@ -1,6 +1,6 @@
 package com.codebridge.apitest.repository;
 
-import com.codebridge.apitester.model.ShareGrant; // Corrected: Point to apitester.model
+import com.codebridge.apitest.model.ShareGrant; // Updated to use apitest.model
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
