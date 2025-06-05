@@ -75,6 +75,12 @@ public class ApiTest {
     private String grpcServiceDefinition;
 
     @Column
+    private String grpcServiceName;
+
+    @Column
+    private String grpcMethodName;
+
+    @Column
     private Integer expectedStatusCode;
 
     @Column
@@ -234,6 +240,22 @@ public class ApiTest {
 
     public void setGrpcServiceDefinition(String grpcServiceDefinition) {
         this.grpcServiceDefinition = grpcServiceDefinition;
+    }
+
+    public String getGrpcServiceName() {
+        return grpcServiceName;
+    }
+
+    public void setGrpcServiceName(String grpcServiceName) {
+        this.grpcServiceName = grpcServiceName;
+    }
+
+    public String getGrpcMethodName() {
+        return grpcMethodName;
+    }
+
+    public void setGrpcMethodName(String grpcMethodName) {
+        this.grpcMethodName = grpcMethodName;
     }
 
     public Integer getExpectedStatusCode() {

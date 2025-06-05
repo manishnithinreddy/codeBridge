@@ -51,9 +51,9 @@ class ProjectSharingControllerTests {
     void grantProjectAccess_authenticated_returnsCreated() throws Exception {
         ShareGrantRequest requestDto = new ShareGrantRequest();
         requestDto.setGranteeUserId(granteeUserId);
-        requestDto.setPermissionLevel(SharePermissionLevel.CAN_VIEW);
+        requestDto.setPermissionLevel(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_VIEW); // Fully qualified
 
-        ShareGrantResponse responseDto = new ShareGrantResponse(UUID.randomUUID(), projectId, "Test Project", granteeUserId, SharePermissionLevel.CAN_VIEW, MOCK_USER_ID_UUID, LocalDateTime.now());
+        ShareGrantResponse responseDto = new ShareGrantResponse(UUID.randomUUID(), projectId, "Test Project", granteeUserId, com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_VIEW, MOCK_USER_ID_UUID, LocalDateTime.now()); // Fully qualified
         when(projectSharingService.grantProjectAccess(eq(projectId), any(ShareGrantRequest.class), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/projects/{projectId}/shares", projectId)
@@ -69,7 +69,7 @@ class ProjectSharingControllerTests {
     void grantProjectAccess_unauthenticated_returnsUnauthorized() throws Exception {
         ShareGrantRequest requestDto = new ShareGrantRequest();
         requestDto.setGranteeUserId(granteeUserId);
-        requestDto.setPermissionLevel(SharePermissionLevel.CAN_VIEW);
+        requestDto.setPermissionLevel(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_VIEW); // Fully qualified
 
         mockMvc.perform(post("/api/projects/{projectId}/shares", projectId)
                 // No JWT
@@ -91,7 +91,7 @@ class ProjectSharingControllerTests {
 
     @Test
     void listSharedUsers_authenticated_returnsList() throws Exception {
-        ShareGrantResponse responseDto = new ShareGrantResponse(UUID.randomUUID(), projectId, "Test Project", granteeUserId, SharePermissionLevel.CAN_VIEW, MOCK_USER_ID_UUID, LocalDateTime.now());
+        ShareGrantResponse responseDto = new ShareGrantResponse(UUID.randomUUID(), projectId, "Test Project", granteeUserId, com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_VIEW, MOCK_USER_ID_UUID, LocalDateTime.now()); // Fully qualified
         List<ShareGrantResponse> shares = Collections.singletonList(responseDto);
         when(projectSharingService.listUsersForProject(projectId, MOCK_USER_ID_UUID)).thenReturn(shares);
 

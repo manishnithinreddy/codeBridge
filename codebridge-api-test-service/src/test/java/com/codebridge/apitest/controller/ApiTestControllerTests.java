@@ -1,6 +1,8 @@
 package com.codebridge.apitest.controller;
 
-import com.codebridge.apitest.service.ApiTestService; // Assuming this service exists
+import com.codebridge.apitest.dto.ApiTestRequest; // Added DTO import
+import com.codebridge.apitest.dto.ApiTestResponse; // Added DTO import
+import com.codebridge.apitest.service.ApiTestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +27,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 // Placeholder DTOs for ApiTestController
 // package com.codebridge.apitest.dto;
-// public record ApiTestRequest(String name, String details) {}
-// public record ApiTestResponse(UUID id, String name, String details, UUID platformUserId) {}
-
+// Removed local dummy DTOs
 
 @WebMvcTest(ApiTestController.class)
 class ApiTestControllerTests {
@@ -45,18 +45,28 @@ class ApiTestControllerTests {
             .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    // Define dummy DTOs for the test if they are not complex
-    private record ApiTestRequest(String name, String details) {}
-    private record ApiTestResponse(UUID id, String name, String details, UUID platformUserId) {}
-
+    // Dummy DTOs removed
 
     @Test
     void createApiTest_authenticated_returnsCreated() throws Exception {
-        ApiTestRequest requestDto = new ApiTestRequest("My API Test", "Some details");
-        ApiTestResponse responseDto = new ApiTestResponse(UUID.randomUUID(), "My API Test", "Some details", MOCK_USER_ID_UUID);
+        // Note: Actual ApiTestRequest has many more fields. This will need to be adjusted
+        // based on what the actual createTest method expects or how the test is intended to work.
+        // For now, providing null for fields not in the dummy DTO.
+        ApiTestRequest requestDto = new ApiTestRequest(); // Use no-arg constructor
+        requestDto.setName("My API Test");
+        requestDto.setDescription("Some details");
+        requestDto.setUrl("http://example.com");
+        requestDto.setMethod("GET");
+        requestDto.setTimeoutMs(5000);
+        // Set other essential fields for the test if needed by createTest service method
 
-        // Assuming ApiTestService has a method like createApiTest(ApiTestRequest, UUID)
-        // when(apiTestService.createApiTest(any(ApiTestRequest.class), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
+        ApiTestResponse responseDto = new ApiTestResponse();
+        responseDto.setId(UUID.randomUUID());
+        responseDto.setName("My API Test");
+        // responseDto.setDescription("Some details"); // Corrected from setDetails if it matches DTO
+        // responseDto.setUserId(MOCK_USER_ID_UUID); // Removed, field/setter does not exist on ApiTestResponse
+
+        when(apiTestService.createTest(any(ApiTestRequest.class), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/tests") // Assuming this is the endpoint
                 .with(defaultUserJwt())
@@ -71,7 +81,14 @@ class ApiTestControllerTests {
 
     @Test
     void createApiTest_unauthenticated_returnsUnauthorized() throws Exception {
-        ApiTestRequest requestDto = new ApiTestRequest("My API Test", "Some details");
+        ApiTestRequest requestDto = new ApiTestRequest(); // Use no-arg constructor
+        requestDto.setName("My API Test");
+        requestDto.setDescription("Some details");
+        requestDto.setUrl("http://example.com");
+        requestDto.setMethod("GET");
+        requestDto.setTimeoutMs(5000);
+        // Set other essential fields
+
         mockMvc.perform(post("/api/tests")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -82,9 +99,13 @@ class ApiTestControllerTests {
     @Test
     void getApiTestById_authenticated_returnsOk() throws Exception {
         UUID testId = UUID.randomUUID();
-        ApiTestResponse responseDto = new ApiTestResponse(testId, "My API Test", "Some details", MOCK_USER_ID_UUID);
+        ApiTestResponse responseDto = new ApiTestResponse();
+        responseDto.setId(testId);
+        responseDto.setName("My API Test");
+        // responseDto.setDescription("Some details");
+        // responseDto.setUserId(MOCK_USER_ID_UUID); // Removed, field/setter does not exist on ApiTestResponse
 
-        // when(apiTestService.getApiTestById(eq(testId), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
+        when(apiTestService.getTestById(eq(testId), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(get("/api/tests/{testId}", testId) // Assuming this endpoint
                 .with(defaultUserJwt()))

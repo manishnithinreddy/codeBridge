@@ -35,7 +35,7 @@ public class ProjectSharingService {
     @Transactional
     public ShareGrantResponse grantProjectAccess(UUID projectId, ShareGrantRequest requestDto, UUID granterUserId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         if (!project.getPlatformUserId().equals(granterUserId)) {
             throw new AccessDeniedException("User " + granterUserId + " does not own project " + projectId);
@@ -60,7 +60,7 @@ public class ProjectSharingService {
     @Transactional
     public void revokeProjectAccess(UUID projectId, UUID granteeUserId, UUID revokerUserId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         if (!project.getPlatformUserId().equals(revokerUserId)) {
             throw new AccessDeniedException("User " + revokerUserId + " does not own project " + projectId);
@@ -74,7 +74,7 @@ public class ProjectSharingService {
     @Transactional(readOnly = true)
     public SharePermissionLevel getEffectivePermission(UUID projectId, UUID platformUserId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         if (project.getPlatformUserId().equals(platformUserId)) {
             return SharePermissionLevel.CAN_EDIT; // Owner has full edit rights (implicitly)
@@ -98,7 +98,7 @@ public class ProjectSharingService {
     @Transactional(readOnly = true)
     public List<ShareGrantResponse> listUsersForProject(UUID projectId, UUID platformUserId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         if (!project.getPlatformUserId().equals(platformUserId)) {
             throw new AccessDeniedException("User " + platformUserId + " does not own project " + projectId + ". Cannot list shares.");
