@@ -1,15 +1,15 @@
 package com.codebridge.apitest.service;
 
-import com.codebridge.apitester.model.Project; // Model from apitester
-import com.codebridge.apitester.model.ShareGrant; // Model from apitester
-import com.codebridge.apitester.model.enums.SharePermissionLevel; // Enum from apitester
+import com.codebridge.apitest.model.Project; // Updated to use apitest.model
+import com.codebridge.apitest.model.ShareGrant; // Updated to use apitest.model
+import com.codebridge.apitest.model.enums.SharePermissionLevel; // Updated to use apitest.model.enums
 import com.codebridge.apitest.dto.ProjectResponse;
 import com.codebridge.apitest.dto.ShareGrantRequest;
 import com.codebridge.apitest.dto.ShareGrantResponse;
 import com.codebridge.apitest.exception.AccessDeniedException;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
-import com.codebridge.apitest.repository.ProjectRepository; // Repository from apitest
-import com.codebridge.apitest.repository.ShareGrantRepository; // Repository from apitest
+import com.codebridge.apitest.repository.ProjectRepository;
+import com.codebridge.apitest.repository.ShareGrantRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
