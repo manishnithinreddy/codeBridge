@@ -1,6 +1,6 @@
 package com.codebridge.apitest.dto;
 
-import com.codebridge.apitester.model.enums.SharePermissionLevel; // Enum from apitester.model
+import com.codebridge.apitest.model.enums.SharePermissionLevel; // Updated to use apitest.model.enums
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 

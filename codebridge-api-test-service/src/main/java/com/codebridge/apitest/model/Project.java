@@ -8,16 +8,17 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.Objects;
 
 /**
- * Entity for collections of API tests.
- * Collections allow grouping related tests for batch execution.
+ * Entity for projects that organize collections of API tests.
  */
 @Entity
-@Table(name = "collections")
-public class Collection {
+@Table(name = "projects")
+public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,16 +29,13 @@ public class Collection {
     @Column(nullable = false)
     private String name;
 
-    // This field represents the platformUserId of the owner,
-    // especially if the collection is standalone (project is null).
-    // If associated with a project, ownership might be primarily derived from the project's owner.
-    @NotNull
-    @Column(nullable = false, updatable = false)
-    private UUID userId;
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = true) // Nullable to allow standalone collections
-    private Project project;
+    @NotNull
+    @Column(nullable = false, updatable = false) // platformUserId should not be updatable
+    private UUID platformUserId; // Owner of the project
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -47,19 +45,17 @@ public class Collection {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Collection> collections = new ArrayList<>();
+
     // Constructors
-    public Collection() {
+    public Project() {
     }
 
-    public Collection(String name, UUID userId) {
+    public Project(String name, String description, UUID platformUserId) {
         this.name = name;
-        this.userId = userId;
-    }
-
-    public Collection(String name, UUID userId, Project project) {
-        this.name = name;
-        this.userId = userId;
-        this.project = project;
+        this.description = description;
+        this.platformUserId = platformUserId;
     }
 
     // Getters and Setters
@@ -79,20 +75,20 @@ public class Collection {
         this.name = name;
     }
 
-    public UUID getUserId() {
-        return userId;
+    public String getDescription() {
+        return description;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public Project getProject() {
-        return project;
+    public UUID getPlatformUserId() {
+        return platformUserId;
     }
 
-    public void setProject(Project project) {
-        this.project = project;
+    public void setPlatformUserId(UUID platformUserId) {
+        this.platformUserId = platformUserId;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -111,13 +107,32 @@ public class Collection {
         this.updatedAt = updatedAt;
     }
 
+    public List<Collection> getCollections() {
+        return collections;
+    }
+
+    public void setCollections(List<Collection> collections) {
+        this.collections = collections;
+    }
+
+    // Convenience methods
+    public void addCollection(Collection collection) {
+        collections.add(collection);
+        collection.setProject(this);
+    }
+
+    public void removeCollection(Collection collection) {
+        collections.remove(collection);
+        collection.setProject(null);
+    }
+
     // equals, hashCode, toString
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Collection that = (Collection) o;
-        return Objects.equals(id, that.id);
+        Project project = (Project) o;
+        return Objects.equals(id, project.id);
     }
 
     @Override
@@ -127,11 +142,10 @@ public class Collection {
 
     @Override
     public String toString() {
-        return "Collection{" +
+        return "Project{" +
                "id=" + id +
                ", name='" + name + '\'' +
-               ", userId=" + userId +
-               ", projectId=" + (project != null ? project.getId() : null) +
+               ", platformUserId=" + platformUserId +
                ", createdAt=" + createdAt +
                ", updatedAt=" + updatedAt +
                '}';
