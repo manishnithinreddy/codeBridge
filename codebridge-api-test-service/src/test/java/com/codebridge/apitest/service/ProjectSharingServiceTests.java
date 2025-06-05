@@ -1,13 +1,13 @@
-package com.codebridge.apitester.service;
+package com.codebridge.apitest.service;
 
-import com.codebridge.apitester.model.Project;
-import com.codebridge.apitester.model.ShareGrant;
-import com.codebridge.apitester.model.enums.SharePermissionLevel;
-import com.codebridge.apitester.dto.ProjectResponse;
-import com.codebridge.apitester.dto.ShareGrantRequest;
-import com.codebridge.apitester.dto.ShareGrantResponse;
-import com.codebridge.apitester.exception.AccessDeniedException;
-import com.codebridge.apitester.exception.ResourceNotFoundException;
+import com.codebridge.apitest.model.Project;
+import com.codebridge.apitest.model.ShareGrant;
+import com.codebridge.apitest.model.enums.SharePermissionLevel;
+import com.codebridge.apitest.dto.ProjectResponse;
+import com.codebridge.apitest.dto.ShareGrantRequest;
+import com.codebridge.apitest.dto.ShareGrantResponse;
+import com.codebridge.apitest.exception.AccessDeniedException;
+import com.codebridge.apitest.exception.ResourceNotFoundException;
 import com.codebridge.apitest.repository.ProjectRepository; // Corrected
 import com.codebridge.apitest.repository.ShareGrantRepository; // Corrected
 import org.junit.jupiter.api.BeforeEach;

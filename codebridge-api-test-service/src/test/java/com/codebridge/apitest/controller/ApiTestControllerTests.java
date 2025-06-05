@@ -1,6 +1,6 @@
-package com.codebridge.apitester.controller;
+package com.codebridge.apitest.controller;
 
-import com.codebridge.apitester.service.ApiTestService; // Assuming this service exists
+import com.codebridge.apitest.service.ApiTestService; // Assuming this service exists
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 
 // Placeholder DTOs for ApiTestController
-// package com.codebridge.apitester.dto;
+// package com.codebridge.apitest.dto;
 // public record ApiTestRequest(String name, String details) {}
 // public record ApiTestResponse(UUID id, String name, String details, UUID platformUserId) {}
 
