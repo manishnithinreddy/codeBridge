@@ -5,4 +5,3 @@ public enum SharePermissionLevel {
     CAN_EXECUTE,  // VIEW_ONLY + can execute tests/collections
     CAN_EDIT      // VIEW_ONLY + CAN_EXECUTE + can edit project/collections/tests, manage collections within project
 }
-

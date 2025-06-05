@@ -12,6 +12,10 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import java.util.Map;
+import java.util.Collections;
+import com.codebridge.apitest.dto.EnvironmentRequest;
+import com.codebridge.apitest.dto.EnvironmentResponse;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -24,9 +28,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 // Placeholder DTOs for EnvironmentController
 // package com.codebridge.apitest.dto;
-// public record EnvironmentRequest(String name, Map<String, String> variables) {}
-// public record EnvironmentResponse(UUID id, String name, Map<String, String> variables, UUID platformUserId) {}
-
+// Removed local dummy DTOs
 
 @WebMvcTest(EnvironmentController.class)
 class EnvironmentControllerTests {
@@ -44,18 +46,22 @@ class EnvironmentControllerTests {
             .authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    // Define dummy DTOs for the test if they are not complex
-    private record EnvironmentRequest(String name, Map<String, String> variables) {}
-    private record EnvironmentResponse(UUID id, String name, Map<String, String> variables, UUID platformUserId) {}
-
+    // Dummy DTOs removed
 
     @Test
     void createEnvironment_authenticated_returnsCreated() throws Exception {
-        EnvironmentRequest requestDto = new EnvironmentRequest("Dev Env", Collections.emptyMap());
-        EnvironmentResponse responseDto = new EnvironmentResponse(UUID.randomUUID(), "Dev Env", Collections.emptyMap(), MOCK_USER_ID_UUID);
+        EnvironmentRequest requestDto = new EnvironmentRequest();
+        requestDto.setName("Dev Env");
+        requestDto.setVariables(Collections.emptyMap());
 
-        // Assuming EnvironmentService has a method like createEnvironment(EnvironmentRequest, UUID)
-        // when(environmentService.createEnvironment(any(EnvironmentRequest.class), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
+        EnvironmentResponse responseDto = new EnvironmentResponse();
+        responseDto.setId(UUID.randomUUID());
+        responseDto.setName("Dev Env");
+        responseDto.setVariables(Collections.emptyMap());
+        // responseDto.setUserId(MOCK_USER_ID_UUID); // Removed: No userId or platformUserId in EnvironmentResponse DTO
+        // Assuming createdAt/updatedAt are handled by service/persistence
+
+        when(environmentService.createEnvironment(any(EnvironmentRequest.class), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(post("/api/environments") // Assuming this is the endpoint
                 .with(defaultUserJwt())
@@ -68,7 +74,10 @@ class EnvironmentControllerTests {
 
     @Test
     void createEnvironment_unauthenticated_returnsUnauthorized() throws Exception {
-        EnvironmentRequest requestDto = new EnvironmentRequest("Dev Env", Collections.emptyMap());
+        EnvironmentRequest requestDto = new EnvironmentRequest(); // Use no-arg constructor
+        requestDto.setName("Dev Env");
+        requestDto.setVariables(Collections.emptyMap());
+
         mockMvc.perform(post("/api/environments")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -79,9 +88,14 @@ class EnvironmentControllerTests {
     @Test
     void getEnvironmentById_authenticated_returnsOk() throws Exception {
         UUID environmentId = UUID.randomUUID();
-        EnvironmentResponse responseDto = new EnvironmentResponse(environmentId, "Dev Env", Collections.emptyMap(), MOCK_USER_ID_UUID);
+        EnvironmentResponse responseDto = new EnvironmentResponse();
+        responseDto.setId(environmentId);
+        responseDto.setName("Dev Env");
+        responseDto.setVariables(Collections.emptyMap());
+        // responseDto.setUserId(MOCK_USER_ID_UUID); // Removed: No userId or platformUserId in EnvironmentResponse DTO
+        // Assuming createdAt/updatedAt are handled by service/persistence
 
-        // when(environmentService.getEnvironmentById(eq(environmentId), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
+        when(environmentService.getEnvironmentById(eq(environmentId), eq(MOCK_USER_ID_UUID))).thenReturn(responseDto);
 
         mockMvc.perform(get("/api/environments/{environmentId}", environmentId) // Assuming this endpoint
                 .with(defaultUserJwt()))

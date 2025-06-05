@@ -46,7 +46,7 @@ public class CollectionService {
         }
 
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
+            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
 
         Collection collection = new Collection();
         collection.setName(collectionRequest.getName());
@@ -60,17 +60,17 @@ public class CollectionService {
     @Transactional(readOnly = true)
     public CollectionResponse getCollectionByIdForUser(UUID collectionId, UUID platformUserId) {
         Collection collection = collectionRepository.findById(collectionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
 
         if (collection.getProject() != null) {
             UUID projectId = collection.getProject().getId();
             SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
             if (effectivePermission == null) {
-                throw new ResourceNotFoundException("Collection not found or access denied to its project.");
+                throw new ResourceNotFoundException("Collection", "projectAccess", "denied_for_project_" + projectId.toString());
             }
-        } else {
+        } else { // Standalone collection
             if (!collection.getUserId().equals(platformUserId)) {
-                throw new ResourceNotFoundException("Collection not found or access denied.");
+                throw new ResourceNotFoundException("Collection", "ownerAccess", "denied_for_user_" + platformUserId.toString());
             }
         }
         return mapToCollectionResponse(collection);
@@ -113,17 +113,18 @@ public class CollectionService {
             throw new AccessDeniedException("User does not have permission to view collections in project " + projectId);
         }
         projectRepository.findById(projectId)
-             .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
+             .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
 
         return collectionRepository.findByProjectId(projectId).stream()
                 .map(this::mapToCollectionResponse)
                 .collect(Collectors.toList());
     }
 
+
     @Transactional
     public CollectionResponse updateCollection(UUID collectionId, CollectionRequest collectionRequest, UUID platformUserId) {
         Collection collection = collectionRepository.findById(collectionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId));
+            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
 
         if (collection.getProject() != null) {
             UUID projectId = collection.getProject().getId();
@@ -132,20 +133,21 @@ public class CollectionService {
                 throw new AccessDeniedException("User does not have permission to update collections in project " + projectId);
             }
             if (collectionRequest.getProjectId() != null && !collectionRequest.getProjectId().equals(projectId)) {
-                throw new IllegalArgumentException("Moving collections between projects is not supported via this method.");
+                 throw new IllegalArgumentException("Moving collections between projects is not supported via this method.");
             }
-        } else {
+
+        } else { // Standalone collection
             if (!collection.getUserId().equals(platformUserId)) {
                 throw new AccessDeniedException("User does not have permission to update this standalone collection.");
             }
             if (collectionRequest.getProjectId() != null) {
-                SharePermissionLevel projectAccess = projectSharingService.getEffectivePermission(collectionRequest.getProjectId(), platformUserId);
-                if (projectAccess == null || projectAccess.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-                    throw new AccessDeniedException("User does not have permission to move this collection to project " + collectionRequest.getProjectId());
-                }
-                Project project = projectRepository.findById(collectionRequest.getProjectId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Target project not found with id " + collectionRequest.getProjectId()));
-                collection.setProject(project);
+                 SharePermissionLevel projectAccess = projectSharingService.getEffectivePermission(collectionRequest.getProjectId(), platformUserId);
+                 if (projectAccess == null || projectAccess.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
+                     throw new AccessDeniedException("User does not have permission to move this collection to project " + collectionRequest.getProjectId());
+                 }
+                 Project project = projectRepository.findById(collectionRequest.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", collectionRequest.getProjectId().toString()));
+                 collection.setProject(project);
             }
         }
         collection.setName(collectionRequest.getName());
@@ -157,7 +159,7 @@ public class CollectionService {
     @Transactional
     public void deleteCollection(UUID collectionId, UUID platformUserId) {
         Collection collection = collectionRepository.findById(collectionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Collection not found with id " + collectionId));
+            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
 
         if (collection.getProject() != null) {
             UUID projectId = collection.getProject().getId();
@@ -165,7 +167,7 @@ public class CollectionService {
             if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
                 throw new AccessDeniedException("User does not have permission to delete collections in project " + projectId);
             }
-        } else {
+        } else { // Standalone collection
             if (!collection.getUserId().equals(platformUserId)) {
                 throw new AccessDeniedException("User does not have permission to delete this standalone collection.");
             }
@@ -180,14 +182,14 @@ public class CollectionService {
         CollectionResponse response = new CollectionResponse();
         response.setId(collection.getId());
         response.setName(collection.getName());
+        // response.setDescription(collection.getDescription());
         response.setCreatedAt(collection.getCreatedAt());
         response.setUpdatedAt(collection.getUpdatedAt());
-        
+
         if (collection.getProject() != null) {
             response.setProjectId(collection.getProject().getId());
             response.setProjectName(collection.getProject().getName());
         }
-        
         return response;
     }
 }

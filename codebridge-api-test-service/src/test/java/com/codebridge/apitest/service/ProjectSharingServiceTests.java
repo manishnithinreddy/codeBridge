@@ -55,7 +55,7 @@ class ProjectSharingServiceTests {
 
         shareGrantRequest = new ShareGrantRequest();
         shareGrantRequest.setGranteeUserId(granteeId);
-        shareGrantRequest.setPermissionLevel(SharePermissionLevel.CAN_VIEW);
+        shareGrantRequest.setPermissionLevel(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_VIEW); // Fully qualified
     }
 
     // --- grantProjectAccess ---
@@ -73,23 +73,23 @@ class ProjectSharingServiceTests {
 
         assertNotNull(response);
         assertEquals(granteeId, response.getGranteeUserId());
-        assertEquals(SharePermissionLevel.CAN_VIEW, response.getPermissionLevel());
+        assertEquals(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_VIEW, response.getPermissionLevel()); // Fully qualified
         verify(shareGrantRepository).save(any(ShareGrant.class));
     }
 
     @Test
     void grantProjectAccess_byOwner_updateGrant_success() {
-        ShareGrant existingGrant = new ShareGrant(project, granteeId, SharePermissionLevel.VIEW_ONLY, ownerId);
+        ShareGrant existingGrant = new ShareGrant(project, granteeId, com.codebridge.apitest.model.enums.SharePermissionLevel.VIEW_ONLY, ownerId); // Fully qualified
         existingGrant.setId(UUID.randomUUID());
 
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
         when(shareGrantRepository.findByProjectIdAndGranteeUserId(projectId, granteeId)).thenReturn(Optional.of(existingGrant));
         when(shareGrantRepository.save(any(ShareGrant.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        shareGrantRequest.setPermissionLevel(SharePermissionLevel.CAN_EDIT);
+        shareGrantRequest.setPermissionLevel(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_EDIT); // Fully qualified
         ShareGrantResponse response = projectSharingService.grantProjectAccess(projectId, shareGrantRequest, ownerId);
 
-        assertEquals(SharePermissionLevel.CAN_EDIT, response.getPermissionLevel());
+        assertEquals(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_EDIT, response.getPermissionLevel()); // Fully qualified
         verify(shareGrantRepository).save(existingGrant); // Ensure it updated existing
     }
 
@@ -128,15 +128,15 @@ class ProjectSharingServiceTests {
     @Test
     void getEffectivePermission_forOwner_returnsCanEdit() {
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(project)); // project owned by ownerId
-        assertEquals(SharePermissionLevel.CAN_EDIT, projectSharingService.getEffectivePermission(projectId, ownerId));
+        assertEquals(com.codebridge.apitest.model.enums.SharePermissionLevel.CAN_EDIT, projectSharingService.getEffectivePermission(projectId, ownerId)); // Fully qualified
     }
 
     @Test
     void getEffectivePermission_forGrantee_returnsGrantLevel() {
-        ShareGrant grant = new ShareGrant(project, granteeId, SharePermissionLevel.VIEW_ONLY, ownerId);
+        ShareGrant grant = new ShareGrant(project, granteeId, com.codebridge.apitest.model.enums.SharePermissionLevel.VIEW_ONLY, ownerId); // Fully qualified
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
         when(shareGrantRepository.findByProjectIdAndGranteeUserId(projectId, granteeId)).thenReturn(Optional.of(grant));
-        assertEquals(SharePermissionLevel.VIEW_ONLY, projectSharingService.getEffectivePermission(projectId, granteeId));
+        assertEquals(com.codebridge.apitest.model.enums.SharePermissionLevel.VIEW_ONLY, projectSharingService.getEffectivePermission(projectId, granteeId)); // Fully qualified
     }
 
     @Test

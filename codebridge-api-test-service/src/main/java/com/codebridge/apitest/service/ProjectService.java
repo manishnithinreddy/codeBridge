@@ -50,10 +50,10 @@ public class ProjectService {
     public ProjectResponse getProjectByIdForUser(UUID projectId, UUID platformUserId) {
         SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
         if (effectivePermission == null) {
-            throw new ResourceNotFoundException("Project not found with id " + projectId + " or access denied.");
+            throw new ResourceNotFoundException("Project", "id", projectId + " or access denied.");
         }
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
         return mapToProjectResponse(project);
     }
 
@@ -81,7 +81,7 @@ public class ProjectService {
         }
 
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
+            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         if (!project.getName().equals(projectRequest.getName()) &&
             project.getPlatformUserId().equals(platformUserId) &&
@@ -98,7 +98,7 @@ public class ProjectService {
     @Transactional
     public void deleteProject(UUID projectId, UUID platformUserId) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project not found with id " + projectId));
+            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
         if (!project.getPlatformUserId().equals(platformUserId)) {
             throw new AccessDeniedException("User " + platformUserId + " is not the owner of project " + projectId + " and cannot delete it.");

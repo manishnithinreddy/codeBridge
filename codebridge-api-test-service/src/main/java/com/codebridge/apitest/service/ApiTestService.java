@@ -16,14 +16,40 @@ import com.codebridge.apitest.repository.TestResultRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.hc.client5.http.classic.methods.*;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpHead;
+import org.apache.hc.client5.http.classic.methods.HttpOptions;
+import org.apache.hc.client5.http.classic.methods.HttpPatch;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils; // Keep if still needed for GraphQL, otherwise remove if fully replaced
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import java.io.InputStream; // Added
+import java.io.ByteArrayInputStream; // Added
+import java.nio.charset.StandardCharsets; // Added
+import java.util.concurrent.TimeUnit; // Added
+import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.util.JsonFormat;
+import io.grpc.CallOptions;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCalls;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -293,29 +319,45 @@ public class ApiTestService {
     private void executeHttpTest(ApiTest test, TestResult result, Map<String, String> environmentVariables) throws Exception {
         // Process URL with environment variables
         String processedUrl = processEnvironmentVariables(test.getUrl(), environmentVariables);
-        
+
         // Create HTTP request with processed URL
-        HttpUriRequest request = createHttpRequest(test, processedUrl, environmentVariables);
-        
+        HttpUriRequestBase request = (HttpUriRequestBase) createHttpRequest(test, processedUrl, environmentVariables);
+
+        // Set timeout using RequestConfig
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
+                .setResponseTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
+                .build();
+        request.setConfig(requestConfig);
+
         // Execute request
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             try (CloseableHttpResponse response = httpClient.execute(request)) {
-                int statusCode = response.getStatusLine().getStatusCode();
+                int statusCode = response.getCode(); // Replaced
                 result.setResponseStatusCode(statusCode);
-                
+
                 // Process response headers
-                Header[] headers = response.getAllHeaders();
+                Header[] headers = response.getHeaders(); // Replaced
                 Map<String, String> headerMap = new HashMap<>();
                 for (Header header : headers) {
                     headerMap.put(header.getName(), header.getValue());
                 }
                 result.setResponseHeaders(objectMapper.writeValueAsString(headerMap));
-                
+
                 // Process response body
                 HttpEntity entity = response.getEntity();
-                String responseBody = entity != null ? EntityUtils.toString(entity) : "";
+                String responseBody = "";
+                if (entity != null) {
+                    try (InputStream instream = entity.getContent()) { // Read entity content correctly
+                        responseBody = new BufferedReader(new InputStreamReader(instream, StandardCharsets.UTF_8))
+                                .lines()
+                                .collect(Collectors.joining("\n"));
+                    } catch (IOException ex) { // Removed ParseException
+                        throw new TestExecutionException("Error reading response body: " + ex.getMessage(), ex);
+                    }
+                }
                 result.setResponseBody(responseBody);
-                
+
                 // Validate response
                 boolean isValid = validateResponse(test, statusCode, responseBody);
                 result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
@@ -358,35 +400,44 @@ public class ApiTestService {
         // Create HTTP request
         HttpPost httpPost = new HttpPost(processedUrl);
         httpPost.setEntity(entity);
-        
+
         // Add headers
         if (test.getHeaders() != null) {
-            Map<String, String> headers = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                String processedValue = processEnvironmentVariables(header.getValue(), environmentVariables);
-                httpPost.addHeader(header.getKey(), processedValue);
+            Map<String, String> headersMap = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {}); // Renamed variable
+            for (Map.Entry<String, String> headerEntry : headersMap.entrySet()) { // Use renamed variable
+                String processedValue = processEnvironmentVariables(headerEntry.getValue(), environmentVariables);
+                httpPost.addHeader(headerEntry.getKey(), processedValue);
             }
         }
         
         // Execute request
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                int statusCode = response.getStatusLine().getStatusCode();
+                int statusCode = response.getCode(); // Replaced
                 result.setResponseStatusCode(statusCode);
-                
+
                 // Process response headers
-                Header[] headers = response.getAllHeaders();
+                Header[] responseHeaders = response.getHeaders(); // Replaced
                 Map<String, String> headerMap = new HashMap<>();
-                for (Header header : headers) {
-                    headerMap.put(header.getName(), header.getValue());
+                for (Header currentHeader : responseHeaders) { // Renamed variable
+                    headerMap.put(currentHeader.getName(), currentHeader.getValue());
                 }
                 result.setResponseHeaders(objectMapper.writeValueAsString(headerMap));
-                
+
                 // Process response body
                 HttpEntity responseEntity = response.getEntity();
-                String responseBody = responseEntity != null ? EntityUtils.toString(responseEntity) : "";
+                String responseBody = "";
+                if (responseEntity != null) {
+                     try (InputStream instream = responseEntity.getContent()) { // Read entity content correctly
+                        responseBody = new BufferedReader(new InputStreamReader(instream, StandardCharsets.UTF_8))
+                                .lines()
+                                .collect(Collectors.joining("\n"));
+                    } catch (IOException ex) { // Removed ParseException
+                        throw new TestExecutionException("Error reading response body: " + ex.getMessage(), ex);
+                    }
+                }
                 result.setResponseBody(responseBody);
-                
+
                 // Validate response
                 boolean isValid = validateResponse(test, statusCode, responseBody);
                 result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
@@ -404,10 +455,110 @@ public class ApiTestService {
      * @throws Exception if an error occurs
      */
     private void executeGrpcTest(ApiTest test, TestResult result, Map<String, String> environmentVariables) throws Exception {
-        // This is a placeholder for gRPC implementation
-        result.setStatus(TestStatus.ERROR);
-        result.setErrorMessage("gRPC testing is not yet implemented");
+        String processedUrl = processEnvironmentVariables(test.getUrl(), environmentVariables);
+        String processedGrpcRequest = processEnvironmentVariables(test.getGrpcRequest(), environmentVariables);
+
+        String[] urlParts = processedUrl.split(":");
+        String host = urlParts[0];
+        int port = Integer.parseInt(urlParts[1]);
+
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+                .usePlaintext()
+                .build();
+        try {
+            InputStream protoInputStream = new ByteArrayInputStream(test.getGrpcServiceDefinition().getBytes(StandardCharsets.UTF_8));
+            DescriptorProtos.FileDescriptorSet descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(protoInputStream);
+
+            if (descriptorSet.getFileCount() == 0) {
+                throw new TestExecutionException("No file descriptors found in gRPC service definition.");
+            }
+            DescriptorProtos.FileDescriptorProto fileDescriptorProto = descriptorSet.getFile(0);
+
+            if (test.getGrpcServiceName() == null || test.getGrpcMethodName() == null) {
+                throw new TestExecutionException("gRPC service name and method name must be specified in the test definition.");
+            }
+            String serviceName = test.getGrpcServiceName();
+            String methodName = test.getGrpcMethodName();
+
+            Descriptors.FileDescriptor fileDescriptor = Descriptors.FileDescriptor.buildFrom(fileDescriptorProto, new Descriptors.FileDescriptor[]{});
+            Descriptors.ServiceDescriptor serviceDescriptor = fileDescriptor.findServiceByName(serviceName);
+            if (serviceDescriptor == null) {
+                throw new TestExecutionException("Service not found: " + serviceName);
+            }
+            Descriptors.MethodDescriptor methodDescriptor = serviceDescriptor.findMethodByName(methodName);
+            if (methodDescriptor == null) {
+                throw new TestExecutionException("Method not found: " + methodName);
+            }
+
+            DynamicMessage.Builder requestBuilder = DynamicMessage.newBuilder(methodDescriptor.getInputType());
+            JsonFormat.parser().merge(processedGrpcRequest, requestBuilder);
+            DynamicMessage requestMessage = requestBuilder.build();
+
+            MethodDescriptor<DynamicMessage, DynamicMessage> grpcMethodDescriptor =
+                    MethodDescriptor.<DynamicMessage, DynamicMessage>newBuilder()
+                            .setType(MethodDescriptor.MethodType.UNARY)
+                            .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceDescriptor.getFullName(), methodDescriptor.getName()))
+                            .setRequestMarshaller(new DynamicMessageMarshaller(methodDescriptor.getInputType()))
+                            .setResponseMarshaller(new DynamicMessageMarshaller(methodDescriptor.getOutputType()))
+                            .build();
+
+            DynamicMessage responseMessage = ClientCalls.blockingUnaryCall(
+                channel,
+                grpcMethodDescriptor,
+                CallOptions.DEFAULT, // Explicitly provide CallOptions
+                requestMessage
+            );
+
+            result.setResponseBody(JsonFormat.printer().print(responseMessage));
+            result.setStatus(TestStatus.SUCCESS);
+
+        } catch (StatusRuntimeException e) {
+            result.setStatus(TestStatus.ERROR);
+            result.setErrorMessage("gRPC call failed: " + e.getStatus().toString() + " - " + e.getMessage());
+            if (e.getTrailers() != null) {
+                Map<String, String> trailersMap = new HashMap<>();
+                 for (String key : e.getTrailers().keys()) { // Iterate directly over keys
+                    String value = e.getTrailers().get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER));
+                    if (value != null) {
+                        trailersMap.put(key, value);
+                    }
+                }
+                result.setResponseHeaders(objectMapper.writeValueAsString(trailersMap));
+            }
+        } catch (Exception e) {
+            result.setStatus(TestStatus.ERROR);
+            result.setErrorMessage("Error during gRPC test execution: " + e.getMessage());
+            throw e;
+        } finally {
+            if (channel != null) {
+                channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+            }
+        }
     }
+
+    // Helper class for DynamicMessage marshalling
+    private static class DynamicMessageMarshaller implements MethodDescriptor.Marshaller<DynamicMessage> {
+        private final Descriptors.Descriptor messageDescriptor;
+
+        DynamicMessageMarshaller(Descriptors.Descriptor messageDescriptor) {
+            this.messageDescriptor = messageDescriptor;
+        }
+
+        @Override
+        public InputStream stream(DynamicMessage value) {
+            return value.toByteString().newInput();
+        }
+
+        @Override
+        public DynamicMessage parse(InputStream stream) {
+            try {
+                return DynamicMessage.parseFrom(messageDescriptor, stream);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to parse dynamic message", e);
+            }
+        }
+    }
+
 
     /**
      * Execute a WebSocket API test.
@@ -454,8 +605,8 @@ public class ApiTestService {
      * @throws IOException if an error occurs
      */
     private HttpUriRequest createHttpRequest(ApiTest test, String processedUrl, Map<String, String> environmentVariables) throws IOException {
-        HttpUriRequest request;
-        
+        HttpUriRequestBase request;
+
         switch (test.getMethod()) {
             case GET:
                 request = new HttpGet(processedUrl);
@@ -464,7 +615,7 @@ public class ApiTestService {
                 HttpPost post = new HttpPost(processedUrl);
                 if (test.getRequestBody() != null) {
                     String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
-                    post.setEntity(new StringEntity(processedBody));
+                    post.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
                 }
                 request = post;
                 break;
@@ -472,7 +623,7 @@ public class ApiTestService {
                 HttpPut put = new HttpPut(processedUrl);
                 if (test.getRequestBody() != null) {
                     String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
-                    put.setEntity(new StringEntity(processedBody));
+                    put.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
                 }
                 request = put;
                 break;
@@ -483,7 +634,7 @@ public class ApiTestService {
                 HttpPatch patch = new HttpPatch(processedUrl);
                 if (test.getRequestBody() != null) {
                     String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
-                    patch.setEntity(new StringEntity(processedBody));
+                    patch.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
                 }
                 request = patch;
                 break;
@@ -496,26 +647,15 @@ public class ApiTestService {
             default:
                 throw new IllegalArgumentException("Unsupported HTTP method: " + test.getMethod());
         }
-        
-        // Add headers
+
         if (test.getHeaders() != null) {
-            Map<String, String> headers = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
-            for (Map.Entry<String, String> header : headers.entrySet()) {
+            Map<String, String> headersMap = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
+            for (Map.Entry<String, String> header : headersMap.entrySet()) {
                 String processedValue = processEnvironmentVariables(header.getValue(), environmentVariables);
                 request.addHeader(header.getKey(), processedValue);
             }
         }
-        
-        // Set timeout
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(test.getTimeoutMs())
-                .setSocketTimeout(test.getTimeoutMs())
-                .build();
-        
-        if (request instanceof HttpRequestBase) {
-            ((HttpRequestBase) request).setConfig(requestConfig);
-        }
-        
+        // Timeout is set in executeHttpTest/executeGraphQLTest using RequestConfig
         return request;
     }
 
