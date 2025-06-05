@@ -1,9 +1,9 @@
-package com.codebridge.apitester.controller;
+package com.codebridge.apitest.controller;
 
-import com.codebridge.apitester.dto.ShareGrantRequest;
-import com.codebridge.apitester.dto.ShareGrantResponse;
-import com.codebridge.apitester.model.enums.SharePermissionLevel;
-import com.codebridge.apitester.service.ProjectSharingService;
+import com.codebridge.apitest.dto.ShareGrantRequest;
+import com.codebridge.apitest.dto.ShareGrantResponse;
+import com.codebridge.apitest.model.enums.SharePermissionLevel;
+import com.codebridge.apitest.service.ProjectSharingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
