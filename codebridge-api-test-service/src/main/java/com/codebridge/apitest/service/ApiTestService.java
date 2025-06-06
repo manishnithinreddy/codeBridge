@@ -606,8 +606,9 @@ public class ApiTestService {
      * @param environmentVariables the environment variables
      * @return the HTTP request
      * @throws IOException if an error occurs
+     * @throws URISyntaxException if an error occurs with the URI
      */
-    private HttpUriRequest createHttpRequest(ApiTest test, String processedUrl, Map<String, String> environmentVariables) throws IOException {
+    private HttpUriRequest createHttpRequest(ApiTest test, String processedUrl, Map<String, String> environmentVariables) throws IOException, URISyntaxException {
         HttpUriRequestBase request;
 
         switch (test.getMethod()) {
@@ -673,8 +674,9 @@ public class ApiTestService {
      *
      * @param request the HTTP request
      * @param projectId the project ID
+     * @throws URISyntaxException if an error occurs
      */
-    private void injectProjectTokens(HttpUriRequestBase request, UUID projectId) {
+    private void injectProjectTokens(HttpUriRequestBase request, UUID projectId) throws URISyntaxException {
         List<ProjectToken> tokens = projectTokenService.getActiveTokens(projectId);
         
         for (ProjectToken token : tokens) {
@@ -704,8 +706,7 @@ public class ApiTestService {
                 try {
                     request.setUri(new URI(newUri));
                 } catch (URISyntaxException e) {
-                    // Log error but continue with the request
-                    System.err.println("Failed to add token to query parameters: " + e.getMessage());
+                    throw new TestExecutionException("Invalid URI: " + newUri, e);
                 }
             }
             // Note: cookie and body token locations would require additional implementation

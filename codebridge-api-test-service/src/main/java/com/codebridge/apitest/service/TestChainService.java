@@ -1,6 +1,7 @@
 package com.codebridge.apitest.service;
 
 import com.codebridge.apitest.dto.TestResultResponse;
+import com.codebridge.apitest.exception.AccessDeniedException;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
 import com.codebridge.apitest.exception.TestExecutionException;
 import com.codebridge.apitest.model.ApiTest;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -266,11 +268,11 @@ public class TestChainService {
             }
             
             // Execute test
-            TestResultResponse result = apiTestService.executeTest(test.getId(), environmentId, userId);
+            TestResultResponse result = apiTestService.executeTest(test.getId(), userId);
             results.add(result);
             
             // Stop chain execution if test failed
-            if (result.getStatus() == TestStatus.ERROR || result.getStatus() == TestStatus.FAILURE) {
+            if (TestStatus.ERROR.name().equals(result.getStatus()) || TestStatus.FAILURE.name().equals(result.getStatus())) {
                 break;
             }
             
@@ -418,4 +420,3 @@ public class TestChainService {
         }
     }
 }
-
