@@ -96,6 +96,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- JavaScript Engine for scripting support -->
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>15.4</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -136,4 +143,3 @@
         </plugins>
     </build>
 </project>
-
