@@ -1,5 +1,6 @@
 package com.codebridge.apitest.service;
 
+import com.codebridge.apitest.exception.AccessDeniedException;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
 import com.codebridge.apitest.model.ApiTest;
 import com.codebridge.apitest.model.TestResult;
@@ -388,4 +389,3 @@ public class TestSnapshotService {
         }
     }
 }
-
