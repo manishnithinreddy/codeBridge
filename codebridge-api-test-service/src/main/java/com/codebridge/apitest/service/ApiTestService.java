@@ -8,6 +8,7 @@ import com.codebridge.apitest.exception.ResourceNotFoundException;
 import com.codebridge.apitest.exception.TestExecutionException;
 import com.codebridge.apitest.model.ApiTest;
 import com.codebridge.apitest.model.HttpMethod;
+import com.codebridge.apitest.model.ProjectToken;
 import com.codebridge.apitest.model.ProtocolType;
 import com.codebridge.apitest.model.TestResult;
 import com.codebridge.apitest.model.TestStatus;
@@ -66,6 +67,9 @@ import java.util.stream.Collectors;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * Service for API test operations.
  */
@@ -74,22 +78,21 @@ public class ApiTestService {
 
     private final ApiTestRepository apiTestRepository;
     private final TestResultRepository testResultRepository;
-    private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate;
     private final EnvironmentService environmentService;
+    private final ProjectTokenService projectTokenService;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public ApiTestService(
-            ApiTestRepository apiTestRepository,
-            TestResultRepository testResultRepository,
-            ObjectMapper objectMapper,
-            RestTemplate restTemplate,
-            EnvironmentService environmentService) {
+    public ApiTestService(ApiTestRepository apiTestRepository,
+                         TestResultRepository testResultRepository,
+                         EnvironmentService environmentService,
+                         ProjectTokenService projectTokenService,
+                         ObjectMapper objectMapper) {
         this.apiTestRepository = apiTestRepository;
         this.testResultRepository = testResultRepository;
-        this.objectMapper = objectMapper;
-        this.restTemplate = restTemplate;
         this.environmentService = environmentService;
+        this.projectTokenService = projectTokenService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -655,8 +658,58 @@ public class ApiTestService {
                 request.addHeader(header.getKey(), processedValue);
             }
         }
+        
+        // Auto-inject project tokens if available
+        if (test.getProjectId() != null) {
+            injectProjectTokens(request, test.getProjectId());
+        }
+        
         // Timeout is set in executeHttpTest/executeGraphQLTest using RequestConfig
         return request;
+    }
+
+    /**
+     * Injects project tokens into the request.
+     *
+     * @param request the HTTP request
+     * @param projectId the project ID
+     */
+    private void injectProjectTokens(HttpUriRequestBase request, UUID projectId) {
+        List<ProjectToken> tokens = projectTokenService.getActiveTokens(projectId);
+        
+        for (ProjectToken token : tokens) {
+            if ("header".equals(token.getTokenLocation())) {
+                String headerName = token.getHeaderName();
+                String headerValue = token.getTokenValue();
+                
+                // Format the header value based on token type
+                if ("Bearer".equals(token.getTokenType())) {
+                    headerValue = "Bearer " + headerValue;
+                } else if ("Basic".equals(token.getTokenType())) {
+                    headerValue = "Basic " + headerValue;
+                }
+                
+                // Set the header
+                request.setHeader(headerName, headerValue);
+            } else if ("query".equals(token.getTokenLocation())) {
+                // For query parameters, we need to modify the URI
+                // This is a simplified implementation - in a real app, you'd need to handle existing query params
+                String currentUri = request.getUri().toString();
+                String paramName = token.getParameterName();
+                String paramValue = token.getTokenValue();
+                
+                String separator = currentUri.contains("?") ? "&" : "?";
+                String newUri = currentUri + separator + paramName + "=" + paramValue;
+                
+                try {
+                    request.setUri(new URI(newUri));
+                } catch (URISyntaxException e) {
+                    // Log error but continue with the request
+                    System.err.println("Failed to add token to query parameters: " + e.getMessage());
+                }
+            }
+            // Note: cookie and body token locations would require additional implementation
+        }
     }
 
     /**

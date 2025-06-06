@@ -35,6 +35,9 @@ public class ApiTest {
 
     @Column
     private UUID teamId;
+    
+    @Column
+    private UUID projectId;
 
     @Column(nullable = false)
     private String url;
@@ -160,6 +163,14 @@ public class ApiTest {
 
     public void setTeamId(UUID teamId) {
         this.teamId = teamId;
+    }
+
+    public UUID getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(UUID projectId) {
+        this.projectId = projectId;
     }
 
     public String getUrl() {
