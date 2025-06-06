@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+spec:
+  serviceName: redis-cluster
+  replicas: 6
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.0-alpine
+        command: ["redis-server", "/conf/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+          readOnly: false
+        - name: data
+          mountPath: /data
+          readOnly: false
+      volumes:
+      - name: conf
+        configMap:
+          name: redis-cluster-config
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-config
+data:
+  redis.conf: |
+    cluster-enabled yes
+    cluster-config-file /data/nodes.conf
+    cluster-node-timeout 5000
+    appendonly yes
+    protected-mode no
+    dir /data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+spec:
+  clusterIP: None
+  selector:
+    app: redis-cluster
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-cluster-init
+spec:
+  template:
+    spec:
+      containers:
+      - name: redis-cluster-init
+        image: redis:7.0-alpine
+        command:
+        - sh
+        - -c
+        - |
+          # Wait for all Redis nodes to be ready
+          echo "Waiting for Redis nodes to be ready..."
+          for i in $(seq 0 5); do
+            until ping -c 1 redis-cluster-$i.redis-cluster; do
+              echo "Waiting for redis-cluster-$i.redis-cluster to be ready..."
+              sleep 1
+            done
+          done
+          
+          # Create Redis cluster
+          echo "Creating Redis cluster..."
+          redis-cli --cluster create \
+            redis-cluster-0.redis-cluster:6379 \
+            redis-cluster-1.redis-cluster:6379 \
+            redis-cluster-2.redis-cluster:6379 \
+            redis-cluster-3.redis-cluster:6379 \
+            redis-cluster-4.redis-cluster:6379 \
+            redis-cluster-5.redis-cluster:6379 \
+            --cluster-replicas 1 \
+            --cluster-yes
+          
+          echo "Redis cluster created successfully!"
+      restartPolicy: OnFailure
+  backoffLimit: 10
+
