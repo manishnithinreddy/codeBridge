@@ -1,5 +1,6 @@
 package com.codebridge.apitest.model;
 
+import com.codebridge.apitest.util.EncryptedStringConverter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,17 +29,17 @@ public class ProjectToken {
     private UUID projectId;
 
     @NotBlank
-    @Size(max = 255)
+    @Size(max = 100)
     @Column(nullable = false)
     private String name;
 
     @NotBlank
-    @Size(max = 50)
     @Column(nullable = false)
-    private String tokenType; // e.g., "Bearer", "Basic", "ApiKey", "OAuth2"
+    private String tokenType; // "Bearer", "Basic", "ApiKey", "OAuth2"
 
+    @NotBlank
     @Column(nullable = false)
-    @Lob
+    @Convert(converter = EncryptedStringConverter.class) // Encrypt token values in database
     private String tokenValue;
 
     @Column
@@ -254,4 +255,3 @@ public class ProjectToken {
                 '}';
     }
 }
-
