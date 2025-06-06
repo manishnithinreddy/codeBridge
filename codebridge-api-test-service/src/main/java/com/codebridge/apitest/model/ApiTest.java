@@ -15,6 +15,7 @@ import java.util.UUID;
 
 /**
  * Entity for API tests.
+ * Supports HTTP, WebSocket, gRPC, and GraphQL requests.
  */
 @Entity
 @Table(name = "api_tests")
@@ -34,6 +35,9 @@ public class ApiTest {
 
     @Column
     private UUID teamId;
+    
+    @Column
+    private UUID projectId;
 
     @Column(nullable = false)
     private String url;
@@ -41,6 +45,13 @@ public class ApiTest {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private HttpMethod method;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private ProtocolType protocolType;
+
+    @Column
+    private UUID environmentId;
 
     @Column
     @Lob
@@ -51,11 +62,41 @@ public class ApiTest {
     private String requestBody;
 
     @Column
+    @Lob
+    private String graphqlQuery;
+
+    @Column
+    @Lob
+    private String graphqlVariables;
+
+    @Column
+    @Lob
+    private String grpcRequest;
+
+    @Column
+    @Lob
+    private String grpcServiceDefinition;
+
+    @Column
+    private String grpcServiceName;
+
+    @Column
+    private String grpcMethodName;
+
+    @Column
     private Integer expectedStatusCode;
 
     @Column
     @Lob
     private String expectedResponseBody;
+
+    @Column
+    @Lob
+    private String preRequestScript;
+
+    @Column
+    @Lob
+    private String postRequestScript;
 
     @Column
     @Lob
@@ -124,6 +165,14 @@ public class ApiTest {
         this.teamId = teamId;
     }
 
+    public UUID getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(UUID projectId) {
+        this.projectId = projectId;
+    }
+
     public String getUrl() {
         return url;
     }
@@ -138,6 +187,22 @@ public class ApiTest {
 
     public void setMethod(HttpMethod method) {
         this.method = method;
+    }
+
+    public ProtocolType getProtocolType() {
+        return protocolType;
+    }
+
+    public void setProtocolType(ProtocolType protocolType) {
+        this.protocolType = protocolType;
+    }
+
+    public UUID getEnvironmentId() {
+        return environmentId;
+    }
+
+    public void setEnvironmentId(UUID environmentId) {
+        this.environmentId = environmentId;
     }
 
     public String getHeaders() {
@@ -156,6 +221,54 @@ public class ApiTest {
         this.requestBody = requestBody;
     }
 
+    public String getGraphqlQuery() {
+        return graphqlQuery;
+    }
+
+    public void setGraphqlQuery(String graphqlQuery) {
+        this.graphqlQuery = graphqlQuery;
+    }
+
+    public String getGraphqlVariables() {
+        return graphqlVariables;
+    }
+
+    public void setGraphqlVariables(String graphqlVariables) {
+        this.graphqlVariables = graphqlVariables;
+    }
+
+    public String getGrpcRequest() {
+        return grpcRequest;
+    }
+
+    public void setGrpcRequest(String grpcRequest) {
+        this.grpcRequest = grpcRequest;
+    }
+
+    public String getGrpcServiceDefinition() {
+        return grpcServiceDefinition;
+    }
+
+    public void setGrpcServiceDefinition(String grpcServiceDefinition) {
+        this.grpcServiceDefinition = grpcServiceDefinition;
+    }
+
+    public String getGrpcServiceName() {
+        return grpcServiceName;
+    }
+
+    public void setGrpcServiceName(String grpcServiceName) {
+        this.grpcServiceName = grpcServiceName;
+    }
+
+    public String getGrpcMethodName() {
+        return grpcMethodName;
+    }
+
+    public void setGrpcMethodName(String grpcMethodName) {
+        this.grpcMethodName = grpcMethodName;
+    }
+
     public Integer getExpectedStatusCode() {
         return expectedStatusCode;
     }
@@ -170,6 +283,22 @@ public class ApiTest {
 
     public void setExpectedResponseBody(String expectedResponseBody) {
         this.expectedResponseBody = expectedResponseBody;
+    }
+
+    public String getPreRequestScript() {
+        return preRequestScript;
+    }
+
+    public void setPreRequestScript(String preRequestScript) {
+        this.preRequestScript = preRequestScript;
+    }
+
+    public String getPostRequestScript() {
+        return postRequestScript;
+    }
+
+    public void setPostRequestScript(String postRequestScript) {
+        this.postRequestScript = postRequestScript;
     }
 
     public String getValidationScript() {
@@ -212,4 +341,3 @@ public class ApiTest {
         this.updatedAt = updatedAt;
     }
 }
-
