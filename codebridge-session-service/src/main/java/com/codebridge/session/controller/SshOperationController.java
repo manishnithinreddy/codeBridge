@@ -12,8 +12,11 @@ import com.codebridge.session.model.SessionKey;
 import com.codebridge.session.model.SshSessionWrapper;
 import com.codebridge.session.security.jwt.JwtTokenProvider;
 import com.codebridge.session.service.SshSessionLifecycleManager;
+import com.codebridge.session.service.command.SshCommandQueue;
 import com.jcraft.jsch.*;
 import io.jsonwebtoken.Claims;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
@@ -36,6 +39,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/sessions/ops/ssh/{sessionToken}") // Base path includes sessionToken
@@ -49,15 +54,33 @@ public class SshOperationController {
     private final JwtTokenProvider jwtTokenProvider;
     private final ApplicationInstanceIdProvider instanceIdProvider;
     private final String applicationInstanceId;
-
+    private final SshCommandQueue commandQueue;
+    private final MeterRegistry meterRegistry;
+    private final Timer sftpListTimer;
+    private final Timer sftpDownloadTimer;
+    private final Timer sftpUploadTimer;
 
     public SshOperationController(SshSessionLifecycleManager sessionLifecycleManager,
                                   JwtTokenProvider jwtTokenProvider,
-                                  ApplicationInstanceIdProvider instanceIdProvider) {
+                                  ApplicationInstanceIdProvider instanceIdProvider,
+                                  SshCommandQueue commandQueue,
+                                  MeterRegistry meterRegistry) {
         this.sessionLifecycleManager = sessionLifecycleManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.instanceIdProvider = instanceIdProvider;
         this.applicationInstanceId = this.instanceIdProvider.getInstanceId();
+        this.commandQueue = commandQueue;
+        this.meterRegistry = meterRegistry;
+        
+        this.sftpListTimer = Timer.builder("ssh.sftp.list.time")
+                .description("Time taken to list files via SFTP")
+                .register(meterRegistry);
+        this.sftpDownloadTimer = Timer.builder("ssh.sftp.download.time")
+                .description("Time taken to download files via SFTP")
+                .register(meterRegistry);
+        this.sftpUploadTimer = Timer.builder("ssh.sftp.upload.time")
+                .description("Time taken to upload files via SFTP")
+                .register(meterRegistry);
     }
 
     // Helper method to get and validate the local JSch session
@@ -74,7 +97,7 @@ public class SshOperationController {
             claims.get("type", String.class) // Should be "SSH"
         );
 
-        if (!"SSH".equals(sessionKey.sessionType())) {
+        if (!SSH_SESSION_TYPE.equals(sessionKey.sessionType())) {
              throw new AccessDeniedException("Invalid session type for " + operationName + ". Expected SSH.");
         }
 
@@ -112,68 +135,59 @@ public class SshOperationController {
             @PathVariable String sessionToken,
             @Valid @RequestBody CommandRequest commandRequest) {
 
-        long startTime = System.currentTimeMillis();
-        Session jschSession = getValidatedLocalSshSession(sessionToken, "execute-command");
-        ChannelExec channel = null;
-        String stdoutString = "";
-        String stderrString = "";
-        int exitStatus = -1;
-
-        try {
-            channel = (ChannelExec) jschSession.openChannel("exec");
-            channel.setCommand(commandRequest.getCommand());
-
-            ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
-            ByteArrayOutputStream stderrStream = new ByteArrayOutputStream();
-            channel.setOutputStream(stdoutStream);
-            channel.setErrStream(stderrStream);
-
-            logger.debug("Executing command via token {}: '{}'", sessionToken, commandRequest.getCommand());
-            channel.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
-
-            int timeout = commandRequest.getTimeout() != null ? commandRequest.getTimeout() : DEFAULT_COMMAND_TIMEOUT_MS;
-            long endTime = System.currentTimeMillis() + timeout;
-            while (!channel.isClosed() && System.currentTimeMillis() < endTime) {
-                Thread.sleep(100); // Poll interval
-            }
-
-            if (!channel.isClosed()) {
-                logger.warn("Command timeout for session token {}: {}", sessionToken, commandRequest.getCommand());
-                throw new RemoteOperationException("Command execution timed out after " + timeout + "ms.");
-            }
-
-            exitStatus = channel.getExitStatus();
-            stdoutString = stdoutStream.toString(StandardCharsets.UTF_8);
-            stderrString = stderrStream.toString(StandardCharsets.UTF_8);
-            logger.info("Command via token {} executed with exit status: {}", sessionToken, exitStatus);
-
-        } catch (JSchException e) {
-            logger.error("JSchException for session token {}: {}", sessionToken, e.getMessage(), e);
-            // Consider releasing the session if JSchException indicates a critical connection problem
-            throw new RemoteOperationException("SSH operation failed: " + e.getMessage(), e);
-        } catch (InterruptedException e) {
-            logger.warn("Command execution interrupted for session token {}: {}", sessionToken, e.getMessage());
-            Thread.currentThread().interrupt();
-            throw new RemoteOperationException("Command execution was interrupted.", e);
-        } catch (Exception e) {
-            logger.error("Unexpected error during remote command for session token {}: {}", sessionToken, e.getMessage(), e);
-            throw new RemoteOperationException("An unexpected error occurred during command execution: " + e.getMessage(), e);
-        } finally {
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
+        Claims claims = jwtTokenProvider.getClaimsFromToken(sessionToken);
+        if (claims == null) {
+            throw new AccessDeniedException("Invalid session token for command execution.");
         }
-        long durationMs = System.currentTimeMillis() - startTime;
-        return ResponseEntity.ok(new CommandResponse(stdoutString, stderrString, exitStatus, durationMs));
+        
+        SessionKey sessionKey = new SessionKey(
+            UUID.fromString(claims.getSubject()),
+            UUID.fromString(claims.get("resourceId", String.class)),
+            claims.get("type", String.class)
+        );
+        
+        if (!getValidatedLocalSshSession(sessionToken, "execute-command").isConnected()) {
+            throw new AccessDeniedException("SSH session is not connected.");
+        }
+        
+        CommandResponse response = commandQueue.executeCommandSync(sessionKey, commandRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/execute-command-async")
+    public CompletableFuture<ResponseEntity<CommandResponse>> executeCommandAsync(
+            @PathVariable String sessionToken,
+            @Valid @RequestBody CommandRequest commandRequest) {
+
+        Claims claims = jwtTokenProvider.getClaimsFromToken(sessionToken);
+        if (claims == null) {
+            throw new AccessDeniedException("Invalid session token for command execution.");
+        }
+        
+        SessionKey sessionKey = new SessionKey(
+            UUID.fromString(claims.getSubject()),
+            UUID.fromString(claims.get("resourceId", String.class)),
+            claims.get("type", String.class)
+        );
+        
+        if (!getValidatedLocalSshSession(sessionToken, "execute-command-async").isConnected()) {
+            throw new AccessDeniedException("SSH session is not connected.");
+        }
+        
+        return commandQueue.submitCommandAsync(sessionKey, commandRequest)
+                .thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/sftp/list")
     public ResponseEntity<List<RemoteFileEntry>> listFiles(
             @PathVariable String sessionToken,
             @RequestParam @NotBlank String remotePath) {
+        
+        Timer.Sample sample = Timer.start(meterRegistry);
         Session jschSession = getValidatedLocalSshSession(sessionToken, "sftp-list");
         ChannelSftp channelSftp = null;
         List<RemoteFileEntry> fileEntries = new ArrayList<>();
+        
         try {
             channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
             channelSftp.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
@@ -188,6 +202,8 @@ public class SshOperationController {
                     Instant.ofEpochSecond(attrs.getMTime()).toString(), attrs.getPermissionsString()
                 ));
             }
+            
+            sample.stop(sftpListTimer);
             return ResponseEntity.ok(fileEntries);
         } catch (JSchException | SftpException e) {
             logger.error("SFTP list error for session token {}: {}", sessionToken, e.getMessage(), e);
@@ -203,9 +219,12 @@ public class SshOperationController {
     public ResponseEntity<Resource> downloadFile(
             @PathVariable String sessionToken,
             @RequestParam @NotBlank String remotePath) {
+        
+        Timer.Sample sample = Timer.start(meterRegistry);
         Session jschSession = getValidatedLocalSshSession(sessionToken, "sftp-download");
         ChannelSftp channelSftp = null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        
         try {
             channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
             channelSftp.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
@@ -220,6 +239,7 @@ public class SshOperationController {
             String filename = remotePath.substring(remotePath.lastIndexOf('/') + 1);
             String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
 
+            sample.stop(sftpDownloadTimer);
             return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFilename + "\"")
@@ -232,7 +252,7 @@ public class SshOperationController {
             if (channelSftp != null && channelSftp.isConnected()) {
                 channelSftp.disconnect();
             }
-             try { baos.close(); } catch (IOException e) { /* ignore */ }
+            try { baos.close(); } catch (IOException e) { /* ignore */ }
         }
     }
 
@@ -241,8 +261,11 @@ public class SshOperationController {
             @PathVariable String sessionToken,
             @RequestParam @NotBlank String remotePath, // Target directory on remote server
             @RequestParam("file") MultipartFile file) {
+        
+        Timer.Sample sample = Timer.start(meterRegistry);
         Session jschSession = getValidatedLocalSshSession(sessionToken, "sftp-upload");
         ChannelSftp channelSftp = null;
+        
         if (file.isEmpty()) {
             throw new RemoteOperationException("Cannot upload an empty file.");
         }
@@ -271,6 +294,7 @@ public class SshOperationController {
             channelSftp.cd(targetDir); // Change to target directory
             channelSftp.put(inputStream, originalFilename);
 
+            sample.stop(sftpUploadTimer);
             return ResponseEntity.ok().build();
         } catch (JSchException | SftpException | IOException e) {
             logger.error("SFTP upload error for session token {}: {}", sessionToken, e.getMessage(), e);
