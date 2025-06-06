@@ -28,6 +28,7 @@
         <module>codebridge-core</module>
         <module>codebridge-webhook-service</module>
         <module>codebridge-gitlab-service</module>
+        <module>codebridge-ai-db-agent-service</module> <!-- Added new module -->
     </modules>
     
     <properties>
