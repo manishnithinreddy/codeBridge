@@ -63,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 
 /**
  * Service for API test operations.
@@ -256,9 +258,9 @@ public class ApiTestService {
                 environmentVariables = environment.getVariables();
             }
             
-            // Execute pre-request script (future implementation)
+            // Execute pre-request script if present
             if (test.getPreRequestScript() != null && !test.getPreRequestScript().isEmpty()) {
-                // Execute pre-request script
+                executeScript(test.getPreRequestScript(), null, null, null);
             }
             
             // Execute the test based on protocol type
@@ -270,23 +272,24 @@ public class ApiTestService {
                 executeGrpcTest(test, result, environmentVariables);
             } else if (test.getProtocolType() == ProtocolType.WEBSOCKET) {
                 executeWebSocketTest(test, result, environmentVariables);
-            }
-            
-            // Execute post-request script (future implementation)
-            if (test.getPostRequestScript() != null && !test.getPostRequestScript().isEmpty()) {
-                // Execute post-request script
+            } else {
+                throw new TestExecutionException("Unsupported protocol type: " + test.getProtocolType());
             }
             
         } catch (Exception e) {
             result.setStatus(TestStatus.ERROR);
             result.setErrorMessage(e.getMessage());
         } finally {
+            // Calculate execution time
             long endTime = System.currentTimeMillis();
             result.setExecutionTimeMs(endTime - startTime);
-            testResultRepository.save(result);
+            
+            // Save the test result
+            TestResult savedResult = testResultRepository.save(result);
+            
+            // Return the response
+            return mapToTestResultResponse(savedResult);
         }
-        
-        return mapToTestResultResponse(result);
     }
 
     /**
@@ -319,49 +322,47 @@ public class ApiTestService {
     private void executeHttpTest(ApiTest test, TestResult result, Map<String, String> environmentVariables) throws Exception {
         // Process URL with environment variables
         String processedUrl = processEnvironmentVariables(test.getUrl(), environmentVariables);
-
-        // Create HTTP request with processed URL
-        HttpUriRequestBase request = (HttpUriRequestBase) createHttpRequest(test, processedUrl, environmentVariables);
-
-        // Set timeout using RequestConfig
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
-                .setResponseTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
-                .build();
-        request.setConfig(requestConfig);
-
+        
+        // Create HTTP request
+        HttpUriRequest request = createHttpRequest(test, processedUrl, environmentVariables);
+        
+        // Set timeout
+        if (request instanceof HttpUriRequestBase) {
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
+                    .setResponseTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
+                    .build();
+            ((HttpUriRequestBase) request).setConfig(requestConfig);
+        }
+        
         // Execute request
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                int statusCode = response.getCode(); // Replaced
-                result.setResponseStatusCode(statusCode);
-
-                // Process response headers
-                Header[] headers = response.getHeaders(); // Replaced
-                Map<String, String> headerMap = new HashMap<>();
-                for (Header header : headers) {
-                    headerMap.put(header.getName(), header.getValue());
-                }
-                result.setResponseHeaders(objectMapper.writeValueAsString(headerMap));
-
-                // Process response body
-                HttpEntity entity = response.getEntity();
-                String responseBody = "";
-                if (entity != null) {
-                    try (InputStream instream = entity.getContent()) { // Read entity content correctly
-                        responseBody = new BufferedReader(new InputStreamReader(instream, StandardCharsets.UTF_8))
-                                .lines()
-                                .collect(Collectors.joining("\n"));
-                    } catch (IOException ex) { // Removed ParseException
-                        throw new TestExecutionException("Error reading response body: " + ex.getMessage(), ex);
-                    }
-                }
-                result.setResponseBody(responseBody);
-
-                // Validate response
-                boolean isValid = validateResponse(test, statusCode, responseBody);
-                result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(request)) {
+            
+            // Get response status code
+            int statusCode = response.getCode();
+            result.setResponseStatusCode(statusCode);
+            
+            // Get response headers
+            Map<String, String> responseHeaders = new HashMap<>();
+            for (Header header : response.getHeaders()) {
+                responseHeaders.put(header.getName(), header.getValue());
             }
+            result.setResponseHeaders(objectMapper.writeValueAsString(responseHeaders));
+            
+            // Get response body
+            HttpEntity responseEntity = response.getEntity();
+            String responseBody = responseEntity != null ? EntityUtils.toString(responseEntity) : "";
+            result.setResponseBody(responseBody);
+            
+            // Execute post-request script if present
+            if (test.getPostRequestScript() != null && !test.getPostRequestScript().isEmpty()) {
+                executeScript(test.getPostRequestScript(), statusCode, responseBody, responseHeaders);
+            }
+            
+            // Validate response
+            boolean isValid = validateResponse(test, statusCode, responseBody);
+            result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
         }
     }
 
@@ -377,71 +378,70 @@ public class ApiTestService {
         // Process URL with environment variables
         String processedUrl = processEnvironmentVariables(test.getUrl(), environmentVariables);
         
-        // Process GraphQL query and variables with environment variables
-        String processedQuery = processEnvironmentVariables(test.getGraphqlQuery(), environmentVariables);
-        String processedVariables = processEnvironmentVariables(test.getGraphqlVariables(), environmentVariables);
+        // Create GraphQL request body
+        Map<String, Object> graphqlRequest = new HashMap<>();
+        graphqlRequest.put("query", processEnvironmentVariables(test.getGraphqlQuery(), environmentVariables));
         
-        // Create GraphQL request
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("query", processedQuery);
-        
-        if (processedVariables != null && !processedVariables.isEmpty()) {
+        if (test.getGraphqlVariables() != null && !test.getGraphqlVariables().isEmpty()) {
             try {
-                Map<String, Object> variables = objectMapper.readValue(processedVariables, new TypeReference<Map<String, Object>>() {});
-                requestBody.put("variables", variables);
+                Map<String, Object> variables = objectMapper.readValue(
+                    processEnvironmentVariables(test.getGraphqlVariables(), environmentVariables),
+                    new TypeReference<Map<String, Object>>() {}
+                );
+                graphqlRequest.put("variables", variables);
             } catch (JsonProcessingException e) {
-                throw new TestExecutionException("Invalid GraphQL variables JSON: " + e.getMessage());
+                throw new TestExecutionException("Invalid GraphQL variables format: " + e.getMessage());
             }
         }
         
-        // Create HTTP entity
-        StringEntity entity = new StringEntity(objectMapper.writeValueAsString(requestBody), ContentType.APPLICATION_JSON);
+        // Create HTTP POST request
+        HttpPost request = new HttpPost(processedUrl);
+        request.setEntity(new StringEntity(objectMapper.writeValueAsString(graphqlRequest), ContentType.APPLICATION_JSON));
         
-        // Create HTTP request
-        HttpPost httpPost = new HttpPost(processedUrl);
-        httpPost.setEntity(entity);
-
         // Add headers
         if (test.getHeaders() != null) {
-            Map<String, String> headersMap = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {}); // Renamed variable
-            for (Map.Entry<String, String> headerEntry : headersMap.entrySet()) { // Use renamed variable
-                String processedValue = processEnvironmentVariables(headerEntry.getValue(), environmentVariables);
-                httpPost.addHeader(headerEntry.getKey(), processedValue);
+            Map<String, String> headers = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                String processedValue = processEnvironmentVariables(header.getValue(), environmentVariables);
+                request.addHeader(header.getKey(), processedValue);
             }
         }
         
+        // Set timeout
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
+                .setResponseTimeout(test.getTimeoutMs(), TimeUnit.MILLISECONDS)
+                .build();
+        request.setConfig(requestConfig);
+        
         // Execute request
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                int statusCode = response.getCode(); // Replaced
-                result.setResponseStatusCode(statusCode);
-
-                // Process response headers
-                Header[] responseHeaders = response.getHeaders(); // Replaced
-                Map<String, String> headerMap = new HashMap<>();
-                for (Header currentHeader : responseHeaders) { // Renamed variable
-                    headerMap.put(currentHeader.getName(), currentHeader.getValue());
-                }
-                result.setResponseHeaders(objectMapper.writeValueAsString(headerMap));
-
-                // Process response body
-                HttpEntity responseEntity = response.getEntity();
-                String responseBody = "";
-                if (responseEntity != null) {
-                     try (InputStream instream = responseEntity.getContent()) { // Read entity content correctly
-                        responseBody = new BufferedReader(new InputStreamReader(instream, StandardCharsets.UTF_8))
-                                .lines()
-                                .collect(Collectors.joining("\n"));
-                    } catch (IOException ex) { // Removed ParseException
-                        throw new TestExecutionException("Error reading response body: " + ex.getMessage(), ex);
-                    }
-                }
-                result.setResponseBody(responseBody);
-
-                // Validate response
-                boolean isValid = validateResponse(test, statusCode, responseBody);
-                result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(request)) {
+            
+            // Get response status code
+            int statusCode = response.getCode();
+            result.setResponseStatusCode(statusCode);
+            
+            // Get response headers
+            Map<String, String> responseHeaders = new HashMap<>();
+            for (Header header : response.getHeaders()) {
+                responseHeaders.put(header.getName(), header.getValue());
             }
+            result.setResponseHeaders(objectMapper.writeValueAsString(responseHeaders));
+            
+            // Get response body
+            HttpEntity responseEntity = response.getEntity();
+            String responseBody = responseEntity != null ? EntityUtils.toString(responseEntity) : "";
+            result.setResponseBody(responseBody);
+            
+            // Execute post-request script if present
+            if (test.getPostRequestScript() != null && !test.getPostRequestScript().isEmpty()) {
+                executeScript(test.getPostRequestScript(), statusCode, responseBody, responseHeaders);
+            }
+            
+            // Validate response
+            boolean isValid = validateResponse(test, statusCode, responseBody);
+            result.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
         }
     }
 
@@ -660,6 +660,43 @@ public class ApiTestService {
     }
 
     /**
+     * Executes a script (pre-request or post-request).
+     *
+     * @param script the script to execute
+     * @param statusCode the response status code (for post-request scripts)
+     * @param responseBody the response body (for post-request scripts)
+     * @param responseHeaders the response headers (for post-request scripts)
+     * @throws Exception if an error occurs during script execution
+     */
+    private void executeScript(String script, Integer statusCode, String responseBody, Map<String, String> responseHeaders) throws Exception {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("JavaScript");
+        
+        // Set variables for the script
+        if (statusCode != null) {
+            engine.put("statusCode", statusCode);
+        }
+        
+        if (responseBody != null) {
+            engine.put("responseBody", responseBody);
+        }
+        
+        if (responseHeaders != null) {
+            engine.put("responseHeaders", responseHeaders);
+        }
+        
+        try {
+            // Add utility functions
+            engine.eval("function isJson(str) { try { JSON.parse(str); return true; } catch (e) { return false; } }");
+            
+            // Execute the script
+            engine.eval(script);
+        } catch (Exception e) {
+            throw new Exception("Error executing script: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Validates the response of an API test.
      *
      * @param test the API test
@@ -674,13 +711,60 @@ public class ApiTestService {
         }
         
         // Validate response body
-        if (test.getExpectedResponseBody() != null && !test.getExpectedResponseBody().equals(responseBody)) {
+        if (test.getExpectedResponseBody() != null && !test.getExpectedResponseBody().isEmpty() 
+                && !test.getExpectedResponseBody().equals(responseBody)) {
             return false;
         }
         
-        // TODO: Implement validation script execution
+        // Execute validation script if present
+        if (test.getValidationScript() != null && !test.getValidationScript().isEmpty()) {
+            try {
+                return executeValidationScript(test.getValidationScript(), statusCode, responseBody);
+            } catch (Exception e) {
+                // Log the error and return false
+                System.err.println("Error executing validation script: " + e.getMessage());
+                return false;
+            }
+        }
         
         return true;
+    }
+    
+    /**
+     * Executes a validation script and returns the result.
+     *
+     * @param script the script to execute
+     * @param statusCode the response status code
+     * @param responseBody the response body
+     * @return the result of the script execution (true if valid, false otherwise)
+     * @throws Exception if an error occurs during script execution
+     */
+    private boolean executeValidationScript(String script, int statusCode, String responseBody) throws Exception {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("JavaScript");
+        
+        // Set variables for the script
+        engine.put("statusCode", statusCode);
+        engine.put("responseBody", responseBody);
+        
+        try {
+            // Add utility functions
+            engine.eval("function isJson(str) { try { JSON.parse(str); return true; } catch (e) { return false; } }");
+            
+            // Execute the script
+            Object result = engine.eval(script);
+            
+            // Convert result to boolean
+            if (result instanceof Boolean) {
+                return (Boolean) result;
+            } else if (result != null) {
+                return Boolean.parseBoolean(result.toString());
+            }
+            
+            return false;
+        } catch (Exception e) {
+            throw new Exception("Error executing validation script: " + e.getMessage(), e);
+        }
     }
 
     /**
