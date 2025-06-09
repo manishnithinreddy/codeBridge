@@ -184,8 +184,9 @@ public class ChunkedFileTransferService {
                 try {
                     // Check if the remote file exists and is not a directory
                     try {
-                        ChannelSftp.LsEntry entry = channelSftp.stat(remotePath);
-                        if (entry.getAttrs().isDir()) {
+                        // Use lstat instead of stat to get SftpATTRS directly
+                        com.jcraft.jsch.SftpATTRS attrs = channelSftp.lstat(remotePath);
+                        if (attrs.isDir()) {
                             throw new RemoteOperationException("Remote path is a directory, not a file");
                         }
                     } catch (SftpException e) {
@@ -263,4 +264,3 @@ public class ChunkedFileTransferService {
         transferExecutor.shutdown();
     }
 }
-

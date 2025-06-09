@@ -97,15 +97,16 @@ public class LogEventConsumerService {
 
     private ServerActivityLog mapToEntity(LogEventMessage dto) {
         ServerActivityLog entity = new ServerActivityLog();
-        entity.setPlatformUserId(dto.platformUserId());
-        entity.setAction(dto.action());
-        entity.setServerId(dto.serverId()); // Can be null
-        entity.setDetails(dto.details());
-        entity.setStatus(dto.status());
-        entity.setErrorMessage(dto.errorMessage()); // Can be null
-        entity.setIpAddress(dto.ipAddress()); // Set IP address
-        entity.setUserAgent(dto.userAgent()); // Set user agent
-        entity.setTimestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.timestamp()), ZoneId.systemDefault()));
+        entity.setPlatformUserId(dto.getPlatformUserId());
+        entity.setAction(dto.getAction());
+        entity.setServerId(dto.getServerId()); // Can be null
+        entity.setDetails(dto.getDetails());
+        entity.setStatus(dto.getStatus());
+        entity.setErrorMessage(dto.getErrorMessage()); // Can be null
+        entity.setIpAddress(dto.getIpAddress()); // Set IP address
+        entity.setUserAgent(dto.getUserAgent()); // Set user agent
+        entity.setTimestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.getTimestamp()), ZoneId.systemDefault()));
         return entity;
     }
 }
+

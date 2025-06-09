@@ -25,7 +25,12 @@ public class RemoteOperationController {
             // This should ideally be caught by security filters if endpoint is protected
             throw new IllegalStateException("Authentication principal not found or username is null.");
         }
-        return UUID.fromString(authentication.getName());
+        try {
+            return UUID.fromString(authentication.getName());
+        } catch (IllegalArgumentException e) {
+            // If the authentication name is not a valid UUID, use a deterministic UUID derived from the string
+            return UUID.nameUUIDFromBytes(authentication.getName().getBytes());
+        }
     }
 
     @PostMapping("/execute-command")
@@ -38,3 +43,4 @@ public class RemoteOperationController {
         return ResponseEntity.ok(response);
     }
 }
+

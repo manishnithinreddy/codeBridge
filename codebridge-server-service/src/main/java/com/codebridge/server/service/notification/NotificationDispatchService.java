@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * Service for dispatching notifications to various channels.
  * This is a placeholder implementation that logs notifications instead of actually sending them.
@@ -60,7 +62,7 @@ public class NotificationDispatchService {
      * @param channelType the custom channel type
      * @param channelConfig the custom channel configuration
      */
-    public void sendNotificationToCustomChannel(NotificationMessage message, String channelType, String channelConfig) {
+    public void sendNotificationToCustomChannel(NotificationMessage message, String channelType, Map<String, Object> channelConfig) {
         // This is a placeholder implementation
         // In a real implementation, this would send the notification to the custom channel
         
