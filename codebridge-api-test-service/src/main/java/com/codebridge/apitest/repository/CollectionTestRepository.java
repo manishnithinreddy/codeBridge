@@ -20,7 +20,7 @@ public interface CollectionTestRepository extends JpaRepository<CollectionTest, 
      * @param collectionId the collection ID
      * @return list of collection tests
      */
-    List<CollectionTest> findByCollectionIdOrderByOrder(UUID collectionId);
+    List<CollectionTest> findByCollectionIdOrderByTestOrder(UUID collectionId);
 
     /**
      * Find collection test by collection ID and test ID.
