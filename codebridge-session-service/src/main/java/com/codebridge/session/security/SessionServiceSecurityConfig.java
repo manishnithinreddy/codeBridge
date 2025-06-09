@@ -62,10 +62,14 @@ public class SessionServiceSecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .jwtDecoder(userJwtDecoder()) // Use the decoder for User JWTs
-                    .jwtAuthenticationConverter(userJwtAuthenticationConverter())
-                )
+                .jwt(jwt -> {
+                    try {
+                        jwt.decoder(userJwtDecoder());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to configure JWT decoder", e);
+                    }
+                    jwt.jwtAuthenticationConverter(userJwtAuthenticationConverter());
+                })
             );
         return http.build();
     }
@@ -92,3 +96,4 @@ public class SessionServiceSecurityConfig {
         return jwtAuthenticationConverter;
     }
 }
+

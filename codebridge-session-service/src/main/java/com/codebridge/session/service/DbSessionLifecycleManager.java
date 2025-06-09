@@ -34,6 +34,7 @@ import java.sql.DatabaseMetaData; // Added
 import java.sql.ResultSet; // Added
 import java.util.ArrayList; // Added
 import java.util.List; // Added
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -340,3 +341,4 @@ public class DbSessionLifecycleManager {
         }
     }
 }
+

@@ -44,10 +44,14 @@ public class ServerSecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .jwtDecoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                )
+                .jwt(jwt -> {
+                    try {
+                        jwt.decoder(jwtDecoder());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to configure JWT decoder", e);
+                    }
+                    jwt.jwtAuthenticationConverter(jwtAuthenticationConverter());
+                })
             );
         
         // http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())); // For H2 console
@@ -76,3 +80,4 @@ public class ServerSecurityConfig {
         return jwtAuthenticationConverter;
     }
 }
+
