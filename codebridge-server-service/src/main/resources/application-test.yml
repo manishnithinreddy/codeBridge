@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: server-service
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  flyway:
+    enabled: false
+  cloud:
+    config:
+      enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/codebridge
+          jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+
+server:
+  port: 8083
+  servlet:
+    context-path: /api/server
+
+eureka:
+  client:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.codebridge: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+
+ssh:
+  connection:
+    timeout: 30000
+    retry-count: 3
+    retry-delay: 5000
+  key-storage:
+    path: /tmp/codebridge/ssh-keys
+
+jasypt:
+  encryptor:
+    password: test-password
+
+# RabbitMQ Configuration
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+# Application-specific AMQP properties
+codebridge:
+  security:
+    jwt:
+      shared-secret: "test-shared-secret-for-testing-only-do-not-use-in-production"
+  service-urls:
+    session-service: "http://localhost:8082/api/sessions"
+    ai-db-agent-service: "http://localhost:8085/api/ai-db-agent"
+  rabbitmq:
+    activity-log:
+      exchange-name: "codebridge.activitylog.exchange"
+      queue-name: "codebridge.activitylog.queue"
+      routing-key: "codebridge.activitylog.routingkey"
+
