@@ -28,6 +28,9 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
     private static final Logger logger = LoggerFactory.getLogger(CustomJschHostKeyRepository.class);
     private final KnownSshHostKeyRepository knownSshHostKeyRepository;
     
+    // Define our own constant for GUESS since HostKey.GUESS is protected
+    private static final int SSH_KEY_GUESS = 0;
+    
     // Host key verification policy
     public enum HostKeyVerificationPolicy {
         STRICT,      // Reject unknown or changed keys
@@ -230,6 +233,12 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void remove(String host, String type) {
+        remove(host, type, null);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void remove(String host, String type, byte[] key) {
         // JSch might pass host as "[hostname]:port"
         String hostname = host;
@@ -307,8 +316,8 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
         try {
             // Construct host string for JSch, potentially including port if not default
             String hostString = dbKey.getPort() != 22 ? String.format("[%s]:%d", dbKey.getHostname(), dbKey.getPort()) : dbKey.getHostname();
-            return new HostKey(hostString, HostKey.GUESS, Base64.getDecoder().decode(dbKey.getHostKeyBase64()));
-            // Or: new HostKey(dbKey.getHostname(), dbKey.getPort(), HostKey.GUESS, Base64.getDecoder().decode(dbKey.getHostKeyBase64()));
+            return new HostKey(hostString, SSH_KEY_GUESS, Base64.getDecoder().decode(dbKey.getHostKeyBase64()));
+            // Or: new HostKey(dbKey.getHostname(), dbKey.getPort(), SSH_KEY_GUESS, Base64.getDecoder().decode(dbKey.getHostKeyBase64()));
             // HostKey.GUESS will make JSch determine type from key bytes. Or use dbKey.getKeyType() if it matches JSch types.
         } catch (JSchException e) {
             logger.error("Error converting DB host key to JSch HostKey for host {}: {}", dbKey.getHostname(), e.getMessage());
@@ -323,7 +332,7 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
         
         try {
             // Try to create a temporary HostKey to get its type
-            HostKey tempHostKey = new HostKey("temp", HostKey.GUESS, keyBytes);
+            HostKey tempHostKey = new HostKey("temp", SSH_KEY_GUESS, keyBytes);
             return tempHostKey.getType();
         } catch (JSchException e) {
             logger.debug("Could not determine key type using JSch: {}", e.getMessage());

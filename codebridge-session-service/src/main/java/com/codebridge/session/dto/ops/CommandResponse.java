@@ -5,6 +5,8 @@ import java.io.Serializable;
 public class CommandResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private String commandId;
+    private String command;
     private String stdout;
     private String stderr;
     private Integer exitStatus;
@@ -21,7 +23,32 @@ public class CommandResponse implements Serializable {
         this.durationMs = durationMs;
     }
 
+    public CommandResponse(String commandId, String command, String stdout, String stderr, Integer exitStatus, long durationMs) {
+        this.commandId = commandId;
+        this.command = command;
+        this.stdout = stdout;
+        this.stderr = stderr;
+        this.exitStatus = exitStatus;
+        this.durationMs = durationMs;
+    }
+
     // Getters and Setters
+    public String getCommandId() {
+        return commandId;
+    }
+
+    public void setCommandId(String commandId) {
+        this.commandId = commandId;
+    }
+
+    public String getCommand() {
+        return command;
+    }
+
+    public void setCommand(String command) {
+        this.command = command;
+    }
+
     public String getStdout() {
         return stdout;
     }
@@ -54,3 +81,4 @@ public class CommandResponse implements Serializable {
         this.durationMs = durationMs;
     }
 }
+

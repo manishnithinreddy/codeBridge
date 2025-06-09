@@ -45,7 +45,66 @@ public class RemoteExecutionService {
         this.sessionServiceBaseUrl = sessionServiceBaseUrl;
     }
 
-    // Method signature changed: platformUserId is now derived from sessionToken
+    // Method to handle UUID platformUserId
+    public CommandResponse executeCommand(UUID serverId, UUID platformUserId, CommandRequest commandRequest) {
+        long startTime = System.currentTimeMillis();
+        String logStatus = "FAILED";
+        String errorMessage = null;
+        String logDetails = String.format("ServerID: %s, Command: '%s'", serverId, commandRequest.getCommand());
+
+        try {
+            // Authorize if user has access
+            serverAccessControlService.getValidatedConnectionDetails(platformUserId, serverId);
+            
+            // Get session token for the user and server
+            String sessionToken = getOrCreateSessionToken(platformUserId, serverId);
+            
+            // Make RestTemplate call to SessionService
+            String url = sessionServiceBaseUrl + "/ops/ssh/" + sessionToken + "/execute-command";
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<CommandRequest> entity = new HttpEntity<>(commandRequest, headers);
+
+            ResponseEntity<CommandResponse> response =
+                restTemplate.exchange(url, HttpMethod.POST, entity, CommandResponse.class);
+
+            logStatus = response.getBody() != null && response.getBody().getExitStatus() == 0 ? "SUCCESS" : "FAILED_WITH_STDERR";
+            if (response.getBody() != null && response.getBody().getExitStatus() != 0) {
+                errorMessage = response.getBody().getStderr();
+            }
+
+            activityLogService.createLog(platformUserId, "REMOTE_COMMAND_EXECUTE_PROXY", serverId, logDetails, logStatus, errorMessage);
+            return response.getBody();
+
+        } catch (HttpStatusCodeException e) {
+            errorMessage = e.getResponseBodyAsString();
+            logger.error("Error calling SessionService for command execution on server {}: {} - {}", serverId, e.getStatusCode(), errorMessage, e);
+            activityLogService.createLog(platformUserId, "REMOTE_COMMAND_EXECUTE_PROXY_FAILED", serverId, logDetails, "FAILED", errorMessage);
+            throw new RemoteCommandException("Failed to execute command via SessionService: " + errorMessage, e);
+        } catch (AccessDeniedException e) {
+            errorMessage = e.getMessage();
+            logger.warn("Access denied for command execution on server {}: {}", serverId, errorMessage);
+            activityLogService.createLog(platformUserId, "REMOTE_COMMAND_EXECUTE_PROXY_DENIED", serverId, logDetails, "FAILED", errorMessage);
+            throw e; // Re-throw
+        }
+        catch (Exception e) { // Catch other potential errors
+            errorMessage = e.getMessage();
+            logger.error("Unexpected error during remote command execution proxy for server {}: {}", serverId, errorMessage, e);
+            activityLogService.createLog(platformUserId, "REMOTE_COMMAND_EXECUTE_PROXY_ERROR", serverId, logDetails, "FAILED", errorMessage);
+            throw new RemoteCommandException("Unexpected error during command execution: " + errorMessage, e);
+        }
+    }
+    
+    // Helper method to get or create a session token
+    private String getOrCreateSessionToken(UUID platformUserId, UUID serverId) {
+        // This is a placeholder implementation
+        // In a real implementation, this would either retrieve an existing session token
+        // or create a new one by calling the session service
+        
+        // For now, just return a dummy token
+        return "dummy-session-token-" + platformUserId + "-" + serverId;
+    }
+
+    // Legacy method that accepts sessionToken
     public CommandResponse executeCommand(UUID serverId, String sessionToken, CommandRequest commandRequest) {
         long startTime = System.currentTimeMillis();
         String logStatus = "FAILED";
@@ -112,3 +171,4 @@ public class RemoteExecutionService {
         }
     }
 }
+

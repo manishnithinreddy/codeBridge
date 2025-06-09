@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 public class CommandWebSocketController {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandWebSocketController.class);
+    private static final String SSH_SESSION_TYPE = "SSH"; // Session type constant
 
     private final SshCommandQueue commandQueue;
     private final SimpMessagingTemplate messagingTemplate;
@@ -57,7 +58,11 @@ public class CommandWebSocketController {
         }
         
         // Create a session key from the session ID and user ID
-        SessionKey sessionKey = new SessionKey(sessionId, UUID.fromString(authentication.getName()));
+        SessionKey sessionKey = new SessionKey(
+            UUID.fromString(authentication.getName()),
+            sessionId,
+            SSH_SESSION_TYPE
+        );
         
         // Create the destination for sending output messages
         String destination = "/queue/command/" + sessionId + "/" + command.getCommandId();
@@ -106,7 +111,11 @@ public class CommandWebSocketController {
         logger.info("Received cancel command request for session {}, command {}", sessionId, commandId);
         
         // Create a session key from the session ID and user ID
-        SessionKey sessionKey = new SessionKey(sessionId, UUID.fromString(authentication.getName()));
+        SessionKey sessionKey = new SessionKey(
+            UUID.fromString(authentication.getName()),
+            sessionId,
+            SSH_SESSION_TYPE
+        );
         
         // Cancel the command
         return commandQueue.cancelCommand(sessionKey, commandId);
@@ -122,4 +131,3 @@ public class CommandWebSocketController {
         messagingTemplate.convertAndSend(destination, message);
     }
 }
-
