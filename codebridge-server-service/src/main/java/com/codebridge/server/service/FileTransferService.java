@@ -185,4 +185,157 @@ public class FileTransferService {
             throw new FileTransferException("Unexpected error during SFTP upload: " + errorMessage, e);
         }
     }
+
+    /**
+     * Delete a file or directory on the remote server
+     * @param serverId Server ID
+     * @param sessionToken Session token
+     * @param remotePath Path to delete
+     * @param recursive Whether to delete recursively (for directories)
+     */
+    public void deleteFile(UUID serverId, String sessionToken, String remotePath, boolean recursive) {
+        UUID platformUserId = null;
+        String logStatus = "FAILED";
+        String errorMessage = null;
+        String logDetails = String.format("Path: '%s', Recursive: %b", remotePath, recursive);
+        try {
+            platformUserId = validateTokenAndAuthorize(serverId, sessionToken);
+
+            String url = UriComponentsBuilder.fromHttpUrl(sessionServiceBaseUrl)
+                .pathSegment("ops", "ssh", sessionToken, "sftp", "delete")
+                .queryParam("remotePath", remotePath)
+                .queryParam("recursive", recursive)
+                .toUriString();
+
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            restTemplate.exchange(url, HttpMethod.DELETE, entity, Void.class);
+            logStatus = "SUCCESS";
+            activityLogService.createLog(platformUserId, "FILE_DELETE_PROXY", serverId, logDetails, logStatus, null);
+        } catch (HttpStatusCodeException e) {
+            errorMessage = e.getResponseBodyAsString();
+            logger.error("Error calling SessionService for SFTP delete on server {}: {} - {}", serverId, e.getStatusCode(), errorMessage, e);
+            activityLogService.createLog(platformUserId, "FILE_DELETE_PROXY_FAILED", serverId, logDetails, "FAILED", errorMessage);
+            throw new FileTransferException("Failed to delete file via SessionService: " + errorMessage, e);
+        } catch (Exception e) {
+            errorMessage = e.getMessage();
+            logger.error("Unexpected error during SFTP delete proxy for server {}: {}", serverId, errorMessage, e);
+            activityLogService.createLog(platformUserId, "FILE_DELETE_PROXY_ERROR", serverId, logDetails, "FAILED", errorMessage);
+            throw new FileTransferException("Unexpected error during SFTP delete: " + errorMessage, e);
+        }
+    }
+    
+    /**
+     * Change permissions of a file or directory on the remote server
+     * @param serverId Server ID
+     * @param sessionToken Session token
+     * @param remotePath Path to change permissions
+     * @param permissions Permissions in octal format (e.g. "755")
+     * @param recursive Whether to change permissions recursively (for directories)
+     */
+    public void changeFilePermissions(UUID serverId, String sessionToken, String remotePath, String permissions, boolean recursive) {
+        UUID platformUserId = null;
+        String logStatus = "FAILED";
+        String errorMessage = null;
+        String logDetails = String.format("Path: '%s', Permissions: %s, Recursive: %b", remotePath, permissions, recursive);
+        try {
+            platformUserId = validateTokenAndAuthorize(serverId, sessionToken);
+
+            String url = UriComponentsBuilder.fromHttpUrl(sessionServiceBaseUrl)
+                .pathSegment("ops", "ssh", sessionToken, "sftp", "chmod")
+                .queryParam("remotePath", remotePath)
+                .queryParam("permissions", permissions)
+                .queryParam("recursive", recursive)
+                .toUriString();
+
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+            logStatus = "SUCCESS";
+            activityLogService.createLog(platformUserId, "FILE_CHMOD_PROXY", serverId, logDetails, logStatus, null);
+        } catch (HttpStatusCodeException e) {
+            errorMessage = e.getResponseBodyAsString();
+            logger.error("Error calling SessionService for SFTP chmod on server {}: {} - {}", serverId, e.getStatusCode(), errorMessage, e);
+            activityLogService.createLog(platformUserId, "FILE_CHMOD_PROXY_FAILED", serverId, logDetails, "FAILED", errorMessage);
+            throw new FileTransferException("Failed to change file permissions via SessionService: " + errorMessage, e);
+        } catch (Exception e) {
+            errorMessage = e.getMessage();
+            logger.error("Unexpected error during SFTP chmod proxy for server {}: {}", serverId, errorMessage, e);
+            activityLogService.createLog(platformUserId, "FILE_CHMOD_PROXY_ERROR", serverId, logDetails, "FAILED", errorMessage);
+            throw new FileTransferException("Unexpected error during SFTP chmod: " + errorMessage, e);
+        }
+    }
+    
+    /**
+     * Rename or move a file or directory on the remote server
+     * @param serverId Server ID
+     * @param sessionToken Session token
+     * @param sourcePath Source path
+     * @param targetPath Target path
+     */
+    public void renameFile(UUID serverId, String sessionToken, String sourcePath, String targetPath) {
+        UUID platformUserId = null;
+        String logStatus = "FAILED";
+        String errorMessage = null;
+        String logDetails = String.format("Source: '%s', Target: '%s'", sourcePath, targetPath);
+        try {
+            platformUserId = validateTokenAndAuthorize(serverId, sessionToken);
+
+            String url = UriComponentsBuilder.fromHttpUrl(sessionServiceBaseUrl)
+                .pathSegment("ops", "ssh", sessionToken, "sftp", "rename")
+                .queryParam("sourcePath", sourcePath)
+                .queryParam("targetPath", targetPath)
+                .toUriString();
+
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
+            logStatus = "SUCCESS";
+            activityLogService.createLog(platformUserId, "FILE_RENAME_PROXY", serverId, logDetails, logStatus, null);
+        } catch (HttpStatusCodeException e) {
+            errorMessage = e.getResponseBodyAsString();
+            logger.error("Error calling SessionService for SFTP rename on server {}: {} - {}", serverId, e.getStatusCode(), errorMessage, e);
+            activityLogService.createLog(platformUserId, "FILE_RENAME_PROXY_FAILED", serverId, logDetails, "FAILED", errorMessage);
+            throw new FileTransferException("Failed to rename file via SessionService: " + errorMessage, e);
+        } catch (Exception e) {
+            errorMessage = e.getMessage();
+            logger.error("Unexpected error during SFTP rename proxy for server {}: {}", serverId, errorMessage, e);
+            activityLogService.createLog(platformUserId, "FILE_RENAME_PROXY_ERROR", serverId, logDetails, "FAILED", errorMessage);
+            throw new FileTransferException("Unexpected error during SFTP rename: " + errorMessage, e);
+        }
+    }
+    
+    // Convenience methods for controller to use with platformUserId instead of sessionToken
+    
+    public void deleteFile(UUID serverId, UUID platformUserId, String remotePath, boolean recursive) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        deleteFile(serverId, sessionToken, remotePath, recursive);
+    }
+    
+    public void changeFilePermissions(UUID serverId, UUID platformUserId, String remotePath, String permissions, boolean recursive) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        changeFilePermissions(serverId, sessionToken, remotePath, permissions, recursive);
+    }
+    
+    public void renameFile(UUID serverId, UUID platformUserId, String sourcePath, String targetPath) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        renameFile(serverId, sessionToken, sourcePath, targetPath);
+    }
+    
+    // Helper method to get a session token for a user and server
+    private String getSessionTokenForUser(UUID platformUserId, UUID serverId) {
+        // This is a placeholder - in a real implementation, you would:
+        // 1. Check if there's an existing valid session token for this user and server
+        // 2. If not, create a new session
+        // 3. Return the session token
+        
+        // For now, we'll just throw an exception to indicate this needs to be implemented
+        throw new UnsupportedOperationException("Session token management not implemented yet");
+    }
 }

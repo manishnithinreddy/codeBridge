@@ -50,6 +50,16 @@ public class ServerUser { // Links platform users to servers for team/shared acc
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+    
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt; // Optional expiration date for time-limited access
+    
+    @Column(name = "access_level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ServerAccessGrant.AccessLevel accessLevel = ServerAccessGrant.AccessLevel.OPERATOR; // Default to OPERATOR
+    
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true; // Whether this access grant is currently active
 
     // Constructors
     public ServerUser() {
@@ -118,6 +128,39 @@ public class ServerUser { // Links platform users to servers for team/shared acc
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+    
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+    
+    public ServerAccessGrant.AccessLevel getAccessLevel() {
+        return accessLevel;
+    }
+    
+    public void setAccessLevel(ServerAccessGrant.AccessLevel accessLevel) {
+        this.accessLevel = accessLevel;
+    }
+    
+    public boolean isActive() {
+        return isActive;
+    }
+    
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+    
+    /**
+     * Check if this access grant is currently valid (active and not expired)
+     * @return true if the grant is valid, false otherwise
+     */
+    @Transient
+    public boolean isValid() {
+        return isActive && (expiresAt == null || expiresAt.isAfter(LocalDateTime.now()));
     }
 
     @Override
