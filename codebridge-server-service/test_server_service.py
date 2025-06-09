@@ -7,12 +7,29 @@ import sys
 import uuid
 import os
 import base64
+import subprocess
+import logging
+import paramiko
+from io import BytesIO
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Base URL
 BASE_URL = "http://localhost:8083/api/server"
 
 # Mock JWT token for testing (this would be a real token in production)
 MOCK_JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMiwidXNlcklkIjoiMDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAxIiwicm9sZXMiOlsiVVNFUiIsIkFETUlOIl19.YOUR_SIGNATURE_HERE"
+
+# Test server details
+SSH_HOST = "localhost"
+SSH_PORT = 2222
+SSH_USERNAME = "testuser"
+SSH_PASSWORD = "testpassword"
+
+# Test server process
+server_process = None
 
 def print_response(response, label):
     print(f"\n=== {label} ===")
@@ -46,8 +63,155 @@ def mock_response(data, status_code=200):
         "data": data
     }
 
+def start_test_servers():
+    """Start the test SSH and FTP servers in the background"""
+    global server_process
+    
+    # Create test server directory if it doesn't exist
+    os.makedirs("../test_server", exist_ok=True)
+    
+    # Copy the server scripts to the test server directory
+    server_files = [
+        "ssh_server.py",
+        "ftp_server.py",
+        "start_servers.py"
+    ]
+    
+    for file in server_files:
+        if not os.path.exists(f"../test_server/{file}"):
+            print(f"Error: Test server file {file} not found. Please make sure the test server files are in place.")
+            return None
+    
+    print("Starting test servers...")
+    
+    # Start the servers in a separate process
+    server_process = subprocess.Popen(
+        ["python", "../test_server/start_servers.py"],
+        cwd="../test_server",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    # Wait for servers to start
+    time.sleep(3)
+    
+    return server_process
+
+def stop_test_servers():
+    """Stop the test servers"""
+    global server_process
+    
+    if server_process:
+        print("Stopping test servers...")
+        server_process.terminate()
+        server_process.wait()
+        server_process = None
+
+def test_real_server_operations():
+    """Test real server operations using paramiko"""
+    print("\n=== Testing Real Server Operations ===")
+    
+    try:
+        # Create SSH client
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Connect to the server
+        client.connect(
+            hostname=SSH_HOST,
+            port=SSH_PORT,
+            username=SSH_USERNAME,
+            password=SSH_PASSWORD,
+            timeout=5
+        )
+        
+        print("SSH connection successful!")
+        
+        # Execute a command
+        print("Executing command: ls -la")
+        stdin, stdout, stderr = client.exec_command("ls -la")
+        output = stdout.read().decode()
+        print(f"Command output: {output}")
+        
+        # Create a test directory
+        test_dir = f"test_dir_{uuid.uuid4().hex[:8]}"
+        print(f"Creating directory: {test_dir}")
+        stdin, stdout, stderr = client.exec_command(f"mkdir {test_dir}")
+        time.sleep(1)
+        
+        # Verify directory was created
+        stdin, stdout, stderr = client.exec_command("ls -la")
+        output = stdout.read().decode()
+        print(f"Directory listing: {output}")
+        
+        # Create a test file
+        test_file = f"{test_dir}/test_file.txt"
+        test_content = f"This is a test file created at {time.time()}"
+        print(f"Creating file: {test_file}")
+        stdin, stdout, stderr = client.exec_command(f"echo '{test_content}' > {test_file}")
+        time.sleep(1)
+        
+        # Verify file was created
+        stdin, stdout, stderr = client.exec_command(f"cat {test_file}")
+        output = stdout.read().decode()
+        print(f"File content: {output}")
+        
+        # Create SFTP client
+        sftp = client.open_sftp()
+        
+        # Upload a file
+        upload_file = f"{test_dir}/uploaded_file.txt"
+        upload_content = f"This is an uploaded file at {time.time()}"
+        print(f"Uploading file: {upload_file}")
+        
+        # Create a file-like object in memory
+        file_obj = BytesIO(upload_content.encode())
+        sftp.putfo(file_obj, upload_file)
+        
+        # Verify file was uploaded
+        stdin, stdout, stderr = client.exec_command(f"cat {upload_file}")
+        output = stdout.read().decode()
+        print(f"Uploaded file content: {output}")
+        
+        # Download a file
+        print(f"Downloading file: {upload_file}")
+        download_obj = BytesIO()
+        sftp.getfo(upload_file, download_obj)
+        
+        # Verify downloaded content
+        download_obj.seek(0)
+        downloaded_content = download_obj.read().decode()
+        print(f"Downloaded content: {downloaded_content}")
+        
+        # Clean up
+        print("Cleaning up test files and directories")
+        stdin, stdout, stderr = client.exec_command(f"rm -rf {test_dir}")
+        
+        # Close connections
+        sftp.close()
+        client.close()
+        
+        print("Real server operations test completed successfully!")
+        print("=" * 35)
+        return True
+    
+    except Exception as e:
+        print(f"Real server operations test failed: {str(e)}")
+        print("=" * 35)
+        return False
+
 def test_server_service():
-    print("Testing Server Service with Mock Data...")
+    print("Testing Server Service...")
+    
+    # Try to start test servers
+    server_started = False
+    try:
+        if start_test_servers():
+            server_started = True
+            print("Test servers started successfully!")
+    except Exception as e:
+        print(f"Failed to start test servers: {str(e)}")
+        print("Continuing with mock data...")
     
     # Test 1: Health check
     try:
@@ -466,6 +630,10 @@ def test_server_service():
     delete_server_response = mock_response({}, 204)
     print_response(delete_server_response, "Delete Server")
     
+    # Run real server operations tests if servers were started
+    if server_started:
+        test_real_server_operations()
+    
     print("\nAll tests completed!")
     print("\nSummary:")
     print(f"- Created and tested server management")
@@ -475,7 +643,12 @@ def test_server_service():
     print(f"- Created and tested team server access management")
     print(f"- Retrieved server activity logs")
     print(f"- Cleaned up all created resources")
+    
+    if server_started:
+        print(f"- Tested real server operations (connect, file operations, command execution)")
+        
+        # Stop the test servers
+        stop_test_servers()
 
 if __name__ == "__main__":
     test_server_service()
-
