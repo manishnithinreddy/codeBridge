@@ -8,12 +8,36 @@ import uuid
 import websocket
 import threading
 import ssl
+import os
+import paramiko
+import ftplib
+import subprocess
+import logging
+from io import BytesIO
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Base URL
 BASE_URL = "http://localhost:8082/api/sessions"
 
 # Mock JWT token for testing (this would be a real token in production)
 MOCK_JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMiwidXNlcklkIjoiMDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAxIiwicm9sZXMiOlsiVVNFUiIsIkFETUlOIl19.YOUR_SIGNATURE_HERE"
+
+# Test server details
+SSH_HOST = "localhost"
+SSH_PORT = 2222
+SSH_USERNAME = "testuser"
+SSH_PASSWORD = "testpassword"
+
+FTP_HOST = "localhost"
+FTP_PORT = 2121
+FTP_USERNAME = "testuser"
+FTP_PASSWORD = "testpassword"
+
+# Test server process
+server_process = None
 
 def print_response(response, label):
     print(f"\n=== {label} ===")
@@ -74,8 +98,209 @@ def on_open(ws):
         "sessionId": "test-session-id"
     }))
 
+def start_test_servers():
+    """Start the test SSH and FTP servers in the background"""
+    global server_process
+    
+    # Create test server directory if it doesn't exist
+    os.makedirs("../test_server", exist_ok=True)
+    
+    # Copy the server scripts to the test server directory
+    server_files = [
+        "ssh_server.py",
+        "ftp_server.py",
+        "start_servers.py"
+    ]
+    
+    for file in server_files:
+        if not os.path.exists(f"../test_server/{file}"):
+            print(f"Error: Test server file {file} not found. Please make sure the test server files are in place.")
+            return None
+    
+    print("Starting test servers...")
+    
+    # Start the servers in a separate process
+    server_process = subprocess.Popen(
+        ["python", "../test_server/start_servers.py"],
+        cwd="../test_server",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    # Wait for servers to start
+    time.sleep(3)
+    
+    return server_process
+
+def stop_test_servers():
+    """Stop the test servers"""
+    global server_process
+    
+    if server_process:
+        print("Stopping test servers...")
+        server_process.terminate()
+        server_process.wait()
+        server_process = None
+
+def test_real_ssh_operations():
+    """Test real SSH operations using paramiko"""
+    print("\n=== Testing Real SSH Operations ===")
+    
+    try:
+        # Create SSH client
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Connect to the server
+        client.connect(
+            hostname=SSH_HOST,
+            port=SSH_PORT,
+            username=SSH_USERNAME,
+            password=SSH_PASSWORD,
+            timeout=5
+        )
+        
+        print("SSH connection successful!")
+        
+        # Create SFTP client
+        sftp = client.open_sftp()
+        
+        # List files
+        print("Listing files...")
+        try:
+            files = sftp.listdir("files")
+            print(f"Files in directory: {files}")
+        except:
+            print("Could not list files, creating 'files' directory...")
+            stdin, stdout, stderr = client.exec_command("mkdir -p files")
+            time.sleep(1)
+            files = sftp.listdir("files")
+            print(f"Files in directory: {files}")
+        
+        # Create a test file
+        test_file_name = f"test_file_{uuid.uuid4().hex[:8]}.txt"
+        test_file_path = f"files/{test_file_name}"
+        test_file_content = f"This is a test file created at {time.time()}"
+        
+        print(f"Creating test file: {test_file_path}")
+        with sftp.file(test_file_path, "w") as f:
+            f.write(test_file_content)
+        
+        # Read the file back
+        print(f"Reading test file: {test_file_path}")
+        with sftp.file(test_file_path, "r") as f:
+            content = f.read()
+        
+        print(f"File content: {content}")
+        
+        # Rename the file
+        new_file_name = f"renamed_{test_file_name}"
+        new_file_path = f"files/{new_file_name}"
+        
+        print(f"Renaming file from {test_file_path} to {new_file_path}")
+        sftp.rename(test_file_path, new_file_path)
+        
+        # Delete the file
+        print(f"Deleting file: {new_file_path}")
+        sftp.remove(new_file_path)
+        
+        # Execute a command
+        print("Executing command: ls -la files")
+        stdin, stdout, stderr = client.exec_command("ls -la files")
+        output = stdout.read().decode()
+        print(f"Command output: {output}")
+        
+        # Close the connection
+        sftp.close()
+        client.close()
+        
+        print("Real SSH operations test completed successfully!")
+        print("=" * 35)
+        return True
+    
+    except Exception as e:
+        print(f"Real SSH operations test failed: {str(e)}")
+        print("=" * 35)
+        return False
+
+def test_real_ftp_operations():
+    """Test real FTP operations"""
+    print("\n=== Testing Real FTP Operations ===")
+    
+    try:
+        # Create FTP client
+        ftp = ftplib.FTP()
+        
+        # Connect to the server
+        ftp.connect(FTP_HOST, FTP_PORT)
+        ftp.login(FTP_USERNAME, FTP_PASSWORD)
+        
+        print(f"FTP connection successful! Welcome message: {ftp.getwelcome()}")
+        
+        # List files
+        print("Listing files...")
+        files = ftp.nlst()
+        print(f"Files in directory: {files}")
+        
+        # Create a test file locally
+        test_file_name = f"test_file_{uuid.uuid4().hex[:8]}.txt"
+        test_file_content = f"This is a test file created at {time.time()}"
+        
+        # Create a file-like object in memory
+        test_file = BytesIO(test_file_content.encode())
+        
+        # Upload the file
+        print(f"Uploading file: {test_file_name}")
+        ftp.storbinary(f"STOR {test_file_name}", test_file)
+        
+        # Verify the file was uploaded
+        files = ftp.nlst()
+        print(f"Files after upload: {files}")
+        
+        # Download the file
+        download_file = BytesIO()
+        
+        print(f"Downloading file: {test_file_name}")
+        ftp.retrbinary(f"RETR {test_file_name}", download_file.write)
+        
+        # Verify the downloaded content
+        download_file.seek(0)
+        content = download_file.read().decode()
+        
+        print(f"Downloaded file content: {content}")
+        
+        # Delete the file
+        print(f"Deleting file: {test_file_name}")
+        ftp.delete(test_file_name)
+        
+        # Verify the file was deleted
+        files = ftp.nlst()
+        print(f"Files after deletion: {files}")
+        
+        # Close the connection
+        ftp.quit()
+        
+        print("Real FTP operations test completed successfully!")
+        print("=" * 35)
+        return True
+    
+    except Exception as e:
+        print(f"Real FTP operations test failed: {str(e)}")
+        print("=" * 35)
+        return False
+
 def test_session_service():
-    print("Testing Session Service with Mock Data...")
+    print("Testing Session Service...")
+    
+    # Try to start test servers
+    server_started = False
+    try:
+        if start_test_servers():
+            server_started = True
+            print("Test servers started successfully!")
+    except Exception as e:
+        print(f"Failed to start test servers: {str(e)}")
+        print("Continuing with mock data...")
     
     # Test 1: Health check
     try:
@@ -404,6 +629,11 @@ def test_session_service():
         delete_host_key_response = mock_response({}, 204)
         print_response(delete_host_key_response, "Delete Host Key")
     
+    # Run real file operations tests if servers were started
+    if server_started:
+        test_real_ssh_operations()
+        test_real_ftp_operations()
+    
     print("\nAll tests completed!")
     print("\nSummary:")
     print("- Tested SSH session lifecycle (init, status, execute, close)")
@@ -411,7 +641,13 @@ def test_session_service():
     print("- Tested host key management (get, add, update policy, delete)")
     print("- Tested file operations via SSH (list files)")
     print("- Described WebSocket connection process (not actually connected)")
+    
+    if server_started:
+        print("- Tested real SSH operations (connect, file operations, command execution)")
+        print("- Tested real FTP operations (connect, upload, download, delete)")
+        
+        # Stop the test servers
+        stop_test_servers()
 
 if __name__ == "__main__":
     test_session_service()
-
