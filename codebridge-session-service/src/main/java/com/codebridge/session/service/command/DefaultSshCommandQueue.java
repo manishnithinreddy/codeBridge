@@ -1,5 +1,6 @@
 package com.codebridge.session.service.command;
 
+import com.codebridge.session.dto.ops.CommandOutputMessage;
 import com.codebridge.session.dto.ops.CommandRequest;
 import com.codebridge.session.dto.ops.CommandResponse;
 import com.codebridge.session.exception.RemoteOperationException;
@@ -18,7 +19,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -47,6 +52,12 @@ public class DefaultSshCommandQueue implements SshCommandQueue {
     private final Counter commandFailureCounter;
     private final Counter commandTimeoutCounter;
     private final Counter commandRejectedCounter;
+
+    // Map to store active streaming commands for cancellation
+    private final Map<String, ChannelExec> activeStreamingChannels = new ConcurrentHashMap<>();
+    
+    // Counter for streaming commands
+    private final Counter streamingCommandCounter;
 
     @Autowired
     public DefaultSshCommandQueue(
@@ -93,6 +104,10 @@ public class DefaultSshCommandQueue implements SshCommandQueue {
         
         this.commandRejectedCounter = Counter.builder("ssh.command.rejected.count")
                 .description("Number of SSH commands rejected due to queue capacity")
+                .register(meterRegistry);
+        
+        this.streamingCommandCounter = Counter.builder("ssh.command.streaming.count")
+                .description("Number of streaming SSH commands")
                 .register(meterRegistry);
         
         // Register gauges for queue metrics
@@ -168,6 +183,219 @@ public class DefaultSshCommandQueue implements SshCommandQueue {
         return activeCommandCount.get();
     }
 
+    @Override
+    public CompletableFuture<CommandResponse> submitStreamingCommand(
+            SessionKey sessionKey, 
+            CommandRequest command, 
+            Consumer<CommandOutputMessage> outputHandler) {
+        
+        CompletableFuture<CommandResponse> future = new CompletableFuture<>();
+        
+        try {
+            if (executor.getQueue().size() >= maxQueueSize) {
+                commandRejectedCounter.increment();
+                String errorMessage = "Command queue is full. Try again later.";
+                logger.warn(errorMessage);
+                future.completeExceptionally(new RemoteOperationException(errorMessage));
+                return future;
+            }
+            
+            queuedCommandCount.incrementAndGet();
+            
+            executor.submit(() -> {
+                queuedCommandCount.decrementAndGet();
+                activeCommandCount.incrementAndGet();
+                streamingCommandCounter.increment();
+                
+                Timer.Sample sample = Timer.start(meterRegistry);
+                
+                try {
+                    CommandResponse response = executeStreamingCommand(sessionKey, command, outputHandler);
+                    future.complete(response);
+                    commandSuccessCounter.increment();
+                } catch (Exception e) {
+                    logger.error("Error executing streaming command: {}", e.getMessage(), e);
+                    commandFailureCounter.increment();
+                    future.completeExceptionally(e);
+                    
+                    // Send error message to the output handler
+                    if (outputHandler != null) {
+                        UUID commandId = UUID.fromString(command.getCommandId());
+                        outputHandler.accept(CommandOutputMessage.createErrorMessage(
+                                sessionKey.getSessionId(), 
+                                commandId, 
+                                e.getMessage()));
+                    }
+                } finally {
+                    activeCommandCount.decrementAndGet();
+                    sample.stop(commandExecutionTimer);
+                }
+            });
+            
+        } catch (RejectedExecutionException e) {
+            commandRejectedCounter.increment();
+            String errorMessage = "Command rejected: " + e.getMessage();
+            logger.warn(errorMessage, e);
+            future.completeExceptionally(new RemoteOperationException(errorMessage));
+        }
+        
+        return future;
+    }
+    
+    /**
+     * Executes a command with streaming output.
+     *
+     * @param sessionKey The session key
+     * @param command The command to execute
+     * @param outputHandler The handler for incremental output
+     * @return The final command response
+     */
+    private CommandResponse executeStreamingCommand(
+            SessionKey sessionKey, 
+            CommandRequest command, 
+            Consumer<CommandOutputMessage> outputHandler) {
+        
+        Session session = null;
+        ChannelExec channel = null;
+        
+        try {
+            session = connectionPool.getSession(sessionKey);
+            
+            if (session == null || !session.isConnected()) {
+                throw new RemoteOperationException("SSH session is not connected");
+            }
+            
+            channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(command.getCommand());
+            
+            // Set up streams for stdout and stderr
+            InputStream stdout = channel.getInputStream();
+            InputStream stderr = channel.getErrStream();
+            
+            // Store the channel for potential cancellation
+            UUID commandId = UUID.fromString(command.getCommandId());
+            activeStreamingChannels.put(command.getCommandId(), channel);
+            
+            // Send start message
+            if (outputHandler != null) {
+                outputHandler.accept(CommandOutputMessage.createStartMessage(
+                        sessionKey.getSessionId(), 
+                        commandId, 
+                        command.getCommand()));
+            }
+            
+            // Connect the channel
+            channel.connect(JSCH_CHANNEL_CONNECT_TIMEOUT_MS);
+            
+            // Set up buffers for final output
+            ByteArrayOutputStream stdoutBuffer = new ByteArrayOutputStream();
+            ByteArrayOutputStream stderrBuffer = new ByteArrayOutputStream();
+            
+            // Read from streams until command completes
+            byte[] buffer = new byte[1024];
+            long startTime = System.currentTimeMillis();
+            int timeout = command.getTimeoutMs() > 0 ? command.getTimeoutMs() : DEFAULT_COMMAND_TIMEOUT_MS;
+            
+            while (!channel.isClosed()) {
+                // Check for timeout
+                if (System.currentTimeMillis() - startTime > timeout) {
+                    commandTimeoutCounter.increment();
+                    throw new RemoteOperationException("Command execution timed out after " + timeout + "ms");
+                }
+                
+                // Read from stdout
+                while (stdout.available() > 0) {
+                    int len = stdout.read(buffer);
+                    if (len > 0) {
+                        stdoutBuffer.write(buffer, 0, len);
+                        
+                        // Send incremental output
+                        if (outputHandler != null) {
+                            String output = new String(buffer, 0, len, StandardCharsets.UTF_8);
+                            outputHandler.accept(new CommandOutputMessage(
+                                    sessionKey.getSessionId(),
+                                    commandId,
+                                    CommandOutputMessage.OutputType.STDOUT,
+                                    output));
+                        }
+                    }
+                }
+                
+                // Read from stderr
+                while (stderr.available() > 0) {
+                    int len = stderr.read(buffer);
+                    if (len > 0) {
+                        stderrBuffer.write(buffer, 0, len);
+                        
+                        // Send incremental output
+                        if (outputHandler != null) {
+                            String output = new String(buffer, 0, len, StandardCharsets.UTF_8);
+                            outputHandler.accept(new CommandOutputMessage(
+                                    sessionKey.getSessionId(),
+                                    commandId,
+                                    CommandOutputMessage.OutputType.STDERR,
+                                    output));
+                        }
+                    }
+                }
+                
+                // Check if command has completed
+                if (channel.isClosed()) {
+                    break;
+                }
+                
+                // Sleep briefly to avoid busy waiting
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RemoteOperationException("Command execution interrupted");
+                }
+            }
+            
+            // Get exit status
+            int exitStatus = channel.getExitStatus();
+            
+            // Send end message
+            if (outputHandler != null) {
+                outputHandler.accept(CommandOutputMessage.createEndMessage(
+                        sessionKey.getSessionId(), 
+                        commandId, 
+                        exitStatus));
+            }
+            
+            // Create and return the final response
+            return new CommandResponse(
+                    command.getCommandId(),
+                    command.getCommand(),
+                    stdoutBuffer.toString(StandardCharsets.UTF_8),
+                    stderrBuffer.toString(StandardCharsets.UTF_8),
+                    exitStatus,
+                    System.currentTimeMillis() - startTime
+            );
+            
+        } catch (JSchException | IOException e) {
+            throw new RemoteOperationException("Error executing command: " + e.getMessage(), e);
+        } finally {
+            if (channel != null) {
+                activeStreamingChannels.remove(command.getCommandId());
+                channel.disconnect();
+            }
+        }
+    }
+    
+    @Override
+    public boolean cancelCommand(SessionKey sessionKey, String commandId) {
+        ChannelExec channel = activeStreamingChannels.get(commandId);
+        if (channel != null && channel.isConnected()) {
+            channel.disconnect();
+            activeStreamingChannels.remove(commandId);
+            logger.info("Cancelled command {} for session {}", commandId, sessionKey.getSessionId());
+            return true;
+        }
+        return false;
+    }
+    
     /**
      * Internal method to execute a command using a JSch session.
      *
@@ -252,4 +480,3 @@ public class DefaultSshCommandQueue implements SshCommandQueue {
         return new CommandResponse(stdoutString, stderrString, exitStatus, durationMs);
     }
 }
-

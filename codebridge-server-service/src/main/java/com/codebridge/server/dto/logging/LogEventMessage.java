@@ -11,6 +11,8 @@ public record LogEventMessage(
         String details,
         String status,
         String errorMessage, // Nullable
+        String ipAddress, // Added for IP tracking
+        String userAgent, // Added for additional client context
         long timestamp // Epoch millis
 ) implements Serializable {
     // No explicit constructor or getters needed for records
