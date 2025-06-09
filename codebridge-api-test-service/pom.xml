@@ -6,12 +6,13 @@
 
     <parent>
         <groupId>com.codebridge</groupId>
-        <artifactId>codebridge-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <artifactId>codebridge-platform</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>codebridge-api-test-service</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <name>CodeBridge API Test Service</name>
     <description>API Testing Service for CodeBridge</description>
 
@@ -143,3 +144,4 @@
         </plugins>
     </build>
 </project>
+
