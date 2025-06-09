@@ -14,14 +14,18 @@ public class ServerUserResponse {
     private UUID accessGrantedBy; // Platform user who granted this
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime expiresAt; // Expiration date for time-limited access
+    private String accessLevel; // Access level (OWNER, ADMIN, OPERATOR, VIEWER)
+    private boolean isActive; // Whether the access is currently active
 
     // Constructor, Getters, Setters
     public ServerUserResponse() {
     }
 
     public ServerUserResponse(UUID id, UUID serverId, String serverName, UUID platformUserId,
-                              String remoteUsernameForUser, UUID sshKeyIdForUser, String sshKeyNameForUser,
-                              UUID accessGrantedBy, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                          String remoteUsernameForUser, UUID sshKeyIdForUser, String sshKeyNameForUser,
+                          UUID accessGrantedBy, LocalDateTime createdAt, LocalDateTime updatedAt,
+                          LocalDateTime expiresAt, String accessLevel, boolean isActive) {
         this.id = id;
         this.serverId = serverId;
         this.serverName = serverName;
@@ -32,6 +36,9 @@ public class ServerUserResponse {
         this.accessGrantedBy = accessGrantedBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.expiresAt = expiresAt;
+        this.accessLevel = accessLevel;
+        this.isActive = isActive;
     }
 
     public UUID getId() {
@@ -112,5 +119,29 @@ public class ServerUserResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public String getAccessLevel() {
+        return accessLevel;
+    }
+
+    public void setAccessLevel(String accessLevel) {
+        this.accessLevel = accessLevel;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
     }
 }

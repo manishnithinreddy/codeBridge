@@ -12,16 +12,24 @@ import com.codebridge.server.model.enums.ServerAuthProvider;
 import com.codebridge.server.repository.ServerRepository;
 import com.codebridge.server.repository.ServerUserRepository;
 import com.codebridge.server.repository.SshKeyRepository;
-import org.springframework.cache.annotation.CacheEvict; // Added
-import org.springframework.cache.annotation.Cacheable;  // Added
+import com.codebridge.server.model.ServerAccessGrant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class ServerAccessControlService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServerAccessControlService.class);
 
     private final ServerUserRepository serverUserRepository;
     private final ServerRepository serverRepository;
@@ -56,39 +64,68 @@ public class ServerAccessControlService {
                     .orElseThrow(() -> new ResourceNotFoundException("Server", "id", serverId));
 
             // Verify adminUserId owns the server
-        if (!server.getUserId().equals(adminUserId)) {
-            throw new AccessDeniedException("User " + adminUserId + " does not own server " + serverId + ". Cannot grant access.");
-        }
+            if (!server.getUserId().equals(adminUserId)) {
+                throw new AccessDeniedException("User " + adminUserId + " does not own server " + serverId + ". Cannot grant access.");
+            }
 
-        if (adminUserId.equals(requestDto.getPlatformUserId())) {
-            throw new IllegalArgumentException("Cannot grant server access to the server owner via ServerUser record. Owner has implicit access.");
-        }
+            if (adminUserId.equals(requestDto.getPlatformUserId())) {
+                throw new IllegalArgumentException("Cannot grant server access to the server owner via ServerUser record. Owner has implicit access.");
+            }
 
-        SshKey sshKeyForUser = null;
-        if (requestDto.getSshKeyIdForUser() != null) {
-            // Ensure the adminUserId (who is granting access) also owns the key being assigned.
-            // Or, if keys can be public/shared, this check might differ. For now, assume admin owns assigned key.
-            sshKeyForUser = sshKeyRepository.findById(requestDto.getSshKeyIdForUser())
-                    // .filter(key -> key.getUserId().equals(adminUserId)) // This check might be too restrictive if admin is assigning a user's own key or a shared key
-                    .orElseThrow(() -> new ResourceNotFoundException("SshKey", "id", requestDto.getSshKeyIdForUser()));
-        }
+            SshKey sshKeyForUser = null;
+            if (requestDto.getSshKeyIdForUser() != null) {
+                // Ensure the adminUserId (who is granting access) also owns the key being assigned.
+                // Or, if keys can be public/shared, this check might differ. For now, assume admin owns assigned key.
+                sshKeyForUser = sshKeyRepository.findById(requestDto.getSshKeyIdForUser())
+                        // .filter(key -> key.getUserId().equals(adminUserId)) // This check might be too restrictive if admin is assigning a user's own key or a shared key
+                        .orElseThrow(() -> new ResourceNotFoundException("SshKey", "id", requestDto.getSshKeyIdForUser()));
+            }
 
-        Optional<ServerUser> existingGrantOpt = serverUserRepository.findByServerIdAndPlatformUserId(serverId, requestDto.getPlatformUserId());
+            Optional<ServerUser> existingGrantOpt = serverUserRepository.findByServerIdAndPlatformUserId(serverId, requestDto.getPlatformUserId());
 
-        ServerUser serverUser = existingGrantOpt.orElse(new ServerUser());
-        serverUser.setServer(server);
-        serverUser.setPlatformUserId(requestDto.getPlatformUserId());
-        serverUser.setRemoteUsernameForUser(requestDto.getRemoteUsernameForUser());
-        serverUser.setSshKeyForUser(sshKeyForUser); // Can be null
-        serverUser.setAccessGrantedBy(adminUserId);
+            ServerUser serverUser = existingGrantOpt.orElse(new ServerUser());
+            serverUser.setServer(server);
+            serverUser.setPlatformUserId(requestDto.getPlatformUserId());
+            serverUser.setRemoteUsernameForUser(requestDto.getRemoteUsernameForUser());
+            serverUser.setSshKeyForUser(sshKeyForUser); // Can be null
+            serverUser.setAccessGrantedBy(adminUserId);
+            
+            // Set expiration date if provided
+            if (requestDto.getExpiresAt() != null) {
+                serverUser.setExpiresAt(requestDto.getExpiresAt());
+            }
+            
+            // Set access level if provided, otherwise default to OPERATOR
+            if (requestDto.getAccessLevel() != null) {
+                try {
+                    ServerAccessGrant.AccessLevel accessLevel = 
+                            ServerAccessGrant.AccessLevel.valueOf(requestDto.getAccessLevel());
+                    serverUser.setAccessLevel(accessLevel);
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid access level: {}. Using default OPERATOR.", requestDto.getAccessLevel());
+                    serverUser.setAccessLevel(ServerAccessGrant.AccessLevel.OPERATOR);
+                }
+            } else {
+                serverUser.setAccessLevel(ServerAccessGrant.AccessLevel.OPERATOR);
+            }
+            
+            // Always set active to true when granting access
+            serverUser.setActive(true);
 
-        savedServerUser = serverUserRepository.save(serverUser);
-        logStatus = "SUCCESS";
-        details = String.format("Access granted to user %s for server %s (ID: %s) by user %s. Remote username: %s. Key ID: %s",
-                                requestDto.getPlatformUserId(), server.getName(), serverId, adminUserId,
-                                requestDto.getRemoteUsernameForUser(), requestDto.getSshKeyIdForUser());
-        activityLogService.createLog(adminUserId, "SERVER_ACCESS_GRANT", serverId, details, logStatus, null);
-        return mapToServerUserResponse(savedServerUser);
+            savedServerUser = serverUserRepository.save(serverUser);
+            logStatus = "SUCCESS";
+            
+            String expirationInfo = requestDto.getExpiresAt() != null ? 
+                    String.format(", expires at %s", requestDto.getExpiresAt()) : ", no expiration";
+            
+            details = String.format("Access granted to user %s for server %s (ID: %s) by user %s. " +
+                            "Remote username: %s. Key ID: %s. Access level: %s%s",
+                    requestDto.getPlatformUserId(), server.getName(), serverId, adminUserId,
+                    requestDto.getRemoteUsernameForUser(), requestDto.getSshKeyIdForUser(),
+                    serverUser.getAccessLevel(), expirationInfo);
+                    
+            activityLogService.createLog(adminUserId, "SERVER_ACCESS_GRANT", serverId, details, logStatus, null);
+            return mapToServerUserResponse(savedServerUser);
         } catch (Exception e) {
             details = String.format("Failed to grant access to user %s for server ID %s by user %s. Remote username: %s. Key ID: %s. Error: %s",
                                     requestDto.getPlatformUserId(), serverId, adminUserId,
@@ -163,6 +200,15 @@ public class ServerAccessControlService {
         // If not owner, look for a ServerUser grant
         ServerUser serverUser = serverUserRepository.findByServerIdAndPlatformUserId(serverId, platformUserId)
                 .orElseThrow(() -> new AccessDeniedException("User " + platformUserId + " does not have access to server " + serverId));
+        
+        // Check if the access grant is valid (active and not expired)
+        if (!serverUser.isValid()) {
+            if (!serverUser.isActive()) {
+                throw new AccessDeniedException("Access for user " + platformUserId + " to server " + serverId + " has been deactivated");
+            } else {
+                throw new AccessDeniedException("Access for user " + platformUserId + " to server " + serverId + " has expired");
+            }
+        }
 
         UserSpecificConnectionDetailsDto details = new UserSpecificConnectionDetailsDto(
                 server.getHostname(),
@@ -202,6 +248,36 @@ public class ServerAccessControlService {
         return details;
     }
 
+    /**
+     * Scheduled task to deactivate expired access grants
+     * Runs every hour
+     */
+    @Scheduled(fixedRate = 3600000) // Run every hour
+    @Transactional
+    public void deactivateExpiredGrants() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ServerUser> expiredGrants = serverUserRepository.findExpiredGrants(now);
+        
+        if (!expiredGrants.isEmpty()) {
+            logger.info("Found {} expired server access grants to deactivate", expiredGrants.size());
+            
+            for (ServerUser grant : expiredGrants) {
+                grant.setActive(false);
+                
+                // Log the expiration
+                String details = String.format("Access for user %s to server %s (ID: %s) expired at %s",
+                        grant.getPlatformUserId(), grant.getServer().getName(), 
+                        grant.getServer().getId(), grant.getExpiresAt());
+                
+                activityLogService.createLog(null, "SERVER_ACCESS_EXPIRED", grant.getServer().getId(), 
+                        details, "SUCCESS", null);
+            }
+            
+            serverUserRepository.saveAll(expiredGrants);
+            logger.info("Deactivated {} expired server access grants", expiredGrants.size());
+        }
+    }
+
     private ServerUserResponse mapToServerUserResponse(ServerUser serverUser) {
         if (serverUser == null) return null;
         ServerUserResponse res = new ServerUserResponse(
@@ -214,7 +290,10 @@ public class ServerAccessControlService {
                 serverUser.getSshKeyForUser() != null ? serverUser.getSshKeyForUser().getName() : null,
                 serverUser.getAccessGrantedBy(),
                 serverUser.getCreatedAt(),
-                serverUser.getUpdatedAt()
+                serverUser.getUpdatedAt(),
+                serverUser.getExpiresAt(),
+                serverUser.getAccessLevel() != null ? serverUser.getAccessLevel().name() : null,
+                serverUser.isActive()
         );
         return res;
     }
