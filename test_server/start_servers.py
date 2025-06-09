@@ -5,7 +5,7 @@ import sys
 import threading
 import time
 import logging
-from ssh_server import start_server as start_ssh_server
+from simple_ssh_server import start_server as start_ssh_server
 from ftp_server import start_ftp_server
 
 # Setup logging
@@ -46,4 +46,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
