@@ -28,8 +28,8 @@ public class CollectionTest {
     @Column(nullable = false)
     private UUID testId;
 
-    @Column(nullable = false)
-    private int order;
+    @Column(name = "test_order", nullable = false)
+    private int testOrder;
 
     @Column
     @Lob
@@ -83,12 +83,22 @@ public class CollectionTest {
         this.testId = testId;
     }
 
-    public int getOrder() {
-        return order;
+    public int getTestOrder() {
+        return testOrder;
     }
 
+    public void setTestOrder(int testOrder) {
+        this.testOrder = testOrder;
+    }
+
+    // For backward compatibility
+    public int getOrder() {
+        return testOrder;
+    }
+
+    // For backward compatibility
     public void setOrder(int order) {
-        this.order = order;
+        this.testOrder = order;
     }
 
     public String getPreRequestScript() {
