@@ -20,7 +20,8 @@ public class ApplicationInstanceIdProvider {
         }
     }
 
-    public StringgetInstanceId() {
+    public String getInstanceId() {
         return instanceId;
     }
 }
+
