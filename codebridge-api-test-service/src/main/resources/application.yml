@@ -16,10 +16,15 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
   h2:
     console:
       enabled: true
       path: /h2-console
+      settings:
+        web-allow-others: true
   main:
     allow-bean-definition-overriding: true
 
@@ -37,11 +42,16 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 
 logging:
   level:
     com.codebridge: DEBUG
     org.springframework: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
 
 codebridge:
   encryption:
