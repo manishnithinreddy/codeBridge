@@ -42,6 +42,14 @@ public class ServerActivityLog {
     @Lob
     @Column(columnDefinition = "TEXT")
     private String errorMessage; // Nullable
+    
+    @Size(max = 255)
+    @Column
+    private String ipAddress; // Client IP address
+    
+    @Size(max = 1024)
+    @Column
+    private String userAgent; // Client user agent
 
     @CreationTimestamp // Sets timestamp automatically on creation
     @Column(nullable = false, updatable = false)
@@ -108,6 +116,22 @@ public class ServerActivityLog {
         this.errorMessage = errorMessage;
     }
 
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
+
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
@@ -137,6 +161,7 @@ public class ServerActivityLog {
                ", platformUserId=" + platformUserId +
                ", action='" + action + '\'' +
                ", status='" + status + '\'' +
+               ", ipAddress='" + ipAddress + '\'' +
                ", timestamp=" + timestamp +
                '}';
     }

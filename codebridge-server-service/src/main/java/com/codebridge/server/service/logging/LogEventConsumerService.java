@@ -103,6 +103,8 @@ public class LogEventConsumerService {
         entity.setDetails(dto.details());
         entity.setStatus(dto.status());
         entity.setErrorMessage(dto.errorMessage()); // Can be null
+        entity.setIpAddress(dto.ipAddress()); // Set IP address
+        entity.setUserAgent(dto.userAgent()); // Set user agent
         entity.setTimestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.timestamp()), ZoneId.systemDefault()));
         return entity;
     }

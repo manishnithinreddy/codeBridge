@@ -13,6 +13,8 @@ public class ServerActivityLogResponse {
     private String details;
     private String status;
     private String errorMessage;
+    private String ipAddress; // Added for IP tracking
+    private String userAgent; // Added for client context
     private LocalDateTime timestamp;
 
     // Constructor, Getters, Setters
@@ -20,8 +22,8 @@ public class ServerActivityLogResponse {
     }
 
     public ServerActivityLogResponse(UUID id, UUID serverId, String serverName, UUID platformUserId,
-                                     String platformUsername, String action, String details, String status,
-                                     String errorMessage, LocalDateTime timestamp) {
+                                   String platformUsername, String action, String details, String status,
+                                   String errorMessage, String ipAddress, String userAgent, LocalDateTime timestamp) {
         this.id = id;
         this.serverId = serverId;
         this.serverName = serverName;
@@ -31,6 +33,8 @@ public class ServerActivityLogResponse {
         this.details = details;
         this.status = status;
         this.errorMessage = errorMessage;
+        this.ipAddress = ipAddress;
+        this.userAgent = userAgent;
         this.timestamp = timestamp;
     }
 
@@ -104,6 +108,22 @@ public class ServerActivityLogResponse {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
     }
 
     public LocalDateTime getTimestamp() {
