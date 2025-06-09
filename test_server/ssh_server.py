@@ -7,6 +7,7 @@ import os
 import paramiko
 import logging
 from binascii import hexlify
+import time
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -141,39 +142,120 @@ class SSHServer(paramiko.ServerInterface):
         channel.close()
         return True
 
-def start_server(port=2222):
-    # Create a socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+class SFTPHandle(paramiko.SFTPHandle):
+    def __init__(self, filename, flags, attr):
+        super().__init__(flags)
+        self.filename = filename
+        self.readfile = None
+        self.writefile = None
+        
+        if self.flags & os.O_WRONLY:
+            self.writefile = open(filename, "wb")
+        elif self.flags & os.O_RDWR:
+            self.readfile = open(filename, "rb")
+            self.writefile = open(filename, "wb")
+        else:
+            self.readfile = open(filename, "rb")
     
-    # Bind to the port
-    try:
-        sock.bind(("0.0.0.0", port))
-    except socket.error as e:
-        logger.error(f"Bind failed: {str(e)}")
-        sys.exit(1)
+    def read(self, offset, length):
+        if self.readfile is None:
+            return paramiko.SFTP_OP_UNSUPPORTED
+        self.readfile.seek(offset)
+        return self.readfile.read(length)
     
-    # Start listening
-    sock.listen(100)
-    logger.info(f"Listening for connections on port {port}...")
+    def write(self, offset, data):
+        if self.writefile is None:
+            return paramiko.SFTP_OP_UNSUPPORTED
+        self.writefile.seek(offset)
+        self.writefile.write(data)
+        return paramiko.SFTP_OK
     
-    # Accept connections
-    while True:
+    def close(self):
+        if self.readfile is not None:
+            self.readfile.close()
+        if self.writefile is not None:
+            self.writefile.close()
+        return paramiko.SFTP_OK
+
+class SFTPServer(paramiko.SFTPServerInterface):
+    def __init__(self, server):
+        self.server = server
+        self.root = os.getcwd()
+    
+    def _realpath(self, path):
+        return os.path.join(self.root, path.lstrip("/"))
+    
+    def list_folder(self, path):
+        path = self._realpath(path)
         try:
-            client, addr = sock.accept()
-            logger.info(f"Connection from {addr[0]}:{addr[1]}")
-            
-            # Create a new thread for the connection
-            t = threading.Thread(target=handle_connection, args=(client, addr))
-            t.daemon = True
-            t.start()
-        except KeyboardInterrupt:
-            logger.info("Server shutting down...")
-            break
-        except Exception as e:
-            logger.error(f"Error: {str(e)}")
+            out = []
+            for filename in os.listdir(path):
+                filepath = os.path.join(path, filename)
+                stat = os.stat(filepath)
+                attrs = paramiko.SFTPAttributes.from_stat(stat)
+                attrs.filename = filename
+                out.append(attrs)
+            return out
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
     
-    sock.close()
+    def stat(self, path):
+        path = self._realpath(path)
+        try:
+            stat = os.stat(path)
+            attrs = paramiko.SFTPAttributes.from_stat(stat)
+            return attrs
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
+    
+    def lstat(self, path):
+        path = self._realpath(path)
+        try:
+            stat = os.lstat(path)
+            attrs = paramiko.SFTPAttributes.from_stat(stat)
+            return attrs
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
+    
+    def open(self, path, flags, attr):
+        path = self._realpath(path)
+        try:
+            return SFTPHandle(path, flags, attr)
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
+    
+    def remove(self, path):
+        path = self._realpath(path)
+        try:
+            os.remove(path)
+            return paramiko.SFTP_OK
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
+    
+    def rename(self, oldpath, newpath):
+        oldpath = self._realpath(oldpath)
+        newpath = self._realpath(newpath)
+        try:
+            os.rename(oldpath, newpath)
+            return paramiko.SFTP_OK
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
+    
+    def mkdir(self, path, attr):
+        path = self._realpath(path)
+        try:
+            os.mkdir(path)
+            return paramiko.SFTP_OK
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
+    
+    def rmdir(self, path):
+        path = self._realpath(path)
+        try:
+            os.rmdir(path)
+            return paramiko.SFTP_OK
+        except OSError as e:
+            return paramiko.SFTPServer.convert_errno(e.errno)
 
 def handle_connection(client, addr):
     try:
@@ -185,12 +267,23 @@ def handle_connection(client, addr):
         server = SSHServer()
         transport.start_server(server=server)
         
-        # Wait for authentication
+        # Accept the channel
         channel = transport.accept(20)
         if channel is None:
             logger.warning("No channel established")
             return
         
+        # Check if this is an SFTP request
+        if transport.is_active():
+            sftp_handler = transport.accept(20)
+            if sftp_handler:
+                logger.info("SFTP request received")
+                paramiko.SFTPServer(sftp_handler, SFTPServer(server)).start()
+                # Keep the connection alive for a while
+                time.sleep(30)
+                return
+        
+        # Wait for shell request
         server.event.wait(10)
         if not server.event.is_set():
             logger.warning("No shell requested")
@@ -300,6 +393,40 @@ def handle_connection(client, addr):
             transport.close()
         except:
             pass
+
+def start_server(port=2222):
+    # Create a socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    # Bind to the port
+    try:
+        sock.bind(("0.0.0.0", port))
+    except socket.error as e:
+        logger.error(f"Bind failed: {str(e)}")
+        sys.exit(1)
+    
+    # Start listening
+    sock.listen(100)
+    logger.info(f"Listening for connections on port {port}...")
+    
+    # Accept connections
+    while True:
+        try:
+            client, addr = sock.accept()
+            logger.info(f"Connection from {addr[0]}:{addr[1]}")
+            
+            # Create a new thread for the connection
+            t = threading.Thread(target=handle_connection, args=(client, addr))
+            t.daemon = True
+            t.start()
+        except KeyboardInterrupt:
+            logger.info("Server shutting down...")
+            break
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+    
+    sock.close()
 
 if __name__ == "__main__":
     # Create test files
