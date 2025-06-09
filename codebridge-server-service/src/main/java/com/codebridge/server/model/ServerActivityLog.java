@@ -24,6 +24,10 @@ public class ServerActivityLog {
     @NotNull
     @Column(name = "platform_user_id", nullable = false)
     private UUID platformUserId; // Platform user who performed or initiated the action
+    
+    @NotNull
+    @Column(name = "user_id", nullable = false)
+    private UUID userId; // Alias for platformUserId for consistency with repository methods
 
     @NotBlank
     @Size(max = 255)
@@ -82,6 +86,16 @@ public class ServerActivityLog {
 
     public void setPlatformUserId(UUID platformUserId) {
         this.platformUserId = platformUserId;
+        this.userId = platformUserId; // Set userId to match platformUserId
+    }
+    
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+        this.platformUserId = userId; // Set platformUserId to match userId
     }
 
     public String getAction() {
@@ -166,3 +180,4 @@ public class ServerActivityLog {
                '}';
     }
 }
+

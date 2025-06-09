@@ -6,7 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List; // Kept for non-paginated alternative, though Page is preferred
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -19,4 +20,11 @@ public interface ServerActivityLogRepository extends JpaRepository<ServerActivit
     // Non-paginated alternatives (could be useful for specific, limited queries)
     List<ServerActivityLog> findByServerIdOrderByTimestampDesc(UUID serverId);
     List<ServerActivityLog> findByPlatformUserIdOrderByTimestampDesc(UUID platformUserId);
+    
+    // Added for log export feature
+    List<ServerActivityLog> findByTimestampBetween(LocalDateTime startDate, LocalDateTime endDate);
+    List<ServerActivityLog> findByUserIdAndTimestampBetween(UUID userId, LocalDateTime startDate, LocalDateTime endDate);
+    List<ServerActivityLog> findByServerIdAndTimestampBetween(UUID serverId, LocalDateTime startDate, LocalDateTime endDate);
+    List<ServerActivityLog> findByUserIdAndServerIdAndTimestampBetween(UUID userId, UUID serverId, LocalDateTime startDate, LocalDateTime endDate);
 }
+
