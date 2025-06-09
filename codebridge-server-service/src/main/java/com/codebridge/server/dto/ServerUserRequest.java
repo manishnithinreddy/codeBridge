@@ -3,6 +3,7 @@ package com.codebridge.server.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ServerUserRequest {
@@ -16,6 +17,12 @@ public class ServerUserRequest {
 
     // Optional: if this user should use a specific SSH key different from server's default
     private UUID sshKeyIdForUser;
+    
+    // Optional: expiration date for time-limited access
+    private LocalDateTime expiresAt;
+    
+    // Optional: access level (defaults to OPERATOR if not specified)
+    private String accessLevel;
 
     // serverId will be typically from path variable in controller
 
@@ -42,5 +49,21 @@ public class ServerUserRequest {
 
     public void setSshKeyIdForUser(UUID sshKeyIdForUser) {
         this.sshKeyIdForUser = sshKeyIdForUser;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+    
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+    
+    public String getAccessLevel() {
+        return accessLevel;
+    }
+    
+    public void setAccessLevel(String accessLevel) {
+        this.accessLevel = accessLevel;
     }
 }

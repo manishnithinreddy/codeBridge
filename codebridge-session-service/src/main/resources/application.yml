@@ -59,6 +59,8 @@ codebridge:
     ssh:
       defaultTimeoutMs: 300000 # 5 minutes
       maxSessionsPerUserPerServer: 5
+      # Host key verification policy: STRICT, ASK, or AUTO_ACCEPT
+      host-key-verification-policy: AUTO_ACCEPT
     # db: # DB session specific timeouts can be added later if needed
       # defaultTimeoutMs: 1800000 # 30 minutes
   # Shared secret for validating incoming User JWTs (from API Gateway/Client)

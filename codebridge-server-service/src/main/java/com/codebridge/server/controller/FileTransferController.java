@@ -88,4 +88,63 @@ public class FileTransferController {
         );
         return ResponseEntity.ok().build(); // Or ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+    /**
+     * Delete a file or directory on the remote server
+     * @param serverId Server ID
+     * @param platformUserId User ID
+     * @param remotePath Path to delete
+     * @param recursive Whether to delete recursively (for directories)
+     * @return Success message
+     */
+    @DeleteMapping("/{serverId}/files")
+    public ResponseEntity<String> deleteFile(
+            @PathVariable UUID serverId,
+            @RequestHeader("X-Platform-User-ID") UUID platformUserId,
+            @RequestParam String remotePath,
+            @RequestParam(required = false, defaultValue = "false") boolean recursive) {
+        
+        fileTransferService.deleteFile(serverId, platformUserId, remotePath, recursive);
+        return ResponseEntity.ok("File or directory deleted successfully");
+    }
+    
+    /**
+     * Change permissions of a file or directory on the remote server
+     * @param serverId Server ID
+     * @param platformUserId User ID
+     * @param remotePath Path to change permissions
+     * @param permissions Permissions in octal format (e.g. "755")
+     * @param recursive Whether to change permissions recursively (for directories)
+     * @return Success message
+     */
+    @PutMapping("/{serverId}/files/permissions")
+    public ResponseEntity<String> changeFilePermissions(
+            @PathVariable UUID serverId,
+            @RequestHeader("X-Platform-User-ID") UUID platformUserId,
+            @RequestParam String remotePath,
+            @RequestParam String permissions,
+            @RequestParam(required = false, defaultValue = "false") boolean recursive) {
+        
+        fileTransferService.changeFilePermissions(serverId, platformUserId, remotePath, permissions, recursive);
+        return ResponseEntity.ok("File permissions changed successfully");
+    }
+    
+    /**
+     * Rename or move a file or directory on the remote server
+     * @param serverId Server ID
+     * @param platformUserId User ID
+     * @param sourcePath Source path
+     * @param targetPath Target path
+     * @return Success message
+     */
+    @PutMapping("/{serverId}/files/rename")
+    public ResponseEntity<String> renameFile(
+            @PathVariable UUID serverId,
+            @RequestHeader("X-Platform-User-ID") UUID platformUserId,
+            @RequestParam String sourcePath,
+            @RequestParam String targetPath) {
+        
+        fileTransferService.renameFile(serverId, platformUserId, sourcePath, targetPath);
+        return ResponseEntity.ok("File renamed/moved successfully");
+    }
 }
