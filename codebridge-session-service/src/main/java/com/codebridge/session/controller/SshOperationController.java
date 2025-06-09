@@ -49,6 +49,7 @@ public class SshOperationController {
     private static final Logger logger = LoggerFactory.getLogger(SshOperationController.class);
     private static final int DEFAULT_COMMAND_TIMEOUT_MS = 60000; // 60 seconds
     private static final int JSCH_CHANNEL_CONNECT_TIMEOUT_MS = 5000; // 5 seconds for channel
+    private static final String SSH_SESSION_TYPE = "SSH"; // Session type constant
 
     private final SshSessionLifecycleManager sessionLifecycleManager;
     private final JwtTokenProvider jwtTokenProvider;
@@ -219,7 +220,7 @@ public class SshOperationController {
     public ResponseEntity<Resource> downloadFile(
             @PathVariable String sessionToken,
             @RequestParam @NotBlank String remotePath) {
-        
+    
         Timer.Sample sample = Timer.start(meterRegistry);
         Session jschSession = getValidatedLocalSshSession(sessionToken, "sftp-download");
         ChannelSftp channelSftp = null;
@@ -245,14 +246,18 @@ public class SshOperationController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFilename + "\"")
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(resource.contentLength()))
                 .body(resource);
-        } catch (JSchException | SftpException | IOException e) {
+        } catch (JSchException | SftpException e) {
             logger.error("SFTP download error for session token {}: {}", sessionToken, e.getMessage(), e);
             throw new RemoteOperationException("SFTP download operation failed: " + e.getMessage(), e);
         } finally {
             if (channelSftp != null && channelSftp.isConnected()) {
                 channelSftp.disconnect();
             }
-            try { baos.close(); } catch (IOException e) { /* ignore */ }
+            try { 
+                baos.close(); 
+            } catch (Exception e) { 
+                /* ignore */ 
+            }
         }
     }
 

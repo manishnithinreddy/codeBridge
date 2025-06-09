@@ -259,7 +259,13 @@ public class DefaultSshCommandQueue implements SshCommandQueue {
         ChannelExec channel = null;
         
         try {
-            session = connectionPool.getSession(sessionKey);
+            // Get a connection from the pool
+            try {
+                session = connectionPool.acquireConnection(sessionKey, null); // We assume the connection exists
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RemoteOperationException("Command execution was interrupted while acquiring connection", e);
+            }
             
             if (session == null || !session.isConnected()) {
                 throw new RemoteOperationException("SSH session is not connected");

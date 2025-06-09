@@ -10,4 +10,10 @@ public record SessionKey(
     String sessionType // e.g., "SSH", "DB_POSTGRESQL"
 ) implements Serializable {
     // No explicit constructor, getters, hashCode, equals, or toString needed for records
+    
+    // Added method to support legacy code that expects getSessionId()
+    public UUID getSessionId() {
+        return resourceId;
+    }
 }
+

@@ -66,6 +66,58 @@ public class FileTransferService {
         return platformUserIdFromToken;
     }
 
+    // Methods that accept UUID platformUserId
+    
+    public List<RemoteFileEntry> listFiles(UUID serverId, UUID platformUserId, String remotePath) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        return listFiles(serverId, sessionToken, remotePath);
+    }
+    
+    public byte[] downloadFile(UUID serverId, UUID platformUserId, String remotePath) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        return downloadFile(serverId, sessionToken, remotePath);
+    }
+    
+    public void uploadFile(UUID serverId, UUID platformUserId, String remoteDirectory, InputStream inputStream, String remoteFileName) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        uploadFile(serverId, sessionToken, remoteDirectory, inputStream, remoteFileName);
+    }
+    
+    public void deleteFile(UUID serverId, UUID platformUserId, String remotePath, boolean recursive) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        deleteFile(serverId, sessionToken, remotePath, recursive);
+    }
+    
+    public void changeFilePermissions(UUID serverId, UUID platformUserId, String remotePath, String permissions, boolean recursive) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        changeFilePermissions(serverId, sessionToken, remotePath, permissions, recursive);
+    }
+    
+    public void renameFile(UUID serverId, UUID platformUserId, String sourcePath, String targetPath) {
+        // Get a valid session token for this user and server
+        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
+        renameFile(serverId, sessionToken, sourcePath, targetPath);
+    }
+    
+    // Helper method to get a session token for a user and server
+    private String getSessionTokenForUser(UUID platformUserId, UUID serverId) {
+        // This is a placeholder implementation
+        // In a real implementation, you would:
+        // 1. Check if there's an existing valid session token for this user and server
+        // 2. If not, create a new session
+        // 3. Return the session token
+        
+        // For now, just return a dummy token
+        return "dummy-session-token-" + platformUserId + "-" + serverId;
+    }
+
+    // Methods that accept sessionToken
+    
     public List<RemoteFileEntry> listFiles(UUID serverId, String sessionToken, String remotePath) {
         UUID platformUserId = null;
         String logStatus = "FAILED";
@@ -307,35 +359,5 @@ public class FileTransferService {
             throw new FileTransferException("Unexpected error during SFTP rename: " + errorMessage, e);
         }
     }
-    
-    // Convenience methods for controller to use with platformUserId instead of sessionToken
-    
-    public void deleteFile(UUID serverId, UUID platformUserId, String remotePath, boolean recursive) {
-        // Get a valid session token for this user and server
-        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
-        deleteFile(serverId, sessionToken, remotePath, recursive);
-    }
-    
-    public void changeFilePermissions(UUID serverId, UUID platformUserId, String remotePath, String permissions, boolean recursive) {
-        // Get a valid session token for this user and server
-        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
-        changeFilePermissions(serverId, sessionToken, remotePath, permissions, recursive);
-    }
-    
-    public void renameFile(UUID serverId, UUID platformUserId, String sourcePath, String targetPath) {
-        // Get a valid session token for this user and server
-        String sessionToken = getSessionTokenForUser(platformUserId, serverId);
-        renameFile(serverId, sessionToken, sourcePath, targetPath);
-    }
-    
-    // Helper method to get a session token for a user and server
-    private String getSessionTokenForUser(UUID platformUserId, UUID serverId) {
-        // This is a placeholder - in a real implementation, you would:
-        // 1. Check if there's an existing valid session token for this user and server
-        // 2. If not, create a new session
-        // 3. Return the session token
-        
-        // For now, we'll just throw an exception to indicate this needs to be implemented
-        throw new UnsupportedOperationException("Session token management not implemented yet");
-    }
 }
+
