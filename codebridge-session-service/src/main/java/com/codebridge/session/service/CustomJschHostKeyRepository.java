@@ -5,6 +5,7 @@ import com.codebridge.session.repository.KnownSshHostKeyRepository;
 import com.jcraft.jsch.HostKey;
 import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,21 +13,49 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.security.MessageDigest; // For fingerprint generation
 
 @Component
 public class CustomJschHostKeyRepository implements HostKeyRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomJschHostKeyRepository.class);
     private final KnownSshHostKeyRepository knownSshHostKeyRepository;
+    
+    // Host key verification policy
+    public enum HostKeyVerificationPolicy {
+        STRICT,      // Reject unknown or changed keys
+        ASK,         // Ask for confirmation (if UI available)
+        AUTO_ACCEPT  // Auto-accept unknown keys (Trust On First Use)
+    }
+    
+    private HostKeyVerificationPolicy verificationPolicy = HostKeyVerificationPolicy.AUTO_ACCEPT;
 
     public CustomJschHostKeyRepository(KnownSshHostKeyRepository knownSshHostKeyRepository) {
         this.knownSshHostKeyRepository = knownSshHostKeyRepository;
+    }
+    
+    /**
+     * Set the host key verification policy
+     * @param policy The policy to use
+     */
+    public void setVerificationPolicy(HostKeyVerificationPolicy policy) {
+        this.verificationPolicy = policy;
+        logger.info("Host key verification policy set to: {}", policy);
+    }
+    
+    /**
+     * Get the current host key verification policy
+     * @return The current policy
+     */
+    public HostKeyVerificationPolicy getVerificationPolicy() {
+        return this.verificationPolicy;
     }
 
     @Override
@@ -58,7 +87,6 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
             }
         }
 
-
         Optional<KnownSshHostKey> existingKeyOpt =
             knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(hostname, port, keyType);
 
@@ -73,10 +101,26 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
                 logger.warn("!!! HOST KEY MISMATCH for [{}:{}], type {} !!!", hostname, port, keyType);
                 logger.warn("Presented fingerprint: {}", generateFingerprint(key));
                 logger.warn("Stored fingerprint: {}", existingKey.getFingerprintSha256());
+                
+                // If policy is STRICT, always return CHANGED (will cause connection to fail)
+                if (verificationPolicy == HostKeyVerificationPolicy.STRICT) {
+                    return CHANGED;
+                }
+                
+                // For ASK and AUTO_ACCEPT, we'll handle in the add() method when JSch calls it
                 return CHANGED;
             }
         }
+        
         logger.info("Host key for [{}:{}], type {} NOT_INCLUDED in known hosts.", hostname, port, keyType);
+        
+        // If policy is STRICT, reject unknown keys
+        if (verificationPolicy == HostKeyVerificationPolicy.STRICT) {
+            logger.warn("Rejecting unknown host key due to STRICT policy");
+            return NOT_INCLUDED;
+        }
+        
+        // For ASK and AUTO_ACCEPT, we'll handle in the add() method when JSch calls it
         return NOT_INCLUDED;
     }
 
@@ -102,39 +146,85 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
         String keyBase64 = hostkey.getKey(); // This is already Base64 encoded by JSch
         String fingerprint = generateFingerprint(Base64.getDecoder().decode(keyBase64));
 
-        // TOFU: Trust On First Use.
-        // If ui is null or doesn't prompt, we might auto-accept.
-        // For a backend service, auto-accepting is common for the first connection.
-        boolean trusted = true;
-        if (ui != null) {
-            // Example prompt, though for backend, this might be pre-approved or logged
-            String message = String.format("The authenticity of host '[%s]:%d' can't be established.%n" +
-                                           "%s key fingerprint is %s.%n" +
-                                           "Are you sure you want to continue connecting (yes/no)?",
-                                           hostname, port, keyType, fingerprint);
-            // trusted = ui.promptYesNo(message); // This would block if UI is interactive
-            logger.info("TOFU: {}", message);
-            logger.info("Auto-accepting new host key for [{}:{}] type {} (fingerprint: {}) due to backend TOFU policy.", hostname, port, keyType, fingerprint);
+        // Check if this is a key change (rather than a new key)
+        boolean isKeyChange = false;
+        Optional<KnownSshHostKey> existingKeyOpt = 
+            knownSshHostKeyRepository.findByHostnameAndPortAndKeyType(hostname, port, keyType);
+        if (existingKeyOpt.isPresent()) {
+            isKeyChange = true;
+        }
+
+        // Determine if we should trust this key based on policy and UI
+        boolean trusted = false;
+        
+        if (verificationPolicy == HostKeyVerificationPolicy.AUTO_ACCEPT) {
+            // Auto-accept for TOFU (Trust On First Use) or if policy is set to auto-accept
+            trusted = true;
+            if (isKeyChange) {
+                logger.warn("Auto-accepting CHANGED host key for [{}:{}] type {} due to AUTO_ACCEPT policy", 
+                    hostname, port, keyType);
+            } else {
+                logger.info("Auto-accepting new host key for [{}:{}] type {} due to AUTO_ACCEPT policy", 
+                    hostname, port, keyType);
+            }
+        } else if (verificationPolicy == HostKeyVerificationPolicy.ASK && ui != null) {
+            // If UI is available and policy is ASK, prompt the user
+            String message;
+            if (isKeyChange) {
+                message = String.format(
+                    "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!%n" +
+                    "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!%n" +
+                    "The %s host key for [%s]:%d has changed.%n" +
+                    "New fingerprint: %s%n" +
+                    "Are you sure you want to continue connecting (yes/no)?",
+                    keyType, hostname, port, fingerprint);
+            } else {
+                message = String.format(
+                    "The authenticity of host '[%s]:%d' can't be established.%n" +
+                    "%s key fingerprint is %s.%n" +
+                    "Are you sure you want to continue connecting (yes/no)?",
+                    hostname, port, keyType, fingerprint);
+            }
+            
+            trusted = ui.promptYesNo(message);
+            if (trusted) {
+                logger.info("User accepted {} host key for [{}:{}]", 
+                    isKeyChange ? "changed" : "new", hostname, port);
+            } else {
+                logger.warn("User rejected {} host key for [{}:{}]", 
+                    isKeyChange ? "changed" : "new", hostname, port);
+            }
         } else {
-             logger.info("Auto-accepting new host key for [{}:{}] type {} (fingerprint: {}) due to backend TOFU policy (no UserInfo).", hostname, port, keyType, fingerprint);
+            // STRICT policy or ASK with no UI - reject
+            logger.warn("Rejecting {} host key for [{}:{}] due to {} policy with {} UI", 
+                isKeyChange ? "changed" : "new", hostname, port, 
+                verificationPolicy, ui == null ? "no" : "available");
+            trusted = false;
         }
 
         if (trusted) {
-            KnownSshHostKey newKey = new KnownSshHostKey();
-            newKey.setHostname(hostname);
-            newKey.setPort(port);
-            newKey.setKeyType(keyType);
-            newKey.setHostKeyBase64(keyBase64);
-            newKey.setFingerprintSha256(fingerprint);
-            // firstSeen and lastVerified will be set by @CreationTimestamp and @UpdateTimestamp
-            newKey.setFirstSeen(LocalDateTime.now()); // Explicitly set for clarity
-            newKey.setLastVerified(LocalDateTime.now());
+            // If it's a key change, update the existing record
+            KnownSshHostKey keyRecord = existingKeyOpt.orElse(new KnownSshHostKey());
+            keyRecord.setHostname(hostname);
+            keyRecord.setPort(port);
+            keyRecord.setKeyType(keyType);
+            keyRecord.setHostKeyBase64(keyBase64);
+            keyRecord.setFingerprintSha256(fingerprint);
+            keyRecord.setLastVerified(LocalDateTime.now());
+            
+            // Only set firstSeen for new keys
+            if (!existingKeyOpt.isPresent()) {
+                keyRecord.setFirstSeen(LocalDateTime.now());
+            }
 
-            knownSshHostKeyRepository.save(newKey);
-            logger.info("Added new host key to database for [{}:{}] type {}. Fingerprint: {}", hostname, port, keyType, fingerprint);
+            knownSshHostKeyRepository.save(keyRecord);
+            logger.info("{} host key in database for [{}:{}] type {}. Fingerprint: {}", 
+                existingKeyOpt.isPresent() ? "Updated" : "Added new", 
+                hostname, port, keyType, fingerprint);
         } else {
-            logger.warn("Host key for [{}:{}] type {} was NOT added by user choice.", hostname, port, keyType);
-            // Optionally throw an exception here if strictness is required
+            logger.warn("Host key for [{}:{}] type {} was NOT added/updated.", hostname, port, keyType);
+            // Throw exception to abort the connection if key was rejected
+            throw new RuntimeException("Host key verification failed: Key was rejected");
         }
     }
 
@@ -227,33 +317,43 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
     }
 
     private String getKeyTypeFromBytes(byte[] keyBytes) {
-        // This is a simplified way; JSch does this internally more robustly.
-        // For common types:
-        if (keyBytes == null) return null;
-        String keyString = new String(keyBytes, StandardCharsets.UTF_8); // This is not right for raw key bytes.
-        // A proper way would be to use JSch's internal parsing or a library.
-        // For example, if keyBytes are the full public key line (e.g. "ssh-rsa AAAA...")
-        // This placeholder needs a robust implementation. For now, let's assume key type is provided or guessed by JSch.
-        // JSch's HostKey class can often guess the type if given the raw key material.
-        // We might have to create a temporary HostKey object to get its type.
+        if (keyBytes == null || keyBytes.length < 4) {
+            return null;
+        }
+        
         try {
-            // This is a bit circular, but can work if JSch can parse it
-            HostKey tempHostKey = new HostKey("dummyHost", HostKey.GUESS, keyBytes);
+            // Try to create a temporary HostKey to get its type
+            HostKey tempHostKey = new HostKey("temp", HostKey.GUESS, keyBytes);
             return tempHostKey.getType();
         } catch (JSchException e) {
-            logger.warn("Could not guess key type from bytes: {}", e.getMessage());
-            // Fallback for some common patterns if the above fails (very basic)
-            // This is NOT a reliable way to get key type from raw public key bytes.
-            // JSch's `HostKey.getType()` from `HostKey(host, type, key)` with `type=GUESS` is better.
-            // The `key` byte array in `check(host, key)` is the public key blob, not the full text line.
-            if (keyBytes.length > 10 && keyBytes[8] == 's' && keyBytes[9] == 's' && keyBytes[10] == 'h') { // Heuristic
-                 if (bytesContain(keyBytes, "ssh-rsa")) return "ssh-rsa";
-                 if (bytesContain(keyBytes, "ssh-dss")) return "ssh-dss";
-                 if (bytesContain(keyBytes, "ecdsa-sha2-nistp256")) return "ecdsa-sha2-nistp256";
-                 if (bytesContain(keyBytes, "ssh-ed25519")) return "ssh-ed25519";
+            logger.debug("Could not determine key type using JSch: {}", e.getMessage());
+            
+            // Fallback: Try to parse the key type from the binary format
+            // SSH key format: [length][type][key data]
+            try {
+                // First 4 bytes are the length of the type string
+                int typeLength = ((keyBytes[0] & 0xFF) << 24) | 
+                                 ((keyBytes[1] & 0xFF) << 16) | 
+                                 ((keyBytes[2] & 0xFF) << 8) | 
+                                 (keyBytes[3] & 0xFF);
+                
+                if (typeLength > 0 && typeLength < 20 && typeLength + 4 <= keyBytes.length) {
+                    return new String(keyBytes, 4, typeLength, StandardCharsets.UTF_8);
+                }
+            } catch (Exception ex) {
+                logger.debug("Failed to parse key type from binary format: {}", ex.getMessage());
             }
+            
+            // Last resort: Check for common patterns in the key
+            if (bytesContain(keyBytes, "ssh-rsa")) return "ssh-rsa";
+            if (bytesContain(keyBytes, "ssh-dss")) return "ssh-dss";
+            if (bytesContain(keyBytes, "ecdsa-sha2-nistp256")) return "ecdsa-sha2-nistp256";
+            if (bytesContain(keyBytes, "ecdsa-sha2-nistp384")) return "ecdsa-sha2-nistp384";
+            if (bytesContain(keyBytes, "ecdsa-sha2-nistp521")) return "ecdsa-sha2-nistp521";
+            if (bytesContain(keyBytes, "ssh-ed25519")) return "ssh-ed25519";
+            
+            return "unknown";
         }
-        return "unknown"; // Fallback
     }
     private boolean bytesContain(byte[] source, String searchText) {
         return new String(source, 0, Math.min(source.length, 50), StandardCharsets.US_ASCII).contains(searchText);
