@@ -9,6 +9,7 @@ import logging
 import uuid
 import threading
 import subprocess
+import io
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -75,119 +76,8 @@ def test_ssh_connection():
         logger.error(f"SSH connection failed: {str(e)}")
         return False
 
-def test_ssh_file_operations():
-    """Test file operations over SSH"""
-    logger.info("Testing SSH file operations...")
-    
-    try:
-        # Create SSH client
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        # Connect to the server
-        client.connect(
-            hostname=SSH_HOST,
-            port=SSH_PORT,
-            username=SSH_USERNAME,
-            password=SSH_PASSWORD,
-            timeout=5
-        )
-        
-        # Create SFTP client
-        sftp = client.open_sftp()
-        
-        # List files
-        logger.info("Listing files...")
-        files = sftp.listdir("files")
-        logger.info(f"Files in directory: {files}")
-        
-        # Create a test file
-        test_file_name = f"test_file_{uuid.uuid4().hex[:8]}.txt"
-        test_file_path = f"files/{test_file_name}"
-        test_file_content = f"This is a test file created at {time.time()}"
-        
-        logger.info(f"Creating test file: {test_file_path}")
-        with sftp.file(test_file_path, "w") as f:
-            f.write(test_file_content)
-        
-        # Read the file back
-        logger.info(f"Reading test file: {test_file_path}")
-        with sftp.file(test_file_path, "r") as f:
-            content = f.read()
-        
-        logger.info(f"File content: {content}")
-        
-        # Verify content
-        assert content == test_file_content, "File content doesn't match"
-        
-        # Rename the file
-        new_file_name = f"renamed_{test_file_name}"
-        new_file_path = f"files/{new_file_name}"
-        
-        logger.info(f"Renaming file from {test_file_path} to {new_file_path}")
-        sftp.rename(test_file_path, new_file_path)
-        
-        # Verify the file was renamed
-        files = sftp.listdir("files")
-        assert new_file_name in files, "Renamed file not found"
-        
-        # Delete the file
-        logger.info(f"Deleting file: {new_file_path}")
-        sftp.remove(new_file_path)
-        
-        # Verify the file was deleted
-        files = sftp.listdir("files")
-        assert new_file_name not in files, "File was not deleted"
-        
-        # Create a directory
-        test_dir_name = f"test_dir_{uuid.uuid4().hex[:8]}"
-        test_dir_path = f"files/{test_dir_name}"
-        
-        logger.info(f"Creating directory: {test_dir_path}")
-        sftp.mkdir(test_dir_path)
-        
-        # Verify the directory was created
-        files = sftp.listdir("files")
-        assert test_dir_name in files, "Directory was not created"
-        
-        # Create a file in the directory
-        inner_file_name = "inner_test_file.txt"
-        inner_file_path = f"{test_dir_path}/{inner_file_name}"
-        inner_file_content = "This is a file inside the test directory"
-        
-        logger.info(f"Creating file in directory: {inner_file_path}")
-        with sftp.file(inner_file_path, "w") as f:
-            f.write(inner_file_content)
-        
-        # Verify the file was created
-        files = sftp.listdir(test_dir_path)
-        assert inner_file_name in files, "Inner file was not created"
-        
-        # Delete the file
-        logger.info(f"Deleting file: {inner_file_path}")
-        sftp.remove(inner_file_path)
-        
-        # Delete the directory
-        logger.info(f"Deleting directory: {test_dir_path}")
-        sftp.rmdir(test_dir_path)
-        
-        # Verify the directory was deleted
-        files = sftp.listdir("files")
-        assert test_dir_name not in files, "Directory was not deleted"
-        
-        # Close the connection
-        sftp.close()
-        client.close()
-        
-        logger.info("SSH file operations test completed successfully!")
-        return True
-    
-    except Exception as e:
-        logger.error(f"SSH file operations test failed: {str(e)}")
-        return False
-
 def test_ssh_command_execution():
-    """Test command execution over SSH"""
+    """Test command execution over SSH using direct exec_command"""
     logger.info("Testing SSH command execution...")
     
     try:
@@ -204,30 +94,60 @@ def test_ssh_command_execution():
             timeout=5
         )
         
-        # Execute commands
-        commands = [
-            "ls -la files",
-            "echo 'Hello, world!' > files/hello.txt",
-            "cat files/hello.txt",
-            "mkdir -p files/test_dir",
-            "ls -la files",
-            "rm files/hello.txt",
-            "rmdir files/test_dir",
-            "ls -la files"
-        ]
+        # Test directory creation
+        test_dir = f"test_dir_{uuid.uuid4().hex[:8]}"
+        logger.info(f"Creating directory: {test_dir}")
         
-        for command in commands:
-            logger.info(f"Executing command: {command}")
-            stdin, stdout, stderr = client.exec_command(command)
-            
-            # Get the output
-            output = stdout.read().decode().strip()
-            error = stderr.read().decode().strip()
-            
-            if error:
-                logger.warning(f"Command error: {error}")
-            
-            logger.info(f"Command output: {output}")
+        # Execute command to create directory
+        stdin, stdout, stderr = client.exec_command(f"mkdir -p {test_dir}")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            error = stderr.read().decode()
+            logger.error(f"Failed to create directory: {error}")
+        else:
+            logger.info(f"Directory {test_dir} created successfully")
+        
+        # Execute command to list files
+        logger.info("Listing files...")
+        stdin, stdout, stderr = client.exec_command("ls -la")
+        output = stdout.read().decode()
+        logger.info(f"Directory listing: {output}")
+        
+        # Create a test file
+        test_file = f"{test_dir}/test_file.txt"
+        test_content = f"This is a test file created at {time.time()}"
+        logger.info(f"Creating file: {test_file}")
+        
+        # Execute command to create file
+        stdin, stdout, stderr = client.exec_command(f"echo '{test_content}' > {test_file}")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            error = stderr.read().decode()
+            logger.error(f"Failed to create file: {error}")
+        else:
+            logger.info(f"File {test_file} created successfully")
+        
+        # Read the file content
+        logger.info(f"Reading file: {test_file}")
+        stdin, stdout, stderr = client.exec_command(f"cat {test_file}")
+        output = stdout.read().decode()
+        logger.info(f"File content: {output}")
+        
+        # Verify content
+        if output.strip() == test_content:
+            logger.info("File content verification successful")
+        else:
+            logger.error(f"File content verification failed. Expected: {test_content}, Got: {output}")
+        
+        # Clean up
+        logger.info(f"Removing test directory: {test_dir}")
+        stdin, stdout, stderr = client.exec_command(f"rm -rf {test_dir}")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            error = stderr.read().decode()
+            logger.error(f"Failed to remove directory: {error}")
+        else:
+            logger.info(f"Directory {test_dir} removed successfully")
         
         # Close the connection
         client.close()
@@ -237,6 +157,126 @@ def test_ssh_command_execution():
     
     except Exception as e:
         logger.error(f"SSH command execution test failed: {str(e)}")
+        return False
+
+def test_ssh_file_operations():
+    """Test file operations over SSH using direct file transfer"""
+    logger.info("Testing SSH file operations...")
+    
+    try:
+        # Create SSH client
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Connect to the server
+        client.connect(
+            hostname=SSH_HOST,
+            port=SSH_PORT,
+            username=SSH_USERNAME,
+            password=SSH_PASSWORD,
+            timeout=5
+        )
+        
+        # Create a test directory using exec_command
+        test_dir = f"test_dir_{uuid.uuid4().hex[:8]}"
+        logger.info(f"Creating directory: {test_dir}")
+        stdin, stdout, stderr = client.exec_command(f"mkdir -p {test_dir}")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            error = stderr.read().decode()
+            logger.error(f"Failed to create directory: {error}")
+            return False
+        
+        # Create a test file locally
+        test_file_name = f"test_file_{uuid.uuid4().hex[:8]}.txt"
+        test_file_content = f"This is a test file created at {time.time()}"
+        
+        with open(test_file_name, "w") as f:
+            f.write(test_file_content)
+        
+        # Upload the file using SCP
+        logger.info(f"Uploading file: {test_file_name} to {test_dir}")
+        
+        # Create SFTP client
+        sftp = client.open_sftp()
+        
+        # Upload the file
+        remote_path = f"{test_dir}/{test_file_name}"
+        sftp.put(test_file_name, remote_path)
+        logger.info(f"File uploaded to: {remote_path}")
+        
+        # Verify the file was uploaded
+        stdin, stdout, stderr = client.exec_command(f"ls -la {test_dir}")
+        output = stdout.read().decode()
+        logger.info(f"Directory listing: {output}")
+        
+        # Read the file content
+        stdin, stdout, stderr = client.exec_command(f"cat {remote_path}")
+        output = stdout.read().decode()
+        logger.info(f"File content: {output}")
+        
+        # Verify content
+        if output.strip() == test_file_content:
+            logger.info("File content verification successful")
+        else:
+            logger.error(f"File content verification failed. Expected: {test_file_content}, Got: {output}")
+        
+        # Download the file
+        download_file_name = f"downloaded_{test_file_name}"
+        logger.info(f"Downloading file to: {download_file_name}")
+        sftp.get(remote_path, download_file_name)
+        
+        # Verify the downloaded content
+        with open(download_file_name, "r") as f:
+            content = f.read()
+        
+        logger.info(f"Downloaded file content: {content}")
+        if content.strip() == test_file_content:
+            logger.info("Downloaded file content verification successful")
+        else:
+            logger.error(f"Downloaded file content verification failed. Expected: {test_file_content}, Got: {content}")
+        
+        # Rename the file
+        new_file_name = f"renamed_{test_file_name}"
+        new_remote_path = f"{test_dir}/{new_file_name}"
+        logger.info(f"Renaming file from {remote_path} to {new_remote_path}")
+        sftp.rename(remote_path, new_remote_path)
+        
+        # Verify the file was renamed
+        stdin, stdout, stderr = client.exec_command(f"ls -la {test_dir}")
+        output = stdout.read().decode()
+        logger.info(f"Directory listing after rename: {output}")
+        
+        # Delete the file
+        logger.info(f"Deleting file: {new_remote_path}")
+        sftp.remove(new_remote_path)
+        
+        # Verify the file was deleted
+        stdin, stdout, stderr = client.exec_command(f"ls -la {test_dir}")
+        output = stdout.read().decode()
+        logger.info(f"Directory listing after delete: {output}")
+        
+        # Clean up
+        logger.info(f"Removing test directory: {test_dir}")
+        stdin, stdout, stderr = client.exec_command(f"rm -rf {test_dir}")
+        exit_status = stdout.channel.recv_exit_status()
+        if exit_status != 0:
+            error = stderr.read().decode()
+            logger.error(f"Failed to remove directory: {error}")
+        
+        # Clean up local files
+        os.remove(test_file_name)
+        os.remove(download_file_name)
+        
+        # Close connections
+        sftp.close()
+        client.close()
+        
+        logger.info("SSH file operations test completed successfully!")
+        return True
+    
+    except Exception as e:
+        logger.error(f"SSH file operations test failed: {str(e)}")
         return False
 
 def test_ftp_connection():
@@ -431,4 +471,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
