@@ -272,6 +272,23 @@ public class SshSessionLifecycleManager {
         }
     }
 
+    public boolean hasAnySessionForUser(UUID platformUserId) {
+        if (platformUserId == null) {
+            return false;
+        }
+        
+        // Check local sessions first
+        for (Map.Entry<SessionKey, SshSessionWrapper> entry : localActiveSshSessions.entrySet()) {
+            if (entry.getKey().platformUserId().equals(platformUserId) && entry.getValue().isConnected()) {
+                return true;
+            }
+        }
+        
+        // Check Redis for distributed sessions
+        String keyPattern = "session:metadata:" + platformUserId + ":*";
+        return !sessionMetadataRedisTemplate.keys(keyPattern).isEmpty();
+    }
+
     public SshConnectionPool getConnectionPool() {
         return connectionPool;
     }
