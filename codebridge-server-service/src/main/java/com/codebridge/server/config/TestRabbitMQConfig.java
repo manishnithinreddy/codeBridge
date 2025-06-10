@@ -27,14 +27,16 @@ public class TestRabbitMQConfig {
     }
 
     @Bean
-    public MessageConverter jsonMessageConverter() {
+    @Primary
+    public MessageConverter testJsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter jsonMessageConverter) {
+    @Primary
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter testJsonMessageConverter) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter);
+        rabbitTemplate.setMessageConverter(testJsonMessageConverter);
         return rabbitTemplate;
     }
 }
