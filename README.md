@@ -144,7 +144,7 @@ The consolidation of services provides several benefits:
 
 ### Prerequisites
 
-- Java 17
+- Java 21
 - Maven
 - PostgreSQL
 - Docker (optional)
@@ -177,4 +177,3 @@ docker-compose up -d
 ## Configuration
 
 Each service can be configured using environment variables or application.yml files. See the README.md file in each service directory for specific configuration options.
-

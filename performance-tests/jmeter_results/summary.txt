@@ -1,0 +1,9 @@
+JMeter Test Summary
+===================
+
+Test Plan: codebridge_api_test_plan.jmx
+Date: Tue Jun 10 09:54:51 UTC 2025
+
+Results:
+--------
+No results file found. Test may have failed.
