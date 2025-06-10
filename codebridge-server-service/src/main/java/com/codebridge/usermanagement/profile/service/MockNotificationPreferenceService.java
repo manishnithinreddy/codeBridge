@@ -23,5 +23,11 @@ public class MockNotificationPreferenceService implements NotificationPreference
         // Always return true for testing
         return true;
     }
+    
+    @Override
+    public String getUserNotificationPreference(UUID userId, String notificationType) {
+        // Return "enabled" for all notification types in test mode
+        return "enabled";
+    }
 }
 
