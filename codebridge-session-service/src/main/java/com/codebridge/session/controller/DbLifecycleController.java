@@ -4,7 +4,7 @@ import com.codebridge.session.dto.DbSessionInitRequest;
 import com.codebridge.session.dto.KeepAliveResponse;
 import com.codebridge.session.dto.SessionResponse;
 import com.codebridge.session.service.DbSessionLifecycleManager;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
