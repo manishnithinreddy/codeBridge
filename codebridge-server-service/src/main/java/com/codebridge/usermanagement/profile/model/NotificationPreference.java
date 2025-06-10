@@ -14,10 +14,12 @@ public class NotificationPreference {
     private String value;
     private Map<String, String> channels;
     private Map<String, String> customChannelConfig;
+    private Map<String, String> customChannel;
     
     public NotificationPreference() {
         this.channels = new HashMap<>();
         this.customChannelConfig = new HashMap<>();
+        this.customChannel = new HashMap<>();
     }
     
     public NotificationPreference(String value) {
@@ -71,6 +73,14 @@ public class NotificationPreference {
     
     public void setCustomChannelConfig(Map<String, String> customChannelConfig) {
         this.customChannelConfig = customChannelConfig;
+    }
+    
+    public Map<String, String> getCustomChannel() {
+        return customChannel;
+    }
+    
+    public void setCustomChannel(Map<String, String> customChannel) {
+        this.customChannel = customChannel;
     }
 }
 
