@@ -17,6 +17,8 @@ public class NotificationPreference {
     private String customChannel;
     private boolean slackEnabled;
     private boolean inAppEnabled;
+    private boolean emailEnabled;
+    private boolean pushEnabled;
     
     public NotificationPreference() {
         this.channels = new HashMap<>();
@@ -24,6 +26,8 @@ public class NotificationPreference {
         this.customChannel = "";
         this.slackEnabled = true; // Default to true for testing
         this.inAppEnabled = true; // Default to true for testing
+        this.emailEnabled = true; // Default to true for testing
+        this.pushEnabled = true; // Default to true for testing
     }
     
     public NotificationPreference(String value) {
@@ -101,6 +105,22 @@ public class NotificationPreference {
     
     public void setInAppEnabled(boolean inAppEnabled) {
         this.inAppEnabled = inAppEnabled;
+    }
+    
+    public boolean isEmailEnabled() {
+        return emailEnabled;
+    }
+    
+    public void setEmailEnabled(boolean emailEnabled) {
+        this.emailEnabled = emailEnabled;
+    }
+    
+    public boolean isPushEnabled() {
+        return pushEnabled;
+    }
+    
+    public void setPushEnabled(boolean pushEnabled) {
+        this.pushEnabled = pushEnabled;
     }
 }
 
