@@ -50,6 +50,7 @@ class ChunkedFileTransferServiceTest {
         // Set the temp directory in the service
         ReflectionTestUtils.setField(fileTransferService, "tempUploadDirectory", tempDir);
         ReflectionTestUtils.setField(fileTransferService, "defaultChunkSize", 1024);
+        ReflectionTestUtils.setField(fileTransferService, "rateLimitBytesPerSecond", 0L); // No rate limiting for tests
         
         // Mock session service to return active session
         when(sessionService.isSessionActive(anyString())).thenReturn(true);
@@ -230,5 +231,55 @@ class ChunkedFileTransferServiceTest {
         verify(fileTransferRepository, times(1)).findById(transferId);
         verify(fileTransferRepository, never()).save(any(FileTransferRecord.class));
     }
+    
+    @Test
+    void testRateLimiting() throws IOException {
+        // Set a rate limit for testing
+        ReflectionTestUtils.setField(fileTransferService, "rateLimitBytesPerSecond", 1024L); // 1KB/s
+        
+        // Prepare test data
+        String transferId = "test-transfer-id";
+        int chunkNumber = 0;
+        byte[] chunkData = new byte[1024]; // 1KB of data
+        MockMultipartFile chunkFile = new MockMultipartFile("chunk", chunkData);
+        
+        // Create a transfer record
+        FileTransferRecord record = new FileTransferRecord();
+        record.setTransferId(transferId);
+        record.setSessionId("test-session");
+        record.setFileName("test-file.txt");
+        record.setFileSize(2048L);
+        record.setRemotePath("/remote/path");
+        record.setChunkSize(1024);
+        record.setTotalChunks(2);
+        record.setCompletedChunks(0);
+        record.setStatus(TransferStatus.INITIALIZED);
+        record.setDirection(TransferDirection.UPLOAD);
+        record.setCreatedAt(LocalDateTime.now());
+        record.setUpdatedAt(LocalDateTime.now());
+        
+        // Mock repository findById
+        when(fileTransferRepository.findById(transferId)).thenReturn(Optional.of(record));
+        
+        // Mock repository save
+        when(fileTransferRepository.save(any(FileTransferRecord.class))).thenReturn(record);
+        
+        // Measure time before and after to verify rate limiting
+        long startTime = System.currentTimeMillis();
+        
+        // Call the service method
+        FileTransferResponse response = fileTransferService.uploadChunk(transferId, chunkNumber, chunkFile);
+        
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        
+        // With 1KB of data and a rate limit of 1KB/s, it should take at least 1000ms
+        // But we'll check for at least 900ms to account for timing variations
+        assertTrue(duration >= 900, "Rate limiting should delay the operation by at least 900ms");
+        
+        // Verify the response
+        assertNotNull(response);
+        assertEquals(transferId, response.getTransferId());
+        assertEquals(TransferStatus.IN_PROGRESS, response.getStatus());
+    }
 }
-
