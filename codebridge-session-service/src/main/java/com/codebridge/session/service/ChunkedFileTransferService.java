@@ -42,6 +42,9 @@ public class ChunkedFileTransferService {
     @Value("${file.chunk.size:1048576}") // Default 1MB
     private int defaultChunkSize;
     
+    @Value("${file.transfer.rate.limit.bytes.per.second:0}")
+    private long rateLimitBytesPerSecond; // 0 means no limit
+    
     @Autowired
     private FileTransferRepository fileTransferRepository;
     
@@ -126,6 +129,9 @@ public class ChunkedFileTransferService {
             String chunkPath = getChunkPath(transferId, chunkNumber);
             File chunkDestination = new File(chunkPath);
             chunkFile.transferTo(chunkDestination);
+            
+            // Apply rate limiting if configured
+            applyRateLimit(chunkFile.getSize());
             
             // Update record
             record.setCompletedChunks(record.getCompletedChunks() + 1);
@@ -363,5 +369,25 @@ public class ChunkedFileTransferService {
             }
         }
     }
+    
+    /**
+     * Apply rate limiting to control transfer speed
+     * @param bytesTransferred The number of bytes transferred
+     */
+    private void applyRateLimit(long bytesTransferred) {
+        if (rateLimitBytesPerSecond > 0) {
+            try {
+                // Simple rate limiting by sleeping
+                long sleepTime = (bytesTransferred * 1000) / rateLimitBytesPerSecond;
+                if (sleepTime > 0) {
+                    logger.debug("Rate limiting applied: sleeping for {} ms after transferring {} bytes", 
+                            sleepTime, bytesTransferred);
+                    Thread.sleep(sleepTime);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warn("Rate limiting interrupted", e);
+            }
+        }
+    }
 }
-
