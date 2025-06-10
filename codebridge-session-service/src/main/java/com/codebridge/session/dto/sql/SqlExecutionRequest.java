@@ -1,6 +1,6 @@
 package com.codebridge.session.dto.sql;
 
-import jakarta.validation.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
 import java.util.List;
 
