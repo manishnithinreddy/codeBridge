@@ -222,28 +222,18 @@ def test_api_service():
         sys.exit(1)
     
     print("\nAll tests completed successfully!")
+    
+    # Get project name from the project_id
+    project_response = requests.get(f"{BASE_URL}/api/projects/{project_id}")
+    project_details = project_response.json()
+    
     print("\nSummary:")
-    print(f"- Created project: {project['name']} (ID: {project_id})")
+    print(f"- Created project: {project_details['name']} (ID: {project_id})")
     print(f"- Created collection: {collection['name']} (ID: {collection_id})")
     print(f"- Created GET test: {test['name']} (ID: {test_id})")
     print(f"- Created POST test: {post_test['name']} (ID: {post_test_id})")
-    print(f"- Executed tests successfully")
-    print(f"- Updated test and collection successfully")
-    
-    # Optional: Clean up (uncomment to enable)
-    """
-    # Delete tests
-    print("\nCleaning up...")
-    requests.delete(f"{BASE_URL}/api/tests/{test_id}")
-    requests.delete(f"{BASE_URL}/api/tests/{post_test_id}")
-    
-    # Delete collection
-    requests.delete(f"{BASE_URL}/api/projects/{project_id}/collections/{collection_id}")
-    
-    # Delete project
-    requests.delete(f"{BASE_URL}/api/projects/{project_id}")
-    print("Cleanup completed.")
-    """
+    print("- Executed tests successfully")
+    print("- Updated test and collection successfully")
 
 if __name__ == "__main__":
     test_api_service()
