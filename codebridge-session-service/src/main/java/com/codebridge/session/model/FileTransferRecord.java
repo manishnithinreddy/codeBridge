@@ -2,16 +2,12 @@ package com.codebridge.session.model;
 
 import com.codebridge.session.dto.TransferDirection;
 import com.codebridge.session.dto.TransferStatus;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 /**
@@ -22,6 +18,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class FileTransferRecord {
     
     /**
@@ -117,4 +114,3 @@ public class FileTransferRecord {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 }
-
