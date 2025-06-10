@@ -31,7 +31,7 @@ import java.util.UUID;
 /**
  * Service for handling chunked file transfers with resume capability
  */
-@Service
+@Service("resumableChunkedFileTransferService")
 public class ChunkedFileTransferService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChunkedFileTransferService.class);
