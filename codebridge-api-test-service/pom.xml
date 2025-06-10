@@ -15,6 +15,11 @@
     <version>1.0.0-SNAPSHOT</version>
     <name>CodeBridge API Test Service</name>
     <description>API Testing Service for CodeBridge</description>
+    
+    <!-- Add Java 21 properties -->
+    <properties>
+        <java.version>21</java.version>
+    </properties>
 
     <dependencies>
         <!-- Spring Boot -->
@@ -119,10 +124,22 @@
 
     <build>
         <plugins>
+            <!-- Add Maven compiler plugin with Java 21 support -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+            <!-- ... existing Spring Boot Maven plugin ... -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- ... existing protobuf-maven-plugin ... -->
             <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
@@ -144,4 +161,3 @@
         </plugins>
     </build>
 </project>
-
