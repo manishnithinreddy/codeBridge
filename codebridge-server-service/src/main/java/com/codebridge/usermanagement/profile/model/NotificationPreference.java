@@ -14,12 +14,14 @@ public class NotificationPreference {
     private String value;
     private Map<String, String> channels;
     private Map<String, String> customChannelConfig;
-    private Map<String, String> customChannel;
+    private String customChannel;
+    private boolean slackEnabled;
     
     public NotificationPreference() {
         this.channels = new HashMap<>();
         this.customChannelConfig = new HashMap<>();
-        this.customChannel = new HashMap<>();
+        this.customChannel = "";
+        this.slackEnabled = true; // Default to true for testing
     }
     
     public NotificationPreference(String value) {
@@ -75,12 +77,20 @@ public class NotificationPreference {
         this.customChannelConfig = customChannelConfig;
     }
     
-    public Map<String, String> getCustomChannel() {
+    public String getCustomChannel() {
         return customChannel;
     }
     
-    public void setCustomChannel(Map<String, String> customChannel) {
+    public void setCustomChannel(String customChannel) {
         this.customChannel = customChannel;
+    }
+    
+    public boolean isSlackEnabled() {
+        return slackEnabled;
+    }
+    
+    public void setSlackEnabled(boolean slackEnabled) {
+        this.slackEnabled = slackEnabled;
     }
 }
 
