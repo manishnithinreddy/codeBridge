@@ -1,126 +1,142 @@
 package com.codebridge.usermanagement.profile.model;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Model class for user notification preferences
+ * Model class representing a user's notification preferences for a specific event type.
  */
 public class NotificationPreference {
     private UUID id;
     private UUID userId;
-    private String notificationType;
-    private String value;
-    private Map<String, String> channels;
-    private Map<String, Object> customChannelConfig;
-    private String customChannel;
-    private boolean slackEnabled;
-    private boolean inAppEnabled;
+    private String eventType;
     private boolean emailEnabled;
     private boolean pushEnabled;
-    
+    private boolean inAppEnabled;
+    private boolean slackEnabled;
+    private String customChannel;
+    private Map<String, Object> customChannelConfig;
+
+    /**
+     * Default constructor.
+     */
     public NotificationPreference() {
-        this.channels = new HashMap<>();
-        this.customChannelConfig = new HashMap<>();
-        this.customChannel = "";
-        this.slackEnabled = true; // Default to true for testing
-        this.inAppEnabled = true; // Default to true for testing
-        this.emailEnabled = true; // Default to true for testing
-        this.pushEnabled = true; // Default to true for testing
+        // Default constructor
+        this.id = UUID.randomUUID();
+        this.emailEnabled = true;
+        this.pushEnabled = true;
+        this.inAppEnabled = true;
+        this.slackEnabled = false;
     }
-    
-    public NotificationPreference(String value) {
-        this();
-        this.value = value;
+
+    /**
+     * Constructor with userId and eventType.
+     *
+     * @param userId the user ID
+     * @param eventType the event type
+     */
+    public NotificationPreference(UUID userId, String eventType) {
+        this.id = UUID.randomUUID();
+        this.userId = userId;
+        this.eventType = eventType;
+        // Default to all channels enabled
+        this.emailEnabled = true;
+        this.pushEnabled = true;
+        this.inAppEnabled = true;
+        this.slackEnabled = false;
+        this.customChannel = null;
+        this.customChannelConfig = null;
     }
-    
+
+    /**
+     * Constructor with status.
+     *
+     * @param status the status (e.g., "enabled", "disabled")
+     */
+    public NotificationPreference(String status) {
+        this.id = UUID.randomUUID();
+        this.userId = UUID.randomUUID(); // Dummy user ID
+        this.eventType = "DEFAULT";
+        // Set channels based on status
+        boolean enabled = "enabled".equalsIgnoreCase(status);
+        this.emailEnabled = enabled;
+        this.pushEnabled = enabled;
+        this.inAppEnabled = enabled;
+        this.slackEnabled = false;
+        this.customChannel = null;
+        this.customChannelConfig = null;
+    }
+
     public UUID getId() {
         return id;
     }
-    
+
     public void setId(UUID id) {
         this.id = id;
     }
-    
+
     public UUID getUserId() {
         return userId;
     }
-    
+
     public void setUserId(UUID userId) {
         this.userId = userId;
     }
-    
-    public String getNotificationType() {
-        return notificationType;
+
+    public String getEventType() {
+        return eventType;
     }
-    
-    public void setNotificationType(String notificationType) {
-        this.notificationType = notificationType;
+
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
     }
-    
-    public String getValue() {
-        return value;
-    }
-    
-    public void setValue(String value) {
-        this.value = value;
-    }
-    
-    public Map<String, String> getChannels() {
-        return channels;
-    }
-    
-    public void setChannels(Map<String, String> channels) {
-        this.channels = channels;
-    }
-    
-    public Map<String, Object> getCustomChannelConfig() {
-        return customChannelConfig;
-    }
-    
-    public void setCustomChannelConfig(Map<String, Object> customChannelConfig) {
-        this.customChannelConfig = customChannelConfig;
-    }
-    
-    public String getCustomChannel() {
-        return customChannel;
-    }
-    
-    public void setCustomChannel(String customChannel) {
-        this.customChannel = customChannel;
-    }
-    
-    public boolean isSlackEnabled() {
-        return slackEnabled;
-    }
-    
-    public void setSlackEnabled(boolean slackEnabled) {
-        this.slackEnabled = slackEnabled;
-    }
-    
-    public boolean isInAppEnabled() {
-        return inAppEnabled;
-    }
-    
-    public void setInAppEnabled(boolean inAppEnabled) {
-        this.inAppEnabled = inAppEnabled;
-    }
-    
+
     public boolean isEmailEnabled() {
         return emailEnabled;
     }
-    
+
     public void setEmailEnabled(boolean emailEnabled) {
         this.emailEnabled = emailEnabled;
     }
-    
+
     public boolean isPushEnabled() {
         return pushEnabled;
     }
-    
+
     public void setPushEnabled(boolean pushEnabled) {
         this.pushEnabled = pushEnabled;
+    }
+
+    public boolean isInAppEnabled() {
+        return inAppEnabled;
+    }
+
+    public void setInAppEnabled(boolean inAppEnabled) {
+        this.inAppEnabled = inAppEnabled;
+    }
+
+    public boolean isSlackEnabled() {
+        return slackEnabled;
+    }
+
+    public void setSlackEnabled(boolean slackEnabled) {
+        this.slackEnabled = slackEnabled;
+    }
+
+    public String getCustomChannel() {
+        return customChannel;
+    }
+
+    public void setCustomChannel(String customChannel) {
+        this.customChannel = customChannel;
+    }
+
+    public Map<String, Object> getCustomChannelConfig() {
+        return customChannelConfig;
+    }
+
+    public void setCustomChannelConfig(Map<String, Object> customChannelConfig) {
+        this.customChannelConfig = customChannelConfig;
     }
 }
 
