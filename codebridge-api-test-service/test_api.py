@@ -19,6 +19,29 @@ def print_response(response, label):
     print("=" * (len(label) + 8))
     return response.json() if response.status_code < 400 else None
 
+def create_project():
+    print("\n=== Create Project ===")
+    # Add a unique identifier to the project name
+    unique_id = str(uuid.uuid4())[:8]
+    project_data = {
+        "name": f"Python Test Project {unique_id}",
+        "description": "A test project created from Python"
+    }
+    
+    project_response = requests.post(
+        f"{BASE_URL}/api/projects",
+        json=project_data
+    )
+    project = print_response(project_response, "Create Project")
+    if not project:
+        print("Failed to create project. Exiting.")
+        sys.exit(1)
+    
+    project_id = project["id"]
+    print(f"Project created with ID: {project_id}")
+    
+    return project_id
+
 def test_api_service():
     print("Testing API Test Service...")
     
@@ -31,21 +54,7 @@ def test_api_service():
         print("Service might still be starting up, continuing with tests...")
     
     # Test 2: Create a project
-    project_data = {
-        "name": "Python Test Project",
-        "description": "A test project created from Python"
-    }
-    project_response = requests.post(
-        f"{BASE_URL}/api/projects",
-        json=project_data
-    )
-    project = print_response(project_response, "Create Project")
-    if not project:
-        print("Failed to create project. Exiting.")
-        sys.exit(1)
-    
-    project_id = project["id"]
-    print(f"Project created with ID: {project_id}")
+    project_id = create_project()
     
     # Test 3: Get all projects
     projects_response = requests.get(f"{BASE_URL}/api/projects")
@@ -238,4 +247,3 @@ def test_api_service():
 
 if __name__ == "__main__":
     test_api_service()
-
