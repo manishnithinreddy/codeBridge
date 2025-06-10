@@ -1,5 +1,6 @@
 package com.codebridge.usermanagement.profile.service;
 
+import com.codebridge.usermanagement.profile.model.NotificationPreference;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -25,9 +26,9 @@ public class MockNotificationPreferenceService implements NotificationPreference
     }
     
     @Override
-    public String getUserNotificationPreference(UUID userId, String notificationType) {
+    public NotificationPreference getUserNotificationPreference(UUID userId, String notificationType) {
         // Return "enabled" for all notification types in test mode
-        return "enabled";
+        return new NotificationPreference("enabled");
     }
 }
 
