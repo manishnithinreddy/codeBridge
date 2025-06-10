@@ -1,5 +1,6 @@
 package com.codebridge.usermanagement.profile.service;
 
+import com.codebridge.usermanagement.profile.model.NotificationPreference;
 import java.util.UUID;
 
 /**
@@ -25,8 +26,8 @@ public interface NotificationPreferenceService {
      * Get a user's notification preference for a specific type
      * @param userId The user ID
      * @param notificationType The notification type
-     * @return The notification preference value
+     * @return The notification preference object
      */
-    String getUserNotificationPreference(UUID userId, String notificationType);
+    NotificationPreference getUserNotificationPreference(UUID userId, String notificationType);
 }
 
