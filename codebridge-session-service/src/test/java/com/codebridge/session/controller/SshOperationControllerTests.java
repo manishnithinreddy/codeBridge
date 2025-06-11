@@ -3,7 +3,7 @@ package com.codebridge.session.controller;
 import com.codebridge.session.config.ApplicationInstanceIdProvider;
 import com.codebridge.session.dto.SshSessionMetadata;
 import com.codebridge.session.dto.ops.CommandRequest;
-import com.codebridge.session.dto.ops.CommandResponse;
+import com.codebridge.session.dto.CommandResponse;
 import com.codebridge.session.dto.ops.RemoteFileEntry;
 import com.codebridge.session.model.SessionKey;
 import com.codebridge.session.model.SshSessionWrapper;
@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -75,14 +76,24 @@ class SshOperationControllerTests {
         when(jwtTokenProvider.validateToken(validSessionToken)).thenReturn(true);
         when(jwtTokenProvider.getClaimsFromToken(validSessionToken)).thenReturn(claims);
 
-        SshSessionMetadata metadata = new SshSessionMetadata(platformUserId, serverId, validSessionToken,
-            System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis() + 3600000, "test-instance");
-        when(sessionLifecycleManager.getSessionMetadata(sessionKey)).thenReturn(metadata);
+        SshSessionMetadata metadata = new SshSessionMetadata(
+            platformUserId, 
+            serverId, 
+            validSessionToken,
+            System.currentTimeMillis(), 
+            System.currentTimeMillis(), 
+            System.currentTimeMillis() + 3600000, 
+            "test-instance",
+            "test-host",
+            "test-user"
+        );
+        
+        when(sessionLifecycleManager.getSessionMetadata(sessionKey)).thenReturn(Optional.of(metadata));
         when(instanceIdProvider.getInstanceId()).thenReturn("test-instance");
 
         when(mockSshWrapper.isConnected()).thenReturn(true);
         when(mockSshWrapper.getJschSession()).thenReturn(mockJschSession);
-        when(sessionLifecycleManager.getLocalSession(sessionKey)).thenReturn(mockSshWrapper);
+        when(sessionLifecycleManager.getLocalSession(sessionKey)).thenReturn(Optional.of(mockSshWrapper));
     }
 
     @Test
@@ -100,8 +111,8 @@ class SshOperationControllerTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cmdRequest)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.stdout").exists())
-            .andExpect(jsonPath("$.exitStatus").isNumber());
+            .andExpect(jsonPath("$.output").exists())
+            .andExpect(jsonPath("$.exitCode").isNumber());
     }
 
     @Test
@@ -171,3 +182,4 @@ class SshOperationControllerTests {
             .andExpect(status().isOk());
     }
 }
+
