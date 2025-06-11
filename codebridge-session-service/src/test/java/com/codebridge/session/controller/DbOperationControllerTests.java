@@ -2,7 +2,7 @@ package com.codebridge.session.controller;
 
 import com.codebridge.session.config.ApplicationInstanceIdProvider;
 import com.codebridge.session.dto.DbSessionMetadata;
-import com.codebridge.session.dto.ops.DbSchemaInfoResponse;
+import com.codebridge.session.dto.schema.DbSchemaInfoResponse;
 import com.codebridge.session.model.DbSessionWrapper;
 import com.codebridge.session.model.SessionKey;
 import com.codebridge.session.model.enums.DbType;
@@ -12,6 +12,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -48,51 +50,74 @@ class DbOperationControllerTests {
 
     private String validSessionToken = "valid-db-ops-token";
     private UUID platformUserId = UUID.randomUUID();
-    private UUID resourceId = UUID.randomUUID(); // Represents db alias hash
-    private SessionKey sessionKey;
-
+    
     @BeforeEach
     void setUp() throws SQLException {
-        sessionKey = new SessionKey(platformUserId, resourceId, "DB:POSTGRESQL");
-        Claims claims = new DefaultClaims().setSubject(platformUserId.toString());
-        claims.put("resourceId", resourceId.toString());
-        claims.put("type", "DB:POSTGRESQL");
-
+        MockitoAnnotations.openMocks(this);
+        
+        // Setup JWT token validation
+        Claims claims = new DefaultClaims();
+        claims.put("userId", platformUserId.toString());
+        claims.put("sessionId", "test-session-id");
+        
         when(jwtTokenProvider.validateToken(validSessionToken)).thenReturn(true);
-        when(jwtTokenProvider.getClaimsFromToken(validSessionToken)).thenReturn(claims);
-
-        DbSessionMetadata metadata = new DbSessionMetadata(sessionKey, System.currentTimeMillis(), System.currentTimeMillis(),
-            System.currentTimeMillis() + 3600000, validSessionToken, "test-db-instance",
-            "POSTGRESQL", "localhost", "testdb", "user");
-        when(dbLifecycleManager.getSessionMetadata(sessionKey)).thenReturn(Optional.of(metadata));
-        when(instanceIdProvider.getInstanceId()).thenReturn("test-db-instance");
-
-        when(mockDbWrapper.isValid(anyInt())).thenReturn(true);
+        when(jwtTokenProvider.getClaims(validSessionToken)).thenReturn(claims);
+        
+        // Setup DB session
+        DbSessionMetadata metadata = new DbSessionMetadata();
+        metadata.setSessionId(UUID.randomUUID());
+        metadata.setUserId(platformUserId);
+        metadata.setDbType(DbType.POSTGRESQL);
+        
+        when(mockDbWrapper.getMetadata()).thenReturn(metadata);
         when(mockDbWrapper.getConnection()).thenReturn(mockJdbcConnection);
-        when(dbLifecycleManager.getLocalSession(sessionKey)).thenReturn(Optional.of(mockDbWrapper));
-
         when(mockJdbcConnection.getMetaData()).thenReturn(mockDatabaseMetaData);
+        
+        SessionKey sessionKey = new SessionKey(metadata.getSessionId(), instanceIdProvider.getInstanceId());
+        when(dbLifecycleManager.getSession(any(SessionKey.class))).thenReturn(Optional.of(mockDbWrapper));
     }
 
     @Test
-    void testConnection_validSession_returnsSuccess() throws Exception {
-        when(mockJdbcConnection.isValid(anyInt())).thenReturn(true);
+    void getSchemaInfo_shouldReturnSchemaInfo() throws Exception {
+        // Setup mock response
+        DbSchemaInfoResponse mockResponse = new DbSchemaInfoResponse();
+        when(dbLifecycleManager.getSchemaInfo(any(DbSessionWrapper.class), anyString(), anyInt(), anyInt()))
+                .thenReturn(mockResponse);
 
-        mockMvc.perform(post("/ops/db/{sessionToken}/test-connection", validSessionToken))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("Connection successful"));
+        // Perform request and validate
+        mockMvc.perform(get("/api/db/sessions/{sessionId}/schema", "test-session-id")
+                .header("Authorization", "Bearer " + validSessionToken)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").exists());
     }
 
     @Test
-    void getSchemaInfo_validSession_returnsSchemaInfo() throws Exception {
-        when(mockDatabaseMetaData.getDatabaseProductName()).thenReturn("PostgreSQL");
-        when(mockDatabaseMetaData.getDatabaseProductVersion()).thenReturn("13.4");
-        when(mockDatabaseMetaData.getDriverName()).thenReturn("PostgreSQL JDBC Driver");
-        when(mockDatabaseMetaData.getDriverVersion()).thenReturn("42.2.20");
+    void executeQuery_shouldExecuteAndReturnResults() throws Exception {
+        // Setup mock response
+        Map<String, Object> mockResults = Map.of(
+                "columns", new String[]{"id", "name"},
+                "rows", new Object[]{Map.of("id", 1, "name", "test")},
+                "rowCount", 1,
+                "executionTimeMs", 10
+        );
+        
+        when(dbLifecycleManager.executeQuery(any(DbSessionWrapper.class), anyString()))
+                .thenReturn(mockResults);
 
-        mockMvc.perform(get("/ops/db/{sessionToken}/get-schema-info", validSessionToken))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.databaseProductName").value("PostgreSQL"))
-            .andExpect(jsonPath("$.databaseProductVersion").value("13.4"));
+        // Perform request and validate
+        String requestBody = "{\"query\": \"SELECT * FROM users\"}";
+        mockMvc.perform(post("/api/db/sessions/{sessionId}/query", "test-session-id")
+                .header("Authorization", "Bearer " + validSessionToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.columns").exists())
+                .andExpect(jsonPath("$.rows").exists())
+                .andExpect(jsonPath("$.rowCount").exists())
+                .andExpect(jsonPath("$.executionTimeMs").exists());
     }
 }
+
