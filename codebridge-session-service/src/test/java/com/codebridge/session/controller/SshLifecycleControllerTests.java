@@ -47,7 +47,8 @@ class SshLifecycleControllerTests {
     void initSshSession_shouldReturnSessionResponse() throws Exception {
         // Prepare test data
         SshSessionServiceApiInitRequest request = new SshSessionServiceApiInitRequest();
-        request.setConnectionAlias("test-connection");
+        request.setPlatformUserId(UUID.randomUUID());
+        request.setServerId(UUID.randomUUID());
         
         UserProvidedConnectionDetails details = new UserProvidedConnectionDetails();
         details.setHostname("test-host");
