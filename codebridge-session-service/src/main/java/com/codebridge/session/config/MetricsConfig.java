@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * Configuration for metrics collection and monitoring.
@@ -25,6 +26,7 @@ public class MetricsConfig {
      * @return The configured registry with JVM metrics
      */
     @Bean
+    @Lazy // Add @Lazy to break the circular dependency
     public MeterRegistry bindJvmMetrics(MeterRegistry registry) {
         // JVM metrics
         new ClassLoaderMetrics().bindTo(registry);
@@ -50,4 +52,3 @@ public class MetricsConfig {
         return new TimedAspect(registry);
     }
 }
-
