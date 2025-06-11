@@ -19,6 +19,14 @@ public class Session {
     
     /**
      * Connect to the remote host.
+     * @throws JSchException if there's an error connecting
+     */
+    public void connect() throws JSchException {
+        this.connected = true;
+    }
+    
+    /**
+     * Connect to the remote host with a timeout.
      * @param timeout the timeout in milliseconds
      * @throws JSchException if there's an error connecting
      */
@@ -64,6 +72,9 @@ public class Session {
      * @throws JSchException if there's an error opening the channel
      */
     public Channel openChannel(String type) throws JSchException {
+        if ("exec".equals(type)) {
+            return new ChannelExec();
+        }
         return new Channel();
     }
 }
