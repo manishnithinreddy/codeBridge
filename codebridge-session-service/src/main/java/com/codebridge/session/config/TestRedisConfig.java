@@ -7,7 +7,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import redis.clients.jedis.JedisPooled;
 
 /**
  * Redis configuration for test mode.
@@ -37,13 +36,13 @@ public class TestRedisConfig {
      */
     private static class MockRedisConnectionFactory implements RedisConnectionFactory {
         @Override
-        public JedisPooled getConnection() {
+        public Object getConnection() {
             // Return null as we're not actually connecting to Redis in test mode
             return null;
         }
 
         @Override
-        public JedisPooled getConnection(String s) {
+        public Object getConnection(String s) {
             // Return null as we're not actually connecting to Redis in test mode
             return null;
         }
