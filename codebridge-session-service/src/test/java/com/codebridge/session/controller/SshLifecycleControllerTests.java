@@ -50,10 +50,10 @@ class SshLifecycleControllerTests {
         request.setConnectionAlias("test-connection");
         
         UserProvidedConnectionDetails details = new UserProvidedConnectionDetails();
-        details.setHost("test-host");
+        details.setHostname("test-host");
         details.setPort(22);
         details.setUsername("test-user");
-        details.setPassword("test-password");
+        details.setDecryptedPassword("test-password");
         details.setAuthProvider(ServerAuthProvider.PASSWORD);
         
         request.setConnectionDetails(details);
