@@ -53,7 +53,8 @@ public class DbSessionLifecycleManager {
     private final ApplicationInstanceIdProvider instanceIdProvider;
     private final String applicationInstanceId;
 
-    private final ConcurrentHashMap<SessionKey, DbSessionWrapper> localActiveDbSessions = new ConcurrentHashMap<>();
+    // Make this package-private for testing
+    final ConcurrentHashMap<SessionKey, DbSessionWrapper> localActiveDbSessions = new ConcurrentHashMap<>();
 
     public DbSessionLifecycleManager(
             RedisTemplate<String, SessionKey> jwtToSessionKeyRedisTemplate,
@@ -72,11 +73,13 @@ public class DbSessionLifecycleManager {
     }
 
     // --- Redis Key Helpers ---
-    private String dbTokenRedisKey(String sessionToken) {
+    // Make this package-private for testing
+    String dbTokenRedisKey(String sessionToken) {
         return "session:db:token:" + sessionToken;
     }
 
-    private String dbSessionMetadataRedisKey(SessionKey sessionKey) {
+    // Make this package-private for testing
+    String dbSessionMetadataRedisKey(SessionKey sessionKey) {
         // Ensure consistent key format, resourceId here is derived from dbConnectionAlias
         return "session:db:metadata:" + sessionKey.platformUserId() + ":" + sessionKey.resourceId() + ":" + sessionKey.sessionType();
     }

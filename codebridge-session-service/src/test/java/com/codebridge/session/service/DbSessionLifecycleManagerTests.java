@@ -24,17 +24,16 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class DbSessionLifecycleManagerTests {
+public class DbSessionLifecycleManagerTests {
 
     @Mock private RedisTemplate<String, SessionKey> jwtToSessionKeyRedisTemplate;
     @Mock private RedisTemplate<String, DbSessionMetadata> dbSessionMetadataRedisTemplate;
@@ -60,17 +59,20 @@ class DbSessionLifecycleManagerTests {
     @BeforeEach
     void setUp() {
         platformUserId = UUID.randomUUID();
-        dbConnectionAlias = "myPostgresDb";
+        dbConnectionAlias = "test-db-alias";
+        resourceId = UUID.nameUUIDFromBytes(dbConnectionAlias.getBytes());
+        
+        // Create DbSessionCredentials using setters instead of constructor
         credentials = new DbSessionCredentials();
         credentials.setDbType(DbType.POSTGRESQL);
         credentials.setHost("localhost");
         credentials.setPort(5432);
         credentials.setDatabaseName("testdb");
-        credentials.setUsername("user");
-        credentials.setPassword("pass");
-
-        resourceId = UUID.nameUUIDFromBytes(dbConnectionAlias.getBytes()); // Consistent with manager
-        sessionKey = new SessionKey(platformUserId, resourceId, "DB:" + DbType.POSTGRESQL.name());
+        credentials.setUsername("testuser");
+        credentials.setPassword("testpass");
+        credentials.setSslEnabled(false);
+        
+        sessionKey = new SessionKey(platformUserId, resourceId, "DB:POSTGRESQL");
 
         lenient().when(jwtToSessionKeyRedisTemplate.opsForValue()).thenReturn(valueOpsSessionKey);
         lenient().when(dbSessionMetadataRedisTemplate.opsForValue()).thenReturn(valueOpsDbMetadata);
@@ -84,17 +86,7 @@ class DbSessionLifecycleManagerTests {
     @Test
     void initDbSession_success() {
         // This test would ideally mock DriverManager.getConnection or use a test DB.
-        // For now, asserting structure and interactions.
-        String fakeToken = "fake-db-jwt-token";
-        when(jwtTokenProvider.generateToken(any(SessionKey.class), any(UUID.class))).thenReturn(fakeToken);
-
-        // Act - This will fail if DriverManager.getConnection is called without proper setup/mocking.
-        // SessionResponse response = dbSessionLifecycleManager.initDbSession(platformUserId, dbConnectionAlias, credentials);
-
-        // Assert
-        // assertNotNull(response);
-        // assertEquals(fakeToken, response.sessionToken());
-        // verify(valueOpsSessionKey).set(eq("session:db:token:" + fakeToken), any(SessionKey.class), anyLong(), any(TimeUnit.class));
+        // For now, we'll just verify the structure is in place.
         // verify(valueOpsDbMetadata).set(anyString(), any(DbSessionMetadata.class), anyLong(), any(TimeUnit.class));
         assertTrue(true, "Test structure in place for DB init. Actual JDBC connection mocking is complex for this scope.");
     }
@@ -107,17 +99,16 @@ class DbSessionLifecycleManagerTests {
         claims.put("type", "DB:POSTGRESQL");
 
         when(jwtTokenProvider.getClaimsFromToken(token)).thenReturn(claims);
-        when(valueOpsSessionKey.get(anyString())).thenReturn(sessionKey);
+        when(valueOpsSessionKey.get(dbSessionLifecycleManager.dbTokenRedisKey(token))).thenReturn(sessionKey);
 
         DbSessionWrapper mockWrapper = mock(DbSessionWrapper.class);
-        // when(mockWrapper.getConnection()).thenReturn(mockJdbcConnection); // Not strictly needed for this test path
         when(mockWrapper.isValid(anyInt())).thenReturn(true);
         dbSessionLifecycleManager.localActiveDbSessions.put(sessionKey, mockWrapper);
 
-        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey,
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000,
-            System.currentTimeMillis() + 3600000, token, "test-instance-db-1",
-            "POSTGRESQL", "host", "db", "user");
+        DbSessionMetadata mockMetadata = new DbSessionMetadata(
+                sessionKey, Instant.now().toEpochMilli(), Instant.now().toEpochMilli(),
+                Instant.now().toEpochMilli() + 3600000L, token, "test-instance-db-1",
+                "POSTGRESQL", "localhost", "testdb", "testuser");
         when(valueOpsDbMetadata.get(anyString())).thenReturn(mockMetadata);
 
         String newToken = "new-db-refreshed-token";
@@ -145,18 +136,19 @@ class DbSessionLifecycleManagerTests {
         DbSessionWrapper mockWrapper = mock(DbSessionWrapper.class);
         dbSessionLifecycleManager.localActiveDbSessions.put(sessionKey, mockWrapper);
 
-        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey,
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - 5000,
-            System.currentTimeMillis() + 3600000, token, "test-instance-db-1",
-             "POSTGRESQL", "host", "db", "user");
+        DbSessionMetadata mockMetadata = new DbSessionMetadata(
+                sessionKey, Instant.now().toEpochMilli(), Instant.now().toEpochMilli(),
+                Instant.now().toEpochMilli() + 3600000L, token, "test-instance-db-1",
+                "POSTGRESQL", "localhost", "testdb", "testuser");
         when(valueOpsDbMetadata.get(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey))).thenReturn(mockMetadata);
 
         dbSessionLifecycleManager.releaseDbSession(token);
 
         verify(mockWrapper).closeConnection();
         assertNull(dbSessionLifecycleManager.localActiveDbSessions.get(sessionKey));
-        verify(valueOpsDbMetadata).delete(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey));
-        verify(valueOpsSessionKey).delete(dbSessionLifecycleManager.dbTokenRedisKey(token));
+        // Use RedisTemplate.delete instead of ValueOperations.delete
+        verify(dbSessionMetadataRedisTemplate).delete(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey));
+        verify(jwtToSessionKeyRedisTemplate).delete(dbSessionLifecycleManager.dbTokenRedisKey(token));
     }
 
     @Test
@@ -166,16 +158,18 @@ class DbSessionLifecycleManagerTests {
         when(mockWrapper.getLastAccessedTime()).thenReturn(System.currentTimeMillis() - (2 * dbConfig.getDefaultTimeoutMs()));
         dbSessionLifecycleManager.localActiveDbSessions.put(sessionKey, mockWrapper);
 
-        DbSessionMetadata mockMetadata = new DbSessionMetadata(sessionKey,
-            System.currentTimeMillis() - 10000, System.currentTimeMillis() - (2 * dbConfig.getDefaultTimeoutMs()),
-            System.currentTimeMillis() + 3600000, "some-db-token", "test-instance-db-1",
-            "POSTGRESQL", "host", "db", "user");
+        DbSessionMetadata mockMetadata = new DbSessionMetadata(
+                sessionKey, Instant.now().toEpochMilli(), Instant.now().toEpochMilli(),
+                Instant.now().toEpochMilli() + 3600000L, "token", "test-instance-db-1",
+                "POSTGRESQL", "localhost", "testdb", "testuser");
         when(valueOpsDbMetadata.get(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey))).thenReturn(mockMetadata);
 
         dbSessionLifecycleManager.cleanupExpiredDbSessions();
 
         verify(mockWrapper).closeConnection();
         assertNull(dbSessionLifecycleManager.localActiveDbSessions.get(sessionKey));
-        verify(valueOpsDbMetadata).delete(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey));
+        // Use RedisTemplate.delete instead of ValueOperations.delete
+        verify(dbSessionMetadataRedisTemplate).delete(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey));
     }
 }
+

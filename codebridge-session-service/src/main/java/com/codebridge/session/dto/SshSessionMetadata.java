@@ -11,6 +11,9 @@ public record SshSessionMetadata(
     long createdAt,      // Epoch millis
     long lastAccessedTime, // Epoch millis
     long expiresAt,      // Epoch millis (calculated based on timeout)
-    String hostingInstanceId // ID of the SessionService instance managing this session
+    String hostingInstanceId, // ID of the SessionService instance managing this session
+    String sshHost,      // SSH host for this session
+    String sshUsername   // SSH username for this session
 ) implements Serializable {
 }
+

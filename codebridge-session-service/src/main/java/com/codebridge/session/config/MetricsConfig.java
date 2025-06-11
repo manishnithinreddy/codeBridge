@@ -22,9 +22,10 @@ public class MetricsConfig {
      * Configures JVM metrics for monitoring memory, GC, threads, and other JVM statistics.
      *
      * @param registry The meter registry
+     * @return The configured registry with JVM metrics
      */
     @Bean
-    public void bindJvmMetrics(MeterRegistry registry) {
+    public MeterRegistry bindJvmMetrics(MeterRegistry registry) {
         // JVM metrics
         new ClassLoaderMetrics().bindTo(registry);
         new JvmMemoryMetrics().bindTo(registry);
@@ -34,6 +35,8 @@ public class MetricsConfig {
         // System metrics
         new ProcessorMetrics().bindTo(registry);
         new UptimeMetrics().bindTo(registry);
+        
+        return registry;
     }
 
     /**
