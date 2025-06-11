@@ -1,25 +1,23 @@
 package com.codebridge.session.controller;
 
+import com.codebridge.session.dto.FileChunkRequest;
+import com.codebridge.session.dto.FileChunkResponse;
+import com.codebridge.session.dto.FileTransferInitRequest;
+import com.codebridge.session.dto.FileTransferInitResponse;
 import com.codebridge.session.model.SessionKey;
 import com.codebridge.session.security.jwt.JwtTokenProvider;
 import com.codebridge.session.service.SshSessionLifecycleManager;
 import com.codebridge.session.service.transfer.ChunkedFileTransferService;
+import com.codebridge.session.service.transfer.ChunkedFileTransferService.TransferDirection;
 import io.jsonwebtoken.Claims;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Controller for optimized file transfers using chunking.
@@ -45,70 +43,47 @@ public class ChunkedFileTransferController {
     }
 
     /**
-     * Uploads a file to a remote server using chunking.
+     * Initialize a file transfer (upload or download).
      *
      * @param sessionToken The session token
-     * @param remotePath The remote path
-     * @param file The file to upload
-     * @return A response entity
+     * @param request The file transfer initialization request
+     * @return A response entity with the transfer ID
      */
-    @PostMapping("/upload")
-    public CompletableFuture<ResponseEntity<Void>> uploadFile(
+    @PostMapping("/init")
+    public ResponseEntity<FileTransferInitResponse> initializeTransfer(
             @PathVariable String sessionToken,
-            @RequestParam String remotePath,
-            @RequestParam("file") MultipartFile file) {
+            @Valid @RequestBody FileTransferInitRequest request) {
         
-        SessionKey sessionKey = getSessionKeyFromToken(sessionToken);
+        logger.info("Initializing {} transfer for file: {}", 
+                request.getDirection(), request.getRemotePath());
         
-        return fileTransferService.uploadFile(sessionKey, file, remotePath)
-                .thenApply(result -> ResponseEntity.ok().build());
+        FileTransferInitResponse response = fileTransferService.initializeFileTransfer(
+                sessionToken, request);
+        
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * Downloads a file from a remote server using chunking.
+     * Transfer a chunk of a file (upload or download).
      *
      * @param sessionToken The session token
-     * @param remotePath The remote path
-     * @return A response entity with the file data
+     * @param transferId The transfer ID
+     * @param request The chunk request
+     * @return A response entity with the chunk response
      */
-    @GetMapping("/download")
-    public CompletableFuture<ResponseEntity<Resource>> downloadFile(
+    @PostMapping("/{transferId}/chunk")
+    public ResponseEntity<FileChunkResponse> transferChunk(
             @PathVariable String sessionToken,
-            @RequestParam String remotePath) {
+            @PathVariable String transferId,
+            @Valid @RequestBody FileChunkRequest request) {
         
-        SessionKey sessionKey = getSessionKeyFromToken(sessionToken);
+        logger.debug("Processing chunk {} for transfer {}", 
+                request.getChunkIndex(), transferId);
         
-        return fileTransferService.downloadFile(sessionKey, remotePath)
-                .thenApply(fileData -> {
-                    ByteArrayResource resource = new ByteArrayResource(fileData);
-                    String filename = remotePath.substring(remotePath.lastIndexOf('/') + 1);
-                    String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
-                    
-                    return ResponseEntity.ok()
-                            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFilename + "\"")
-                            .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(resource.contentLength()))
-                            .body(resource);
-                });
-    }
-
-    /**
-     * Gets the session key from a session token.
-     *
-     * @param sessionToken The session token
-     * @return The session key
-     */
-    private SessionKey getSessionKeyFromToken(String sessionToken) {
-        Claims claims = jwtTokenProvider.getClaimsFromToken(sessionToken);
-        if (claims == null) {
-            throw new IllegalArgumentException("Invalid session token");
-        }
+        FileChunkResponse response = fileTransferService.transferChunk(
+                sessionToken, transferId, request);
         
-        return new SessionKey(
-                UUID.fromString(claims.getSubject()),
-                UUID.fromString(claims.get("resourceId", String.class)),
-                claims.get("type", String.class)
-        );
+        return ResponseEntity.ok(response);
     }
 }
 

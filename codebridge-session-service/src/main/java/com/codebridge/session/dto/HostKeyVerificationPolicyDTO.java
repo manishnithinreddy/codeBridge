@@ -1,6 +1,6 @@
 package com.codebridge.session.dto;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * DTO for host key verification policy
