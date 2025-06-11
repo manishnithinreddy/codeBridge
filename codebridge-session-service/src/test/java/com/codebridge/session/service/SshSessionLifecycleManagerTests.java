@@ -7,10 +7,12 @@ import com.codebridge.session.dto.KeepAliveResponse;
 import com.codebridge.session.dto.SessionResponse;
 import com.codebridge.session.dto.SshSessionCredentials;
 import com.codebridge.session.dto.SshSessionMetadata;
+import com.codebridge.session.dto.UserProvidedConnectionDetails;
 import com.codebridge.session.exception.RemoteOperationException;
 import com.codebridge.session.exception.ResourceNotFoundException;
 import com.codebridge.session.model.SessionKey;
 import com.codebridge.session.model.SshSessionWrapper;
+import com.codebridge.session.model.enums.ServerAuthProvider;
 import com.codebridge.session.security.jwt.JwtTokenProvider;
 import com.jcraft.jsch.JSchException;
 import io.jsonwebtoken.Claims;
@@ -25,6 +27,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -50,18 +53,20 @@ public class SshSessionLifecycleManagerTests {
 
     private UUID platformUserId;
     private UUID serverId;
-    private SshSessionCredentials credentials;
+    private UserProvidedConnectionDetails connectionDetails;
     private SessionKey sessionKey;
 
     @BeforeEach
     void setUp() {
         platformUserId = UUID.randomUUID();
         serverId = UUID.randomUUID();
-        credentials = new SshSessionCredentials();
-        credentials.setHost("test-ssh-host");
-        credentials.setPort(22);
-        credentials.setUsername("test-user");
-        credentials.setPassword("test-password");
+        
+        connectionDetails = new UserProvidedConnectionDetails();
+        connectionDetails.setHostname("test-ssh-host");
+        connectionDetails.setPort(22);
+        connectionDetails.setUsername("test-user");
+        connectionDetails.setDecryptedPassword("test-password");
+        connectionDetails.setAuthProvider(ServerAuthProvider.PASSWORD);
         
         sessionKey = new SessionKey(platformUserId, serverId, "SSH");
 
@@ -173,6 +178,46 @@ public class SshSessionLifecycleManagerTests {
         assertNull(sshSessionLifecycleManager.localActiveSshSessions.get(sessionKey));
         // Use RedisTemplate.delete instead of ValueOperations.delete
         verify(sessionMetadataRedisTemplate).delete(sshSessionLifecycleManager.sshSessionMetadataRedisKey(sessionKey));
+    }
+
+    @Test
+    void getLocalSession_returnsOptionalWrapper() {
+        SshSessionWrapper mockWrapper = mock(SshSessionWrapper.class);
+        sshSessionLifecycleManager.localActiveSshSessions.put(sessionKey, mockWrapper);
+        
+        Optional<SshSessionWrapper> result = sshSessionLifecycleManager.getLocalSession(sessionKey);
+        
+        assertTrue(result.isPresent());
+        assertEquals(mockWrapper, result.get());
+    }
+    
+    @Test
+    void getLocalSession_returnsEmptyOptional() {
+        Optional<SshSessionWrapper> result = sshSessionLifecycleManager.getLocalSession(sessionKey);
+        
+        assertFalse(result.isPresent());
+    }
+    
+    @Test
+    void getSessionMetadata_returnsOptionalMetadata() {
+        SshSessionMetadata mockMetadata = new SshSessionMetadata(
+                platformUserId, serverId, "token", Instant.now().toEpochMilli(), Instant.now().toEpochMilli(),
+                Instant.now().toEpochMilli() + 3600000L, "test-instance-1", "test-host", "test-user");
+        when(valueOpsSshMetadata.get(sshSessionLifecycleManager.sshSessionMetadataRedisKey(sessionKey))).thenReturn(mockMetadata);
+        
+        Optional<SshSessionMetadata> result = sshSessionLifecycleManager.getSessionMetadata(sessionKey);
+        
+        assertTrue(result.isPresent());
+        assertEquals(mockMetadata, result.get());
+    }
+    
+    @Test
+    void getSessionMetadata_returnsEmptyOptional() {
+        when(valueOpsSshMetadata.get(sshSessionLifecycleManager.sshSessionMetadataRedisKey(sessionKey))).thenReturn(null);
+        
+        Optional<SshSessionMetadata> result = sshSessionLifecycleManager.getSessionMetadata(sessionKey);
+        
+        assertFalse(result.isPresent());
     }
 
     // Additional tests:

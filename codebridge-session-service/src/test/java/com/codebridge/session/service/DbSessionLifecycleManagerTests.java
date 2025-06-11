@@ -25,6 +25,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -170,6 +171,47 @@ public class DbSessionLifecycleManagerTests {
         assertNull(dbSessionLifecycleManager.localActiveDbSessions.get(sessionKey));
         // Use RedisTemplate.delete instead of ValueOperations.delete
         verify(dbSessionMetadataRedisTemplate).delete(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey));
+    }
+    
+    @Test
+    void getLocalSession_returnsOptionalWrapper() {
+        DbSessionWrapper mockWrapper = mock(DbSessionWrapper.class);
+        dbSessionLifecycleManager.localActiveDbSessions.put(sessionKey, mockWrapper);
+        
+        Optional<DbSessionWrapper> result = dbSessionLifecycleManager.getLocalSession(sessionKey);
+        
+        assertTrue(result.isPresent());
+        assertEquals(mockWrapper, result.get());
+    }
+    
+    @Test
+    void getLocalSession_returnsEmptyOptional() {
+        Optional<DbSessionWrapper> result = dbSessionLifecycleManager.getLocalSession(sessionKey);
+        
+        assertFalse(result.isPresent());
+    }
+    
+    @Test
+    void getSessionMetadata_returnsOptionalMetadata() {
+        DbSessionMetadata mockMetadata = new DbSessionMetadata(
+                sessionKey, Instant.now().toEpochMilli(), Instant.now().toEpochMilli(),
+                Instant.now().toEpochMilli() + 3600000L, "token", "test-instance-db-1",
+                "POSTGRESQL", "localhost", "testdb", "testuser");
+        when(valueOpsDbMetadata.get(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey))).thenReturn(mockMetadata);
+        
+        Optional<DbSessionMetadata> result = dbSessionLifecycleManager.getSessionMetadata(sessionKey);
+        
+        assertTrue(result.isPresent());
+        assertEquals(mockMetadata, result.get());
+    }
+    
+    @Test
+    void getSessionMetadata_returnsEmptyOptional() {
+        when(valueOpsDbMetadata.get(dbSessionLifecycleManager.dbSessionMetadataRedisKey(sessionKey))).thenReturn(null);
+        
+        Optional<DbSessionMetadata> result = dbSessionLifecycleManager.getSessionMetadata(sessionKey);
+        
+        assertFalse(result.isPresent());
     }
 }
 
