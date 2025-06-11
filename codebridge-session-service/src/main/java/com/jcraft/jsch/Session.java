@@ -56,5 +56,15 @@ public class Session {
     public void setConfig(Properties config) {
         this.config = config;
     }
+    
+    /**
+     * Open a channel.
+     * @param type the channel type
+     * @return the channel
+     * @throws JSchException if there's an error opening the channel
+     */
+    public Channel openChannel(String type) throws JSchException {
+        return new Channel();
+    }
 }
 
