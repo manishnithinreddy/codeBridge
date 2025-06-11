@@ -100,6 +100,15 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
     public void setVerificationPolicy(HostKeyVerificationPolicy policy) {
         this.verificationPolicy = policy;
     }
+    
+    /**
+     * Get the verification policy.
+     *
+     * @return the verification policy
+     */
+    public HostKeyVerificationPolicy getVerificationPolicy() {
+        return this.verificationPolicy;
+    }
 
     @Override
     public int check(String host, byte[] key) {
