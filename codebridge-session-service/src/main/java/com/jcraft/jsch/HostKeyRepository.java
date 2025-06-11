@@ -34,5 +34,40 @@ public interface HostKeyRepository {
      * @param ui the user info
      */
     void add(HostKey hostkey, UserInfo ui);
+    
+    /**
+     * Remove a host key.
+     * @param host the host
+     * @param type the key type
+     */
+    void remove(String host, String type);
+    
+    /**
+     * Remove a host key.
+     * @param host the host
+     * @param type the key type
+     * @param key the key
+     */
+    void remove(String host, String type, byte[] key);
+    
+    /**
+     * Get all host keys.
+     * @return the host keys
+     */
+    HostKey[] getHostKey();
+    
+    /**
+     * Get host keys for a specific host and type.
+     * @param host the host
+     * @param type the key type
+     * @return the host keys
+     */
+    HostKey[] getHostKey(String host, String type);
+    
+    /**
+     * Get the repository ID.
+     * @return the repository ID
+     */
+    String getKnownHostsRepositoryID();
 }
 
