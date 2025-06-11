@@ -3,17 +3,18 @@ package com.codebridge.session.controller;
 import com.codebridge.session.config.ApplicationInstanceIdProvider;
 import com.codebridge.session.dto.DbSessionMetadata;
 import com.codebridge.session.dto.schema.DbSchemaInfoResponse;
+import com.codebridge.session.dto.sql.SqlExecutionRequest;
 import com.codebridge.session.model.DbSessionWrapper;
 import com.codebridge.session.model.SessionKey;
 import com.codebridge.session.model.enums.DbType;
 import com.codebridge.session.security.jwt.JwtTokenProvider;
 import com.codebridge.session.service.DbSessionLifecycleManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DbOperationControllerTests {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
 
     @MockBean private DbSessionLifecycleManager dbLifecycleManager;
     @MockBean private JwtTokenProvider jwtTokenProvider;
@@ -50,31 +53,42 @@ class DbOperationControllerTests {
 
     private String validSessionToken = "valid-db-ops-token";
     private UUID platformUserId = UUID.randomUUID();
+    private UUID resourceId = UUID.randomUUID();
+    private SessionKey sessionKey;
     
     @BeforeEach
     void setUp() throws SQLException {
-        MockitoAnnotations.openMocks(this);
+        sessionKey = new SessionKey(platformUserId, resourceId, "DB:POSTGRESQL");
         
         // Setup JWT token validation
-        Claims claims = new DefaultClaims();
-        claims.put("userId", platformUserId.toString());
-        claims.put("sessionId", "test-session-id");
+        Claims claims = new DefaultClaims().setSubject(platformUserId.toString());
+        claims.put("resourceId", resourceId.toString());
+        claims.put("type", "DB:POSTGRESQL");
         
         when(jwtTokenProvider.validateToken(validSessionToken)).thenReturn(true);
-        when(jwtTokenProvider.getClaims(validSessionToken)).thenReturn(claims);
+        when(jwtTokenProvider.getClaimsFromToken(validSessionToken)).thenReturn(claims);
         
         // Setup DB session
-        DbSessionMetadata metadata = new DbSessionMetadata();
-        metadata.setSessionId(UUID.randomUUID());
-        metadata.setUserId(platformUserId);
-        metadata.setDbType(DbType.POSTGRESQL);
+        DbSessionMetadata metadata = new DbSessionMetadata(
+            sessionKey,
+            Instant.now().toEpochMilli(),
+            Instant.now().toEpochMilli(),
+            Instant.now().toEpochMilli() + 3600000L,
+            validSessionToken,
+            "test-instance-1",
+            "POSTGRESQL",
+            "localhost",
+            "testdb",
+            "testuser"
+        );
         
-        when(mockDbWrapper.getMetadata()).thenReturn(metadata);
+        when(mockDbWrapper.isValid(anyInt())).thenReturn(true);
         when(mockDbWrapper.getConnection()).thenReturn(mockJdbcConnection);
         when(mockJdbcConnection.getMetaData()).thenReturn(mockDatabaseMetaData);
         
-        SessionKey sessionKey = new SessionKey(metadata.getSessionId(), instanceIdProvider.getInstanceId());
-        when(dbLifecycleManager.getSession(any(SessionKey.class))).thenReturn(Optional.of(mockDbWrapper));
+        when(dbLifecycleManager.getLocalSession(sessionKey)).thenReturn(Optional.of(mockDbWrapper));
+        when(dbLifecycleManager.getSessionMetadata(sessionKey)).thenReturn(Optional.of(metadata));
+        when(instanceIdProvider.getInstanceId()).thenReturn("test-instance-1");
     }
 
     @Test
@@ -85,8 +99,10 @@ class DbOperationControllerTests {
                 .thenReturn(mockResponse);
 
         // Perform request and validate
-        mockMvc.perform(get("/api/db/sessions/{sessionId}/schema", "test-session-id")
-                .header("Authorization", "Bearer " + validSessionToken)
+        mockMvc.perform(get("/api/ops/db/{sessionToken}/schema", validSessionToken)
+                .param("schema", "public")
+                .param("limit", "100")
+                .param("offset", "0")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -106,12 +122,14 @@ class DbOperationControllerTests {
         when(dbLifecycleManager.executeQuery(any(DbSessionWrapper.class), anyString()))
                 .thenReturn(mockResults);
 
+        // Create request
+        SqlExecutionRequest request = new SqlExecutionRequest();
+        request.setSql("SELECT * FROM users");
+
         // Perform request and validate
-        String requestBody = "{\"query\": \"SELECT * FROM users\"}";
-        mockMvc.perform(post("/api/db/sessions/{sessionId}/query", "test-session-id")
-                .header("Authorization", "Bearer " + validSessionToken)
+        mockMvc.perform(post("/api/ops/db/{sessionToken}/execute", validSessionToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.columns").exists())
