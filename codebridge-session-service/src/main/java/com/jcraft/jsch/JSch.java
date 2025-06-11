@@ -5,27 +5,13 @@ package com.jcraft.jsch;
  * This is a simplified version for test purposes.
  */
 public class JSch {
+    private HostKeyRepository hostKeyRepository;
+    
     /**
      * Constructor for JSch.
      */
     public JSch() {
         // Empty constructor
-    }
-    
-    /**
-     * Set the host key repository.
-     * @param hkrepo the host key repository
-     */
-    public void setHostKeyRepository(HostKeyRepository hkrepo) {
-        // Empty method for testing
-    }
-    
-    /**
-     * Get the host key repository.
-     * @return the host key repository
-     */
-    public HostKeyRepository getHostKeyRepository() {
-        return null; // Placeholder for testing
     }
     
     /**
@@ -49,7 +35,23 @@ public class JSch {
      * @throws JSchException if there's an error getting the session
      */
     public Session getSession(String username, String host, int port) throws JSchException {
-        return new Session(); // Placeholder for testing
+        return new Session();
+    }
+    
+    /**
+     * Set the host key repository.
+     * @param hkrepo the host key repository
+     */
+    public void setHostKeyRepository(HostKeyRepository hkrepo) {
+        this.hostKeyRepository = hkrepo;
+    }
+    
+    /**
+     * Get the host key repository.
+     * @return the host key repository
+     */
+    public HostKeyRepository getHostKeyRepository() {
+        return this.hostKeyRepository;
     }
 }
 

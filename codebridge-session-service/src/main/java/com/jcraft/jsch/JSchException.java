@@ -5,6 +5,8 @@ package com.jcraft.jsch;
  * This is a simplified version for test purposes.
  */
 public class JSchException extends Exception {
+    private static final long serialVersionUID = 1L;
+    
     /**
      * Constructor for a JSch exception.
      */
@@ -13,16 +15,16 @@ public class JSchException extends Exception {
     }
     
     /**
-     * Constructor for a JSch exception with a message.
-     * @param message the message
+     * Constructor for a JSch exception.
+     * @param message the exception message
      */
     public JSchException(String message) {
         super(message);
     }
     
     /**
-     * Constructor for a JSch exception with a message and cause.
-     * @param message the message
+     * Constructor for a JSch exception.
+     * @param message the exception message
      * @param cause the cause
      */
     public JSchException(String message, Throwable cause) {
