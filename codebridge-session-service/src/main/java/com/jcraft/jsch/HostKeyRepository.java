@@ -6,44 +6,29 @@ package com.jcraft.jsch;
  */
 public interface HostKeyRepository {
     /**
-     * Host key status: OK
-     */
-    int OK = 0;
-    
-    /**
-     * Host key status: NOT_INCLUDED
-     */
-    int NOT_INCLUDED = 1;
-    
-    /**
-     * Host key status: CHANGED
-     */
-    int CHANGED = 2;
-    
-    /**
-     * Check a host key.
+     * Check the host key.
      * @param host the host
      * @param key the key
-     * @return the status
+     * @return the check result
      */
     int check(String host, byte[] key);
     
     /**
-     * Add a host key.
+     * Add the host key.
      * @param hostkey the host key
      * @param ui the user info
      */
     void add(HostKey hostkey, UserInfo ui);
     
     /**
-     * Remove a host key.
+     * Remove the host key.
      * @param host the host
      * @param type the key type
      */
     void remove(String host, String type);
     
     /**
-     * Remove a host key.
+     * Remove the host key.
      * @param host the host
      * @param type the key type
      * @param key the key
@@ -51,22 +36,22 @@ public interface HostKeyRepository {
     void remove(String host, String type, byte[] key);
     
     /**
-     * Get all host keys.
-     * @return the host keys
-     */
-    HostKey[] getHostKey();
-    
-    /**
-     * Get host keys for a specific host and type.
+     * Get the host key.
      * @param host the host
      * @param type the key type
-     * @return the host keys
+     * @return the host key
      */
     HostKey[] getHostKey(String host, String type);
     
     /**
-     * Get the repository ID.
-     * @return the repository ID
+     * Get the host key.
+     * @return the host key
+     */
+    HostKey[] getHostKey();
+    
+    /**
+     * Get the host key repository name.
+     * @return the name
      */
     String getKnownHostsRepositoryID();
 }
