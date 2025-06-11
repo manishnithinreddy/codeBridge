@@ -59,11 +59,11 @@ class ServerActivityLogServiceTests {
         verify(rabbitTemplate).convertAndSend(eq(exchangeName), eq(routingKey), captor.capture());
 
         LogEventMessage publishedMessage = captor.getValue();
-        assertEquals(platformUserId, publishedMessage.platformUserId());
-        assertEquals(action, publishedMessage.action());
-        assertEquals(serverId, publishedMessage.serverId());
-        assertEquals(details, publishedMessage.details());
-        assertEquals(status, publishedMessage.status());
+        assertEquals(platformUserId, publishedMessage.getPlatformUserId());
+        assertEquals(action, publishedMessage.getAction());
+        assertEquals(serverId, publishedMessage.getServerId());
+        assertEquals(details, publishedMessage.getDetails());
+        assertEquals(status, publishedMessage.getStatus());
     }
 
     @Test
