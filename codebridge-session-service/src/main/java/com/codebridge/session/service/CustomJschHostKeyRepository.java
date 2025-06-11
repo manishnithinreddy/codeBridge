@@ -9,10 +9,10 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -23,14 +23,45 @@ import java.util.regex.Pattern;
 /**
  * Custom implementation of JSch's HostKeyRepository that stores host keys in a database.
  */
+@Component
 public class CustomJschHostKeyRepository implements HostKeyRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomJschHostKeyRepository.class);
     private static final Pattern HOST_PORT_PATTERN = Pattern.compile("\\[?([^\\]]+)\\]?(?::(\\d+))?");
 
+    /**
+     * Host key verification policy.
+     */
+    public enum HostKeyVerificationPolicy {
+        /**
+         * Automatically accept new host keys.
+         */
+        AUTO_ACCEPT,
+        
+        /**
+         * Prompt the user to accept new host keys.
+         */
+        PROMPT,
+        
+        /**
+         * Reject new host keys.
+         */
+        REJECT
+    }
+
     private final SshHostKeyRepository sshHostKeyRepository;
-    private final UUID userId;
+    private UUID userId;
     private JSch jsch;
+    private HostKeyVerificationPolicy verificationPolicy = HostKeyVerificationPolicy.AUTO_ACCEPT;
+
+    /**
+     * Constructor.
+     *
+     * @param sshHostKeyRepository the SSH host key repository
+     */
+    public CustomJschHostKeyRepository(SshHostKeyRepository sshHostKeyRepository) {
+        this.sshHostKeyRepository = sshHostKeyRepository;
+    }
 
     /**
      * Constructor.
@@ -44,12 +75,30 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
     }
 
     /**
+     * Set the user ID.
+     *
+     * @param userId the user ID
+     */
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    /**
      * Set the JSch instance.
      *
      * @param jsch the JSch instance
      */
     public void setJSch(JSch jsch) {
         this.jsch = jsch;
+    }
+
+    /**
+     * Set the verification policy.
+     *
+     * @param policy the verification policy
+     */
+    public void setVerificationPolicy(HostKeyVerificationPolicy policy) {
+        this.verificationPolicy = policy;
     }
 
     @Override
