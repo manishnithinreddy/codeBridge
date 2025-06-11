@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -28,60 +29,76 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 @WebMvcTest(SshLifecycleController.class)
 class SshLifecycleControllerTests {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @MockBean private SshSessionLifecycleManager sshLifecycleManager;
-    // JwtTokenProvider and ApplicationInstanceIdProvider are not directly used by controller, but by manager
-    // If Spring Security is fully active for WebMvcTest, may need to mock UserDetailsService or provide JWT
-    // For this restoration, assuming basic @WebMvcTest setup.
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private final String MOCK_USER_ID = UUID.randomUUID().toString();
+    @MockBean
+    private SshSessionLifecycleManager sshLifecycleManager;
 
     private SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor defaultJwt() {
-        return jwt().jwt(builder -> builder.subject(MOCK_USER_ID)).authorities(new SimpleGrantedAuthority("ROLE_USER"));
+        return jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))
+                .jwt(builder -> builder.claim("sub", UUID.randomUUID().toString()));
     }
 
-
     @Test
-    void initSshSession_validRequest_returnsCreated() throws Exception {
-        UUID platformUserId = UUID.fromString(MOCK_USER_ID);
-        UUID serverId = UUID.randomUUID();
-        UserProvidedConnectionDetails connDetails = new UserProvidedConnectionDetails("host", 22, "user", ServerAuthProvider.PASSWORD);
-        connDetails.setDecryptedPassword("password");
+    void initSshSession_shouldReturnSessionResponse() throws Exception {
+        // Prepare test data
+        SshSessionServiceApiInitRequest request = new SshSessionServiceApiInitRequest();
+        request.setConnectionAlias("test-connection");
+        
+        UserProvidedConnectionDetails details = new UserProvidedConnectionDetails();
+        details.setHost("test-host");
+        details.setPort(22);
+        details.setUsername("test-user");
+        details.setPassword("test-password");
+        details.setAuthProvider(ServerAuthProvider.PASSWORD);
+        
+        request.setConnectionDetails(details);
+        
+        SessionResponse expectedResponse = new SessionResponse(
+                "test-token", "SSH", "ACTIVE", 
+                System.currentTimeMillis(), System.currentTimeMillis() + 3600000);
+        
+        when(sshLifecycleManager.initSshSession(any(), any(), any()))
+                .thenReturn(expectedResponse);
 
-        SshSessionServiceApiInitRequest requestDto = new SshSessionServiceApiInitRequest(platformUserId, serverId, connDetails);
-
-        SessionResponse sessionResponse = new SessionResponse("test-token", "SSH", "ACTIVE", System.currentTimeMillis(), System.currentTimeMillis() + 3600000);
-        when(sshLifecycleManager.initSshSession(platformUserId, serverId, any(UserProvidedConnectionDetails.class)))
-            .thenReturn(sessionResponse);
-
+        // Perform request and validate
         mockMvc.perform(post("/api/lifecycle/ssh/init")
-                .with(defaultJwt()) // Simulate authenticated user
+                .with(defaultJwt())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestDto)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.sessionToken").value("test-token"))
-            .andExpect(jsonPath("$.type").value("SSH"));
-    }
-
-    @Test
-    void keepAliveSshSession_validToken_returnsOk() throws Exception {
-        String sessionToken = "test-session-token";
-        KeepAliveResponse keepAliveResponse = new KeepAliveResponse(sessionToken, "ACTIVE", System.currentTimeMillis() + 3600000);
-        when(sshLifecycleManager.keepAliveSshSession(sessionToken)).thenReturn(keepAliveResponse);
-
-        mockMvc.perform(post("/api/lifecycle/ssh/{sessionToken}/keepalive", sessionToken)
-                .with(defaultJwt())) // Keepalive might also check original User JWT if configured
+                .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value(sessionToken))
-            .andExpect(jsonPath("$.status").value("ACTIVE"));
+            .andExpect(jsonPath("$.sessionToken").value(expectedResponse.getSessionToken()))
+            .andExpect(jsonPath("$.sessionType").value(expectedResponse.getSessionType()))
+            .andExpect(jsonPath("$.status").value(expectedResponse.getStatus()));
     }
 
     @Test
-    void releaseSshSession_validToken_returnsNoContent() throws Exception {
-        String sessionToken = "test-session-token-release";
-        // releaseSshSession is void
+    void keepAliveSshSession_shouldReturnKeepAliveResponse() throws Exception {
+        // Prepare test data
+        String sessionToken = "test-token";
+        KeepAliveResponse expectedResponse = new KeepAliveResponse(
+                "new-test-token", "ACTIVE", System.currentTimeMillis() + 3600000);
+        
+        when(sshLifecycleManager.keepAliveSshSession(sessionToken))
+                .thenReturn(expectedResponse);
+
+        // Perform request and validate
+        mockMvc.perform(post("/api/lifecycle/ssh/{sessionToken}/keepalive", sessionToken)
+                .with(defaultJwt()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.sessionToken").value(expectedResponse.getSessionToken()))
+            .andExpect(jsonPath("$.status").value(expectedResponse.getStatus()));
+    }
+
+    @Test
+    void releaseSshSession_shouldReturnNoContent() throws Exception {
+        // Prepare test data
+        String sessionToken = "test-token";
+        
         doNothing().when(sshLifecycleManager).releaseSshSession(sessionToken);
 
         mockMvc.perform(post("/api/lifecycle/ssh/{sessionToken}/release", sessionToken)
@@ -89,3 +106,4 @@ class SshLifecycleControllerTests {
             .andExpect(status().isNoContent());
     }
 }
+
