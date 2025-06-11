@@ -3,6 +3,7 @@ package com.codebridge.session.service;
 import com.codebridge.session.model.KnownSshHostKey;
 import com.codebridge.session.repository.KnownSshHostKeyRepository;
 import com.jcraft.jsch.HostKey;
+import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.UserInfo;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,3 +111,4 @@ class CustomJschHostKeyRepositoryTests {
         assertNotNull(savedKey.getFingerprintSha256());
     }
 }
+
