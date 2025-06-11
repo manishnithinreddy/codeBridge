@@ -71,9 +71,9 @@ class SshLifecycleControllerTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value(expectedResponse.getSessionToken()))
-            .andExpect(jsonPath("$.sessionType").value(expectedResponse.getSessionType()))
-            .andExpect(jsonPath("$.status").value(expectedResponse.getStatus()));
+            .andExpect(jsonPath("$.sessionToken").value(expectedResponse.sessionToken()))
+            .andExpect(jsonPath("$.type").value(expectedResponse.type()))
+            .andExpect(jsonPath("$.status").value(expectedResponse.status()));
     }
 
     @Test
@@ -90,8 +90,8 @@ class SshLifecycleControllerTests {
         mockMvc.perform(post("/api/lifecycle/ssh/{sessionToken}/keepalive", sessionToken)
                 .with(defaultJwt()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value(expectedResponse.getSessionToken()))
-            .andExpect(jsonPath("$.status").value(expectedResponse.getStatus()));
+            .andExpect(jsonPath("$.sessionToken").value(expectedResponse.sessionToken()))
+            .andExpect(jsonPath("$.status").value(expectedResponse.status()));
     }
 
     @Test
