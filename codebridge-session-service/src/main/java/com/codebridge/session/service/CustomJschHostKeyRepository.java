@@ -46,7 +46,12 @@ public class CustomJschHostKeyRepository implements HostKeyRepository {
         /**
          * Reject new host keys.
          */
-        REJECT
+        REJECT,
+        
+        /**
+         * Strict verification of host keys.
+         */
+        STRICT
     }
 
     private final SshHostKeyRepository sshHostKeyRepository;
