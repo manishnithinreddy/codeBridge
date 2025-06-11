@@ -343,5 +343,25 @@ public class DbSessionLifecycleManager {
             throw new RemoteOperationException("Failed to retrieve detailed database schema information: " + e.getMessage(), e);
         }
     }
+    
+    // Method to get schema information for a specific schema
+    public DbSchemaInfoResponse getSchemaInfo(DbSessionWrapper wrapper, String schemaName, int limit, int offset) {
+        if (wrapper == null || !wrapper.isValid(DB_VALIDATION_TIMEOUT_SECONDS)) {
+            throw new ResourceNotFoundException("Database session is not valid or has expired");
+        }
+        
+        return getDetailedSchemaInfo(wrapper.getConnection());
+    }
+    
+    // Method to execute a SQL query
+    public Object executeQuery(DbSessionWrapper wrapper, String sql) {
+        if (wrapper == null || !wrapper.isValid(DB_VALIDATION_TIMEOUT_SECONDS)) {
+            throw new ResourceNotFoundException("Database session is not valid or has expired");
+        }
+        
+        // This is a placeholder implementation
+        // In a real implementation, this would execute the SQL query and return the results
+        return new Object(); // Placeholder
+    }
 }
 

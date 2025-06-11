@@ -22,6 +22,11 @@ public class SqlExecutionRequest implements Serializable {
     public void setSqlQuery(String sqlQuery) {
         this.sqlQuery = sqlQuery;
     }
+    
+    // Alias for setSqlQuery for backward compatibility
+    public void setSql(String sql) {
+        this.sqlQuery = sql;
+    }
 
     public List<Object> getParameters() {
         return parameters;
@@ -39,3 +44,4 @@ public class SqlExecutionRequest implements Serializable {
         this.readOnly = readOnly;
     }
 }
+
