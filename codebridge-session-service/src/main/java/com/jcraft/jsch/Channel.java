@@ -50,6 +50,14 @@ public class Channel {
     }
     
     /**
+     * Check if the channel is closed.
+     * @return true if the channel is closed
+     */
+    public boolean isClosed() {
+        return !this.connected;
+    }
+    
+    /**
      * Get the input stream.
      * @return the input stream
      * @throws JSchException if there's an error getting the input stream
