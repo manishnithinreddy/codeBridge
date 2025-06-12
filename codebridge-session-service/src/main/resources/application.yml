@@ -1,0 +1,90 @@
+server:
+  port: 8082 # Different from ServerService (8083) and any other service
+  servlet:
+    context-path: /api/sessions # Consistent with how ServerService calls it
+
+spring:
+  application:
+    name: codebridge-session-service
+  # Datasource Configuration (H2 in-memory for KnownSshHostKey store)
+  datasource:
+    url: jdbc:h2:mem:sessiondb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: "" # Default H2 password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update # Creates/updates schema based on entities. Use "validate" in prod.
+    show-sql: true # For debugging, set to false in prod
+    properties:
+      hibernate:
+        format_sql: true
+  # Redis Configuration (adjust host/port if not localhost default)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # password: # Uncomment and set if your Redis has a password
+  # Caching (can be enabled if @Cacheable is used within SessionService, e.g. for user details if fetched)
+  cache:
+    type: redis # Using redis as cache provider
+  # Spring Security (for securing SessionService itself with User JWTs)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # This service will also validate incoming User JWTs for its own endpoints
+          # It uses a shared secret for this, which should be the same as ServerService's
+          # For now, this is a placeholder. It should be configured to validate User JWTs
+          # if SessionService's own endpoints (like /lifecycle/*) are secured.
+          # If using the same shared secret as ServerService for User JWTs:
+          # issuer-uri: not_applicable_for_shared_secret_validation
+          # jwk-set-uri: not_applicable_for_shared_secret_validation
+          # For shared secret, custom JwtDecoder bean is needed in SecurityConfig
+          # This will be part of SessionService's own SecurityConfig (Step 1.2.4 in overall plan)
+          # For now, this section might be incomplete until that SecurityConfig is restored.
+          # Placeholder, actual validation will be via custom JwtDecoder using codebridge.security.jwt.shared-secret
+          jwk-set-uri: "http://placeholder.invalid/realms/codebridge/protocol/openid-connect/certs"
+
+
+# Application-specific properties
+codebridge:
+  session:
+    jwt:
+      # Secret for JWTs *issued by* SessionService (sessionTokens)
+      secret: "YOUR_SESSION_SERVICE_VERY_SECURE_JWT_SECRET_CHANGE_ME_LONG_ENOUGH"
+      expirationMs: 3600000 # 1 hour for session tokens
+      issuer: "codebridge-session-service"
+    ssh:
+      defaultTimeoutMs: 300000 # 5 minutes
+      maxSessionsPerUserPerServer: 5
+      # Host key verification policy: STRICT, ASK, or AUTO_ACCEPT
+      host-key-verification-policy: AUTO_ACCEPT
+    # db: # DB session specific timeouts can be added later if needed
+      # defaultTimeoutMs: 1800000 # 30 minutes
+  # Shared secret for validating incoming User JWTs (from API Gateway/Client)
+  # This MUST be the same as used in other services validating these User JWTs
+  security:
+    jwt:
+      shared-secret: "YOUR_VERY_SECURE_AND_LONG_SHARED_SECRET_FOR_USER_JWTS_CHANGE_ME" # Must match ServerService's
+
+  # Eureka client configuration (if used)
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true
+
+logging:
+  level:
+    com.codebridge.session: DEBUG
+    org.springframework.data.redis: INFO
+    org.springframework.security: INFO # Set to DEBUG for more security details
+    org.springframework.amqp: INFO
+
+# Jasypt configuration for encrypting properties (e.g., JWT secrets)
+jasypt:
+  encryptor:
+    password: "YOUR_JASYPT_ENCRYPTOR_MASTER_PASSWORD_PLACEHOLDER_SESSIONS" # Use a strong, unique password

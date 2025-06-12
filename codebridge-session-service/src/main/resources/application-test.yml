@@ -1,0 +1,75 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /api/sessions
+
+spring:
+  application:
+    name: codebridge-session-service
+  # Datasource Configuration (H2 in-memory for KnownSshHostKey store)
+  datasource:
+    url: jdbc:h2:mem:sessiondb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  # Redis Configuration (embedded for testing)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  # Caching
+  cache:
+    type: none
+  # Spring Security
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: "http://placeholder.invalid/realms/codebridge/protocol/openid-connect/certs"
+
+# Eureka client configuration
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    com.codebridge.session: DEBUG
+    org.springframework.data.redis: INFO
+    org.springframework.security: INFO
+    org.springframework.amqp: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+
+# Application-specific properties
+codebridge:
+  session:
+    jwt:
+      secret: "test-session-service-jwt-secret-for-testing-only"
+      expirationMs: 3600000
+      issuer: "codebridge-session-service"
+    ssh:
+      defaultTimeoutMs: 30000
+      maxSessionsPerUserPerServer: 5
+      host-key-verification-policy: AUTO_ACCEPT
+  security:
+    jwt:
+      shared-secret: "test-shared-secret-for-testing-only-do-not-use-in-production"
+
+# Jasypt configuration
+jasypt:
+  encryptor:
+    password: test-password
+
