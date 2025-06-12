@@ -2,18 +2,36 @@
 
 This project implements the consolidation of CodeBridge microservices while maintaining the independence of key services for scalability.
 
-## Architecture Overview
+## Consolidation Summary
 
-The CodeBridge platform has been restructured to consolidate related microservices while keeping certain key services separate for independent scaling. The following services remain separate:
+### Removed Services (Consolidated)
+The following services have been removed as part of the consolidation:
+
+- ~~codebridge-usermanagement-service~~ (consolidated into Identity Platform)
+- ~~codebridge-identity-service~~ (consolidated into Identity Platform)
+- ~~codebridge-organization-service~~ (consolidated into Identity Platform, except teams functionality)
+- ~~codebridge-admin-service~~ (consolidated into Platform Operations)
+- ~~codebridge-events-service~~ (consolidated into Platform Operations)
+
+### New Consolidated Services
+These new services replace the removed services:
+
+1. **codebridge-identity-platform** - Combines user management, identity, and organization functionality
+2. **codebridge-teams-service** - Handles team management (extracted from organization service)
+3. **codebridge-platform-ops** - Combines admin dashboard and events functionality
+
+### Independent Services (Unchanged)
+These services remain separate for independent scaling:
 
 - codebridge-api-test-service
-- server-service & session-service (for server connections like WinSCP)
-- ai-db-agent-service
-- gitlab-service
-- docker-service
-- teams-service
+- codebridge-server-service & codebridge-session-service (for server connections)
+- codebridge-ai-db-agent-service
+- codebridge-gitlab-service
+- codebridge-docker-service
 
-## Consolidated Services
+## Architecture Overview
+
+The CodeBridge platform has been restructured to consolidate related microservices while keeping certain key services separate for independent scaling.
 
 ### 1. CodeBridge Identity Platform (Port 8081)
 
