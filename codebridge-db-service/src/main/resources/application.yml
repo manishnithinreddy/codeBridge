@@ -1,0 +1,115 @@
+spring:
+  application:
+    name: codebridge-db-service
+  datasource:
+    url: jdbc:h2:mem:dbservice
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  cloud:
+    discovery:
+      enabled: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterAccess=600s
+
+server:
+  port: 8085
+  servlet:
+    context-path: /db
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Database service specific configuration
+codebridge:
+  db:
+    # Connection pool settings
+    connection-pool:
+      max-size: 20
+      min-idle: 5
+      idle-timeout: 300000
+    # Query execution settings
+    query:
+      max-execution-time: 30000
+      result-limit: 1000
+      cache-enabled: true
+      cache-ttl: 300 # seconds
+    # Schema management settings
+    schema:
+      snapshot-location: ./schema-snapshots
+      migration-location: ./migrations
+    # Security settings
+    security:
+      allowed-query-types: SELECT,WITH
+      denied-keywords: DROP,TRUNCATE,DELETE,ALTER,GRANT,REVOKE
+    # Monitoring settings
+    monitoring:
+      enabled: true
+      metrics-collection-interval: 60 # seconds
+    # Database types supported
+    supported-types:
+      - type: sql
+        enabled: true
+        drivers:
+          - name: mysql
+            class: com.mysql.cj.jdbc.Driver
+          - name: postgresql
+            class: org.postgresql.Driver
+          - name: h2
+            class: org.h2.Driver
+          - name: oracle
+            class: oracle.jdbc.OracleDriver
+          - name: sqlserver
+            class: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      - type: nosql
+        enabled: true
+        drivers:
+          - name: mongodb
+            class: com.mongodb.client.MongoClient
+          - name: cassandra
+            class: com.datastax.driver.core.Cluster
+          - name: redis
+            class: redis.clients.jedis.Jedis
+      - type: graph
+        enabled: true
+        drivers:
+          - name: neo4j
+            class: org.neo4j.driver.Driver
+      - type: timeseries
+        enabled: true
+        drivers:
+          - name: influxdb
+            class: com.influxdb.client.InfluxDBClient
+          - name: timescaledb
+            class: org.postgresql.Driver
+
