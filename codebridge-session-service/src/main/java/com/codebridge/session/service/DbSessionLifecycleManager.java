@@ -16,6 +16,7 @@ import com.codebridge.session.security.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -52,17 +53,20 @@ public class DbSessionLifecycleManager {
     private final JwtConfigProperties jwtConfig; // For session token expiry
     private final ApplicationInstanceIdProvider instanceIdProvider;
     private final String applicationInstanceId;
+    private final DbConnectionPool connectionPool;
 
     // Make this package-private for testing
     final ConcurrentHashMap<SessionKey, DbSessionWrapper> localActiveDbSessions = new ConcurrentHashMap<>();
 
+    @Autowired
     public DbSessionLifecycleManager(
             RedisTemplate<String, SessionKey> jwtToSessionKeyRedisTemplate,
             RedisTemplate<String, DbSessionMetadata> dbSessionMetadataRedisTemplate,
             JwtTokenProvider jwtTokenProvider,
             DbSessionConfigProperties dbConfig,
             JwtConfigProperties jwtConfig,
-            ApplicationInstanceIdProvider instanceIdProvider) {
+            ApplicationInstanceIdProvider instanceIdProvider,
+            DbConnectionPool connectionPool) {
         this.jwtToSessionKeyRedisTemplate = jwtToSessionKeyRedisTemplate;
         this.dbSessionMetadataRedisTemplate = dbSessionMetadataRedisTemplate;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -70,6 +74,7 @@ public class DbSessionLifecycleManager {
         this.jwtConfig = jwtConfig;
         this.instanceIdProvider = instanceIdProvider;
         this.applicationInstanceId = this.instanceIdProvider.getInstanceId();
+        this.connectionPool = connectionPool;
     }
 
     // --- Redis Key Helpers ---
@@ -97,16 +102,8 @@ public class DbSessionLifecycleManager {
 
         forceReleaseDbSessionByKey(sessionKey, false); // Clean up any stale session for this exact key
 
-        Connection jdbcConnection;
-        try {
-            jdbcConnection = createJdbcConnection(credentials);
-            logger.info("JDBC Connection established for {}", sessionKey);
-        } catch (SQLException | ClassNotFoundException e) {
-            logger.error("JDBC Connection failed for {}: {}", sessionKey, e.getMessage(), e);
-            throw new RemoteOperationException("DB connection failed: " + e.getMessage(), e);
-        }
-
-        DbSessionWrapper wrapper = new DbSessionWrapper(jdbcConnection, sessionKey, credentials.getDbType());
+        // Use connection pool to get a connection
+        DbSessionWrapper wrapper = connectionPool.getConnection(sessionKey, credentials);
         localActiveDbSessions.put(sessionKey, wrapper);
 
         String sessionToken = jwtTokenProvider.generateToken(sessionKey, platformUserId);
@@ -199,6 +196,11 @@ public class DbSessionLifecycleManager {
 
     public void forceReleaseDbSessionByKey(SessionKey key, boolean wasTokenBasedRelease) {
         logger.debug("Forcing release for DB session key: {}. Token-based: {}", key, wasTokenBasedRelease);
+        
+        // Close all connections in the pool for this session key
+        connectionPool.closeAllConnections(key);
+        
+        // Remove from local active sessions
         DbSessionWrapper wrapper = localActiveDbSessions.remove(key);
         if (wrapper != null) {
             wrapper.closeConnection();
@@ -364,4 +366,3 @@ public class DbSessionLifecycleManager {
         return new Object(); // Placeholder
     }
 }
-

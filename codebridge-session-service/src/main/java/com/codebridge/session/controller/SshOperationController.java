@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/session/ssh")
@@ -31,6 +32,7 @@ import java.util.UUID;
 public class SshOperationController {
 
     private static final Logger logger = LoggerFactory.getLogger(SshOperationController.class);
+    private static final int DEFAULT_COMMAND_TIMEOUT_MS = 30000; // 30 seconds default timeout
 
     private final SshSessionLifecycleManager sessionLifecycleManager;
     private final JwtTokenProvider jwtTokenProvider;
@@ -52,16 +54,31 @@ public class SshOperationController {
         SshSessionWrapper wrapper = getValidatedSessionWrapper(sessionKey, "command execution");
         
         try {
-            String result = executeRemoteCommand(wrapper, commandRequest.command());
+            // Execute command with timeout from request or default
+            int timeoutMs = commandRequest.timeoutMs() != null && commandRequest.timeoutMs() > 0 
+                    ? commandRequest.timeoutMs() : DEFAULT_COMMAND_TIMEOUT_MS;
+            
+            CommandResult result = executeRemoteCommand(wrapper, commandRequest.command(), timeoutMs);
             sessionLifecycleManager.updateSessionAccessTime(sessionKey, wrapper);
-            return ResponseEntity.ok(new CommandResponse(result, 0));
-        } catch (JSchException | IOException e) {
-            logger.error("Error executing SSH command: {}", e.getMessage(), e);
+            
+            // Return combined output with exit code
+            return ResponseEntity.ok(new CommandResponse(result.output(), result.exitCode()));
+        } catch (JSchException e) {
+            logger.error("JSch error executing SSH command: {}", e.getMessage(), e);
+            throw new RemoteOperationException("SSH connection error: " + e.getMessage(), e);
+        } catch (IOException e) {
+            logger.error("I/O error executing SSH command: {}", e.getMessage(), e);
+            throw new RemoteOperationException("I/O error during command execution: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            logger.error("Command execution interrupted: {}", e.getMessage(), e);
+            Thread.currentThread().interrupt(); // Restore interrupted state
+            throw new RemoteOperationException("Command execution was interrupted", e);
+        } catch (Exception e) {
+            logger.error("Unexpected error executing SSH command: {}", e.getMessage(), e);
             throw new RemoteOperationException("Failed to execute SSH command: " + e.getMessage(), e);
         }
     }
 
-    // Helper methods
     private String extractToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new AccessDeniedException("Invalid or missing Authorization header");
@@ -85,7 +102,7 @@ public class SshOperationController {
             throw new AccessDeniedException("Invalid token claims");
         }
 
-        if (!"SSH".equals(sessionType)) {
+        if (!sessionType.equals("SSH")) {
             logger.warn("Invalid session type for {} operation: {}", operationName, sessionType);
             throw new AccessDeniedException("Invalid session type for SSH operation");
         }
@@ -122,7 +139,8 @@ public class SshOperationController {
         return wrapper;
     }
 
-    private String executeRemoteCommand(SshSessionWrapper wrapper, String command) throws JSchException, IOException {
+    private CommandResult executeRemoteCommand(SshSessionWrapper wrapper, String command, int timeoutMs) 
+            throws JSchException, IOException, InterruptedException {
         ChannelExec channel = null;
         try {
             channel = (ChannelExec) wrapper.getJschSession().openChannel("exec");
@@ -136,41 +154,74 @@ public class SshOperationController {
             InputStream in = channel.getInputStream();
             channel.connect();
 
-            // Read the command output
-            byte[] tmp = new byte[1024];
-            while (true) {
+            // Read the command output with timeout
+            long startTime = System.currentTimeMillis();
+            long endTime = startTime + timeoutMs;
+            byte[] tmp = new byte[4096]; // Increased buffer size for better performance
+            boolean timedOut = false;
+            
+            while (!timedOut) {
+                // Check for timeout
+                if (System.currentTimeMillis() > endTime) {
+                    timedOut = true;
+                    break;
+                }
+                
+                // Read available data
                 while (in.available() > 0) {
-                    int i = in.read(tmp, 0, 1024);
+                    int i = in.read(tmp, 0, tmp.length);
                     if (i < 0) break;
                     outputStream.write(tmp, 0, i);
                 }
+                
+                // Check if channel is closed
                 if (channel.isClosed()) {
+                    // Read any remaining data
+                    while (in.available() > 0) {
+                        int i = in.read(tmp, 0, tmp.length);
+                        if (i < 0) break;
+                        outputStream.write(tmp, 0, i);
+                    }
                     break;
                 }
-                try {
-                    Thread.sleep(100);
-                } catch (Exception ee) {
-                    // Ignore
-                }
+                
+                // Sleep briefly to avoid CPU spinning
+                TimeUnit.MILLISECONDS.sleep(100);
             }
 
+            // Get command output and exit code
             String output = outputStream.toString(StandardCharsets.UTF_8);
             String error = errorStream.toString(StandardCharsets.UTF_8);
+            int exitCode = timedOut ? -1 : channel.getExitStatus();
 
+            // Combine output and error streams
             if (!error.isEmpty()) {
-                logger.warn("SSH command produced error output: {}", error);
-                return output + "\n" + error;
+                logger.debug("SSH command produced error output: {}", error);
+                output = output + "\n" + error;
+            }
+            
+            if (timedOut) {
+                logger.warn("SSH command timed out after {} ms: {}", timeoutMs, command);
+                output = output + "\n*** Command execution timed out after " + timeoutMs + " ms ***";
             }
 
-            return output;
+            return new CommandResult(output, exitCode);
         } finally {
             if (channel != null) {
-                channel.disconnect();
+                try {
+                    if (channel.isConnected()) {
+                        channel.disconnect();
+                    }
+                } catch (Exception e) {
+                    logger.warn("Error disconnecting channel: {}", e.getMessage());
+                }
             }
         }
     }
 
-    // Request/Response classes
-    public record CommandRequest(@NotBlank(message = "Command cannot be blank") String command) {}
-}
+    public record CommandRequest(
+            @NotBlank(message = "Command cannot be blank") String command,
+            Integer timeoutMs) {}
 
+    private record CommandResult(String output, int exitCode) {}
+}
