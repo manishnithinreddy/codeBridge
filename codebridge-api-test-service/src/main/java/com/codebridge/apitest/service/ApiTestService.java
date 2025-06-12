@@ -2,6 +2,7 @@ package com.codebridge.apitest.service;
 
 import com.codebridge.apitest.dto.ApiTestRequest;
 import com.codebridge.apitest.dto.ApiTestResponse;
+import com.codebridge.apitest.dto.CachedResponse;
 import com.codebridge.apitest.dto.EnvironmentResponse;
 import com.codebridge.apitest.dto.TestResultResponse;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
@@ -34,12 +35,12 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils; // Keep if still needed for GraphQL, otherwise remove if fully replaced
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import java.io.InputStream; // Added
-import java.io.ByteArrayInputStream; // Added
-import java.nio.charset.StandardCharsets; // Added
-import java.util.concurrent.TimeUnit; // Added
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
@@ -69,6 +70,9 @@ import javax.script.ScriptEngineManager;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Service for API test operations.
@@ -81,18 +85,26 @@ public class ApiTestService {
     private final EnvironmentService environmentService;
     private final ProjectTokenService projectTokenService;
     private final ObjectMapper objectMapper;
+    private final ResponseCacheService cacheService;
+    private final PerformanceMetricsService metricsService;
+    private final ExecutorService executorService;
 
     @Autowired
     public ApiTestService(ApiTestRepository apiTestRepository,
                          TestResultRepository testResultRepository,
                          EnvironmentService environmentService,
                          ProjectTokenService projectTokenService,
-                         ObjectMapper objectMapper) {
+                         ObjectMapper objectMapper,
+                         ResponseCacheService cacheService,
+                         PerformanceMetricsService metricsService) {
         this.apiTestRepository = apiTestRepository;
         this.testResultRepository = testResultRepository;
         this.environmentService = environmentService;
         this.projectTokenService = projectTokenService;
         this.objectMapper = objectMapper;
+        this.cacheService = cacheService;
+        this.metricsService = metricsService;
+        this.executorService = Executors.newFixedThreadPool(10); // Thread pool for parallel operations
     }
 
     /**
@@ -244,55 +256,238 @@ public class ApiTestService {
      */
     @Transactional
     public TestResultResponse executeTest(UUID id, UUID userId) {
+        long startTime = System.currentTimeMillis();
+        
         ApiTest test = apiTestRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", id));
         
-        TestResult result = new TestResult();
-        result.setId(UUID.randomUUID());
-        result.setTestId(test.getId());
-        
-        long startTime = System.currentTimeMillis();
+        TestResult testResult = new TestResult();
+        testResult.setId(UUID.randomUUID());
+        testResult.setTestId(test.getId());
+        testResult.setUserId(userId);
         
         try {
-            // Process environment variables if an environment is specified
-            Map<String, String> environmentVariables = null;
-            if (test.getEnvironmentId() != null) {
-                EnvironmentResponse environment = environmentService.getEnvironmentById(test.getEnvironmentId(), userId);
-                environmentVariables = environment.getVariables();
-            }
-            
             // Execute pre-request script if present
             if (test.getPreRequestScript() != null && !test.getPreRequestScript().isEmpty()) {
-                executeScript(test.getPreRequestScript(), null, null, null);
+                CompletableFuture<Void> scriptFuture = CompletableFuture.runAsync(() -> {
+                    try {
+                        executeScript(test.getPreRequestScript(), null, null, null);
+                    } catch (Exception e) {
+                        throw new TestExecutionException("Error executing pre-request script: " + e.getMessage(), e);
+                    }
+                }, executorService);
+                
+                // Wait for script execution to complete
+                scriptFuture.join();
+            }
+            
+            // Execute the API test based on protocol type
+            Map<String, String> headers = new HashMap<>();
+            if (test.getHeaders() != null) {
+                headers = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
+            }
+            
+            // Check if response is cached
+            String cacheKey = null;
+            if (test.getProtocolType() == ProtocolType.HTTP && "GET".equals(test.getMethod().name())) {
+                cacheKey = cacheService.generateCacheKey(
+                        test.getUrl(), 
+                        test.getMethod().name(), 
+                        headers, 
+                        test.getRequestBody());
+                
+                Optional<CachedResponse> cachedResponse = cacheService.getCachedResponse(cacheKey);
+                if (cachedResponse.isPresent()) {
+                    metricsService.recordCacheHit();
+                    
+                    CachedResponse response = cachedResponse.get();
+                    testResult.setStatus(TestStatus.SUCCESS);
+                    testResult.setResponseStatusCode(response.getStatusCode());
+                    testResult.setResponseBody(response.getResponseBody());
+                    
+                    try {
+                        testResult.setResponseHeaders(objectMapper.writeValueAsString(response.getResponseHeaders()));
+                    } catch (JsonProcessingException e) {
+                        logger.error("Error processing response headers JSON", e);
+                    }
+                    
+                    testResult.setExecutionTimeMs(System.currentTimeMillis() - startTime);
+                    testResult = testResultRepository.save(testResult);
+                    
+                    metricsService.recordTestExecution(testResult.getExecutionTimeMs(), true);
+                    return mapToTestResultResponse(testResult);
+                }
+                
+                metricsService.recordCacheMiss();
             }
             
             // Execute the test based on protocol type
-            if (test.getProtocolType() == null || test.getProtocolType() == ProtocolType.HTTP) {
-                executeHttpTest(test, result, environmentVariables);
-            } else if (test.getProtocolType() == ProtocolType.GRAPHQL) {
-                executeGraphQLTest(test, result, environmentVariables);
-            } else if (test.getProtocolType() == ProtocolType.GRPC) {
-                executeGrpcTest(test, result, environmentVariables);
-            } else if (test.getProtocolType() == ProtocolType.WEBSOCKET) {
-                executeWebSocketTest(test, result, environmentVariables);
-            } else {
-                throw new TestExecutionException("Unsupported protocol type: " + test.getProtocolType());
+            int statusCode;
+            String responseBody;
+            Map<String, String> responseHeaders = new HashMap<>();
+            
+            switch (test.getProtocolType()) {
+                case HTTP:
+                    HttpResult httpResult = executeHttpTest(test, headers);
+                    statusCode = httpResult.statusCode();
+                    responseBody = httpResult.responseBody();
+                    responseHeaders = httpResult.responseHeaders();
+                    break;
+                case WEBSOCKET:
+                    // WebSocket implementation
+                    throw new TestExecutionException("WebSocket tests not implemented yet");
+                case GRAPHQL:
+                    // GraphQL implementation
+                    throw new TestExecutionException("GraphQL tests not implemented yet");
+                case GRPC:
+                    // gRPC implementation
+                    throw new TestExecutionException("gRPC tests not implemented yet");
+                default:
+                    throw new TestExecutionException("Unsupported protocol type: " + test.getProtocolType());
             }
             
-        } catch (Exception e) {
-            result.setStatus(TestStatus.ERROR);
-            result.setErrorMessage(e.getMessage());
-        } finally {
-            // Calculate execution time
-            long endTime = System.currentTimeMillis();
-            result.setExecutionTimeMs(endTime - startTime);
+            // Cache the response if applicable
+            if (cacheKey != null && statusCode >= 200 && statusCode < 300) {
+                cacheService.cacheResponse(cacheKey, statusCode, responseBody, responseHeaders, 300); // 5 minutes TTL
+            }
+            
+            // Execute post-request script if present
+            if (test.getPostRequestScript() != null && !test.getPostRequestScript().isEmpty()) {
+                CompletableFuture<Void> scriptFuture = CompletableFuture.runAsync(() -> {
+                    try {
+                        executeScript(test.getPostRequestScript(), statusCode, responseBody, responseHeaders);
+                    } catch (Exception e) {
+                        throw new TestExecutionException("Error executing post-request script: " + e.getMessage(), e);
+                    }
+                }, executorService);
+                
+                // Wait for script execution to complete
+                scriptFuture.join();
+            }
+            
+            // Validate the response
+            boolean isValid = validateResponse(test, statusCode, responseBody);
             
             // Save the test result
-            TestResult savedResult = testResultRepository.save(result);
+            testResult.setStatus(isValid ? TestStatus.SUCCESS : TestStatus.FAILURE);
+            testResult.setResponseStatusCode(statusCode);
+            testResult.setResponseBody(responseBody);
             
-            // Return the response
-            return mapToTestResultResponse(savedResult);
+            try {
+                testResult.setResponseHeaders(objectMapper.writeValueAsString(responseHeaders));
+            } catch (JsonProcessingException e) {
+                logger.error("Error processing response headers JSON", e);
+            }
+            
+            if (!isValid) {
+                testResult.setErrorMessage("Response validation failed");
+            }
+        } catch (Exception e) {
+            testResult.setStatus(TestStatus.ERROR);
+            testResult.setErrorMessage(e.getMessage());
+            logger.error("Error executing API test: {}", e.getMessage(), e);
         }
+        
+        testResult.setExecutionTimeMs(System.currentTimeMillis() - startTime);
+        testResult = testResultRepository.save(testResult);
+        
+        // Record metrics
+        metricsService.recordTestExecution(
+                testResult.getExecutionTimeMs(), 
+                testResult.getStatus() == TestStatus.SUCCESS);
+        
+        return mapToTestResultResponse(testResult);
+    }
+
+    /**
+     * Executes an HTTP API test.
+     *
+     * @param test the API test
+     * @param headers the request headers
+     * @return the HTTP result
+     * @throws Exception if an error occurs
+     */
+    private HttpResult executeHttpTest(ApiTest test, Map<String, String> headers) throws Exception {
+        long startTime = System.currentTimeMillis();
+        
+        // Create HTTP client with optimized configuration
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(test.getTimeoutMs() != null ? test.getTimeoutMs() : 30000, TimeUnit.MILLISECONDS)
+                .setResponseTimeout(test.getTimeoutMs() != null ? test.getTimeoutMs() : 30000, TimeUnit.MILLISECONDS)
+                .build();
+        
+        try (CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build()) {
+            
+            // Create HTTP request based on method
+            HttpUriRequestBase request = createHttpRequest(test.getMethod(), test.getUrl());
+            
+            // Set headers
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                request.setHeader(header.getKey(), header.getValue());
+            }
+            
+            // Set request body if present
+            if (test.getRequestBody() != null && !test.getRequestBody().isEmpty() &&
+                    (test.getMethod() == HttpMethod.POST || test.getMethod() == HttpMethod.PUT || 
+                     test.getMethod() == HttpMethod.PATCH)) {
+                StringEntity entity = new StringEntity(test.getRequestBody(), ContentType.APPLICATION_JSON);
+                request.setEntity(entity);
+            }
+            
+            // Inject project tokens if environment is set
+            if (test.getEnvironmentId() != null) {
+                try {
+                    injectProjectTokens(request, test.getEnvironmentId());
+                } catch (URISyntaxException e) {
+                    throw new TestExecutionException("Error injecting project tokens: " + e.getMessage(), e);
+                }
+            }
+            
+            // Execute the request
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                int statusCode = response.getCode();
+                
+                // Extract response headers
+                Map<String, String> responseHeaders = new HashMap<>();
+                for (Header header : response.getHeaders()) {
+                    responseHeaders.put(header.getName(), header.getValue());
+                }
+                
+                // Extract response body
+                HttpEntity entity = response.getEntity();
+                String responseBody = entity != null ? EntityUtils.toString(entity) : "";
+                
+                // Record metrics
+                metricsService.recordHttpRequest(
+                        test.getMethod().name(), 
+                        System.currentTimeMillis() - startTime);
+                
+                return new HttpResult(statusCode, responseBody, responseHeaders);
+            }
+        }
+    }
+
+    /**
+     * Creates an HTTP request based on the method.
+     *
+     * @param method the HTTP method
+     * @param url the URL
+     * @return the HTTP request
+     * @throws URISyntaxException if the URL is invalid
+     */
+    private HttpUriRequestBase createHttpRequest(HttpMethod method, String url) throws URISyntaxException {
+        URI uri = new URI(url);
+        return switch (method) {
+            case GET -> new HttpGet(uri);
+            case POST -> new HttpPost(uri);
+            case PUT -> new HttpPut(uri);
+            case DELETE -> new HttpDelete(uri);
+            case PATCH -> new HttpPatch(uri);
+            case HEAD -> new HttpHead(uri);
+            case OPTIONS -> new HttpOptions(uri);
+        };
     }
 
     /**
@@ -561,7 +756,6 @@ public class ApiTestService {
             }
         }
     }
-
 
     /**
      * Execute a WebSocket API test.
@@ -904,4 +1098,9 @@ public class ApiTestService {
         
         return response;
     }
+
+    /**
+     * Record for HTTP test results.
+     */
+    private record HttpResult(int statusCode, String responseBody, Map<String, String> responseHeaders) {}
 }
