@@ -17,6 +17,7 @@ import com.jcraft.jsch.JSchException;
 import io.jsonwebtoken.Claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -40,17 +41,20 @@ public class SshSessionLifecycleManager {
     private final JwtConfigProperties jwtConfig; // For session token expiry
     private final ApplicationInstanceIdProvider instanceIdProvider;
     private final String applicationInstanceId;
+    private final SshConnectionPool connectionPool;
 
     // Make this package-private for testing
     final ConcurrentHashMap<SessionKey, SshSessionWrapper> localActiveSshSessions = new ConcurrentHashMap<>();
 
+    @Autowired
     public SshSessionLifecycleManager(
             RedisTemplate<String, SessionKey> jwtToSessionKeyRedisTemplate,
             RedisTemplate<String, SshSessionMetadata> sessionMetadataRedisTemplate,
             JwtTokenProvider jwtTokenProvider,
             SshSessionConfigProperties sshConfig,
             JwtConfigProperties jwtConfig,
-            ApplicationInstanceIdProvider instanceIdProvider) {
+            ApplicationInstanceIdProvider instanceIdProvider,
+            SshConnectionPool connectionPool) {
         this.jwtToSessionKeyRedisTemplate = jwtToSessionKeyRedisTemplate;
         this.sessionMetadataRedisTemplate = sessionMetadataRedisTemplate;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -58,6 +62,7 @@ public class SshSessionLifecycleManager {
         this.jwtConfig = jwtConfig;
         this.instanceIdProvider = instanceIdProvider;
         this.applicationInstanceId = this.instanceIdProvider.getInstanceId();
+        this.connectionPool = connectionPool;
     }
 
     // --- Redis Key Helpers ---
@@ -88,7 +93,9 @@ public class SshSessionLifecycleManager {
 
         SshSessionWrapper wrapper;
         try {
-            wrapper = new SshSessionWrapper(credentials.getHost(), credentials.getPort(), credentials.getUsername(), credentials.getPassword(), credentials.getPrivateKey());
+            // Use connection pool to get a connection
+            wrapper = new SshSessionWrapper(credentials.getHost(), credentials.getPort(), 
+                    credentials.getUsername(), credentials.getPassword(), credentials.getPrivateKey());
             wrapper.connect();
             logger.info("SSH Connection established for {}", sessionKey);
         } catch (JSchException e) {
@@ -184,6 +191,11 @@ public class SshSessionLifecycleManager {
 
     public void forceReleaseSshSessionByKey(SessionKey key, boolean wasTokenBasedRelease) {
         logger.debug("Forcing release for SSH session key: {}. Token-based: {}", key, wasTokenBasedRelease);
+        
+        // Close all connections in the pool for this session key
+        connectionPool.closeAllConnections(key);
+        
+        // Remove from local active sessions
         SshSessionWrapper wrapper = localActiveSshSessions.remove(key);
         if (wrapper != null) {
             wrapper.disconnect();
@@ -264,4 +276,3 @@ public class SshSessionLifecycleManager {
                 .anyMatch(key -> key.platformUserId().equals(platformUserId));
     }
 }
-
