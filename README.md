@@ -1,135 +1,237 @@
-# CodeBridge Microservices Consolidation
+# CodeBridge Scalability and High Availability Module
 
-This project implements the consolidation of CodeBridge microservices while maintaining the independence of key services for scalability.
+This module implements Phase 8 of the CodeBridge project, focusing on Scalability and High Availability features.
 
-## Consolidation Summary
+## Features
 
-### Removed Services (Consolidated)
-The following services have been removed as part of the consolidation:
+### Horizontal Scaling
 
-- ~~codebridge-usermanagement-service~~ (consolidated into Identity Platform)
-- ~~codebridge-identity-service~~ (consolidated into Identity Platform)
-- ~~codebridge-organization-service~~ (consolidated into Identity Platform, except teams functionality)
-- ~~codebridge-admin-service~~ (consolidated into Platform Operations)
-- ~~codebridge-events-service~~ (consolidated into Platform Operations)
+- **Load Balancing**: Multiple strategies including Round Robin, Least Connections, Weighted, and IP Hash
+- **Auto-Scaling**: Metric-based scaling decisions with configurable thresholds and cooldown periods
+- **Session Management**: Distributed session support with Redis, Hazelcast, and JDBC backends
 
-### New Consolidated Services
-These new services replace the removed services:
+### Data Resilience
 
-1. **codebridge-identity-platform** - Combines user management, identity, and organization functionality
-2. **codebridge-teams-service** - Handles team management (extracted from organization service)
-3. **codebridge-platform-ops** - Combines admin dashboard and events functionality
+- **Replication**: Data replication with configurable consistency levels (ONE, QUORUM, ALL)
+- **Backup and Recovery**: Scheduled backups with verification and point-in-time recovery
+- **Data Partitioning**: Horizontal data sharding with support for hash, range, and list partitioning strategies
 
-### Independent Services (Unchanged)
-These services remain separate for independent scaling:
+### High Availability
 
-- codebridge-api-test-service
-- codebridge-server-service & codebridge-session-service (for server connections)
-- codebridge-ai-db-agent-service
-- codebridge-gitlab-service
-- codebridge-docker-service
+- **Idempotency Support**: Ensures operations are only executed once, even if requests are retried
+- **Circuit Breakers**: Prevents cascading failures by failing fast when dependencies are unavailable
+- **Rate Limiting**: Protects services from being overwhelmed by too many requests
 
-## Architecture Overview
+## Configuration
 
-The CodeBridge platform has been restructured to consolidate related microservices while keeping certain key services separate for independent scaling.
+The module is highly configurable through the `application.yml` file and environment variables:
 
-### 1. CodeBridge Identity Platform (Port 8081)
+### Session Configuration
 
-Combines the following services:
-- usermanagement-service
-- identity-service
-- organization-service (except teams functionality)
+```yaml
+codebridge:
+  scalability:
+    session:
+      store-type: redis  # Options: redis, hazelcast, jdbc
+      cookie:
+        secure: true
+        http-only: true
+        same-site: lax
+        max-age: 1800
+```
 
-**Key Components:**
-- User authentication and authorization
-- User profile management
-- Organization management
-- Role-based access control
+### Load Balancing Configuration
 
-**API Endpoints:**
-- `/api/auth/*` - Authentication operations
-- `/api/users/*` - User management
-- `/api/organizations/*` - Organization management
+```yaml
+codebridge:
+  scalability:
+    load-balancing:
+      strategy: round-robin  # Options: round-robin, least-connections, weighted, ip-hash
+      sticky-sessions: true
+      health-check-interval-seconds: 30
+```
 
-### 2. CodeBridge Teams Service (Port 8082)
+### Auto-Scaling Configuration
 
-Standalone service for team management:
-- Team creation and management
-- Team membership with roles (MEMBER, ADMIN, OWNER)
-- Hierarchical team structure
+```yaml
+codebridge:
+  scalability:
+    auto-scaling:
+      enabled: true
+      cpu-threshold: 70
+      memory-threshold: 80
+      min-instances: 2
+      max-instances: 10
+      scale-up-cooldown-seconds: 300
+      scale-down-cooldown-seconds: 600
+```
 
-**API Endpoints:**
-- `/api/teams/*` - Team operations
-- `/api/teams/{id}/members/*` - Team member management
+### Data Resilience Configuration
 
-### 3. CodeBridge Platform Operations (Port 8083)
+```yaml
+codebridge:
+  scalability:
+    data-resilience:
+      replication:
+        enabled: true
+        read-from-replicas: true
+        consistency-level: QUORUM  # Options: ONE, QUORUM, ALL
+      backup:
+        enabled: true
+        schedule: "0 0 2 * * ?"  # Cron expression
+        retention-days: 30
+        verify: true
+      partitioning:
+        enabled: true
+        strategy: hash  # Options: hash, range, list
+        shard-count: 4
+```
 
-Combines the following services:
-- admin-service
-- events-service
+### Idempotency Configuration
 
-**Key Components:**
-- Admin dashboard and system monitoring
-- Webhook management and event processing
-- Audit logging and reporting
+```yaml
+codebridge:
+  scalability:
+    idempotency:
+      enabled: true
+      header-name: X-Idempotency-Key
+      storage-type: redis  # Options: redis, hazelcast, jdbc
+      expiration-hours: 24
+```
 
-**API Endpoints:**
-- `/api/admin/dashboard/*` - Admin dashboard operations
-- `/api/webhooks/*` - Webhook management
-- `/api/audit/*` - Audit log operations
+## Architecture
 
-## Security Features
+The module is designed with the following components:
 
-1. JWT-based authentication
-2. Role-based access control
-3. OAuth2 resource server configuration
-4. Method-level security with @PreAuthorize
+1. **Session Management**: Configurable session store with support for multiple backends
+2. **Load Balancing**: Client-side load balancing with health checking and multiple strategies
+3. **Auto-Scaling**: Metric-based scaling decisions with configurable thresholds
+4. **Data Resilience**: Replication, backup, and partitioning services
+5. **Idempotency**: Filter and service for ensuring idempotent operations
 
-## Service Discovery
+## Usage
 
-All services register with Eureka:
-- Default zone: http://localhost:8761/eureka/
-- Instance preference: prefer-ip-address: true
+### Session Management
+
+The module automatically configures session management based on the configured store type:
+
+```java
+@Controller
+public class UserController {
+    
+    @GetMapping("/user")
+    public String getUserInfo(HttpSession session) {
+        // Session is automatically distributed
+        User user = (User) session.getAttribute("user");
+        // ...
+    }
+}
+```
+
+### Load Balancing
+
+The module provides a `ServiceInstanceSelector` for client-side load balancing:
+
+```java
+@Service
+public class UserService {
+    
+    private final ServiceInstanceSelector serviceInstanceSelector;
+    private final RestTemplate restTemplate;
+    
+    @Autowired
+    public UserService(ServiceInstanceSelector serviceInstanceSelector, RestTemplate restTemplate) {
+        this.serviceInstanceSelector = serviceInstanceSelector;
+        this.restTemplate = restTemplate;
+    }
+    
+    public User getUser(String userId) {
+        Optional<ServiceInstance> instance = serviceInstanceSelector.selectInstance("user-service", userId);
+        
+        if (instance.isPresent()) {
+            String url = instance.get().getUri() + "/users/" + userId;
+            return restTemplate.getForObject(url, User.class);
+        }
+        
+        throw new ServiceUnavailableException("No instances available for user-service");
+    }
+}
+```
+
+### Idempotency
+
+The module automatically handles idempotent requests when the idempotency header is present:
+
+```
+POST /api/orders
+X-Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "productId": "product-123",
+  "quantity": 1
+}
+```
+
+If the same request is sent again with the same idempotency key, the original response will be returned without executing the operation again.
+
+### Data Resilience
+
+The module provides services for data replication, backup, and partitioning:
+
+```java
+@Service
+public class OrderService {
+    
+    private final ReplicationService replicationService;
+    private final DataPartitioningService dataPartitioningService;
+    
+    @Autowired
+    public OrderService(ReplicationService replicationService, DataPartitioningService dataPartitioningService) {
+        this.replicationService = replicationService;
+        this.dataPartitioningService = dataPartitioningService;
+    }
+    
+    public void createOrder(Order order) {
+        // Determine the shard for the order
+        int shardId = dataPartitioningService.getShardForKey(order.getCustomerId());
+        
+        // Execute the insert on the appropriate shard
+        dataPartitioningService.executeUpdateOnShard(
+            shardId,
+            "INSERT INTO orders (id, customer_id, product_id, quantity) VALUES (?, ?, ?, ?)",
+            order.getId(), order.getCustomerId(), order.getProductId(), order.getQuantity()
+        );
+        
+        // Replicate the data to all replicas
+        replicationService.replicateData(
+            "INSERT INTO orders (id, customer_id, product_id, quantity) VALUES (?, ?, ?, ?)",
+            order.getId(), order.getCustomerId(), order.getProductId(), order.getQuantity()
+        );
+    }
+}
+```
+
+## Deployment
+
+The module is designed to be deployed in a containerized environment such as Kubernetes or Docker Swarm. It integrates with Eureka for service discovery and supports auto-scaling through external orchestration platforms.
 
 ## Monitoring
 
-- Actuator endpoints enabled
-- Health, info, metrics, and Prometheus endpoints exposed
-- Detailed health information available
+The module exposes metrics through Spring Boot Actuator and Prometheus endpoints:
 
-## Getting Started
+- `/actuator/health`: Health check endpoint
+- `/actuator/info`: Information about the application
+- `/actuator/metrics`: Metrics endpoint
+- `/actuator/prometheus`: Prometheus metrics endpoint
 
-### Prerequisites
+## Dependencies
 
-- Java 17 or higher
-- Maven 3.8 or higher
-- Docker (optional, for containerization)
-
-### Running the Services
-
-1. Start the Eureka Server (if not already running)
-2. Start the Identity Platform:
-   ```
-   cd codebridge-identity-platform
-   ./mvnw spring-boot:run
-   ```
-
-3. Start the Teams Service:
-   ```
-   cd codebridge-teams-service
-   ./mvnw spring-boot:run
-   ```
-
-4. Start the Platform Operations Service:
-   ```
-   cd codebridge-platform-ops
-   ./mvnw spring-boot:run
-   ```
-
-## API Documentation
-
-API documentation is available at:
-- Identity Platform: http://localhost:8081/identity/swagger-ui.html
-- Teams Service: http://localhost:8082/teams/swagger-ui.html
-- Platform Operations: http://localhost:8083/ops/swagger-ui.html
+- Spring Boot 2.7.x
+- Spring Cloud
+- Resilience4j
+- Hazelcast
+- Redis
+- Bucket4j
+- PostgreSQL
 
