@@ -1,0 +1,102 @@
+spring:
+  application:
+    name: codebridge-security
+  datasource:
+    url: jdbc:h2:mem:securitydb
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  redis:
+    host: localhost
+    port: 6379
+  cloud:
+    discovery:
+      enabled: true
+
+server:
+  port: 8083
+  servlet:
+    context-path: /security
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# Security Configuration
+security:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY:5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437}
+    expiration-time: 86400000  # 24 hours in milliseconds
+    refresh-token:
+      expiration-time: 604800000  # 7 days in milliseconds
+  mfa:
+    issuer: CodeBridge
+    time-step-seconds: 30
+    code-digits: 6
+    allowed-time-skew: 1
+  password:
+    min-length: 12
+    require-uppercase: true
+    require-lowercase: true
+    require-digit: true
+    require-special-char: true
+    max-age-days: 90
+    history-count: 5
+  account:
+    max-failed-attempts: 5
+    lockout-duration-minutes: 30
+  api-key:
+    expiration-days: 90
+    max-keys-per-user: 5
+  encryption:
+    algorithm: AES/GCM/NoPadding
+    key-size: 256
+  ssh:
+    host: 0.0.0.0
+    port: 2222
+    key-directory: ${user.home}/.ssh/codebridge
+  audit:
+    enabled: true
+    retention-days: 365
+    log-directory: ${user.home}/codebridge/audit-logs
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${user.home}/codebridge/logs/security.log
+

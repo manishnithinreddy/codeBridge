@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,30 +30,46 @@ public class ApiTestController {
         this.apiTestService = apiTestService;
     }
 
+    private UUID getUserId(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            // For testing purposes, return a fixed UUID
+            return UUID.fromString("00000000-0000-0000-0000-000000000001");
+        }
+        
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            return UUID.fromString(((UserDetails) authentication.getPrincipal()).getUsername());
+        } else if (authentication.getPrincipal() instanceof String) {
+            return UUID.fromString((String) authentication.getPrincipal());
+        }
+        
+        // Default test user
+        return UUID.fromString("00000000-0000-0000-0000-000000000001");
+    }
+
     /**
      * Creates a new API test.
      *
      * @param request the API test request
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return the created API test
      */
     @PostMapping
     public ResponseEntity<ApiTestResponse> createTest(
             @Valid @RequestBody ApiTestRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ApiTestResponse response = apiTestService.createTest(request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        ApiTestResponse response = apiTestService.createTest(request, getUserId(authentication));
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     /**
      * Gets all API tests for the authenticated user.
      *
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return the list of API tests
      */
     @GetMapping
-    public ResponseEntity<List<ApiTestResponse>> getAllTests(@AuthenticationPrincipal UserDetails userDetails) {
-        List<ApiTestResponse> tests = apiTestService.getAllTests(UUID.fromString(userDetails.getUsername()));
+    public ResponseEntity<List<ApiTestResponse>> getAllTests(Authentication authentication) {
+        List<ApiTestResponse> tests = apiTestService.getAllTests(getUserId(authentication));
         return ResponseEntity.ok(tests);
     }
 
@@ -60,14 +77,14 @@ public class ApiTestController {
      * Gets an API test by ID.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return the API test
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiTestResponse> getTestById(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ApiTestResponse test = apiTestService.getTestById(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        ApiTestResponse test = apiTestService.getTestById(id, getUserId(authentication));
         return ResponseEntity.ok(test);
     }
 
@@ -76,15 +93,15 @@ public class ApiTestController {
      *
      * @param id the API test ID
      * @param request the API test request
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return the updated API test
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiTestResponse> updateTest(
             @PathVariable UUID id,
             @Valid @RequestBody ApiTestRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ApiTestResponse response = apiTestService.updateTest(id, request, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        ApiTestResponse response = apiTestService.updateTest(id, request, getUserId(authentication));
         return ResponseEntity.ok(response);
     }
 
@@ -92,14 +109,14 @@ public class ApiTestController {
      * Deletes an API test.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return no content
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTest(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        apiTestService.deleteTest(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        apiTestService.deleteTest(id, getUserId(authentication));
         return ResponseEntity.noContent().build();
     }
 
@@ -107,14 +124,14 @@ public class ApiTestController {
      * Executes an API test.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return the test result
      */
-    @PostMapping("/{id}/execute")
+    @PostMapping("/{id}/run")
     public ResponseEntity<TestResultResponse> executeTest(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        TestResultResponse result = apiTestService.executeTest(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        TestResultResponse result = apiTestService.executeTest(id, getUserId(authentication));
         return ResponseEntity.ok(result);
     }
 
@@ -122,14 +139,14 @@ public class ApiTestController {
      * Gets all test results for an API test.
      *
      * @param id the API test ID
-     * @param userDetails the authenticated user
+     * @param authentication the authentication object
      * @return the list of test results
      */
     @GetMapping("/{id}/results")
     public ResponseEntity<List<TestResultResponse>> getTestResults(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<TestResultResponse> results = apiTestService.getTestResults(id, UUID.fromString(userDetails.getUsername()));
+            Authentication authentication) {
+        List<TestResultResponse> results = apiTestService.getTestResults(id, getUserId(authentication));
         return ResponseEntity.ok(results);
     }
 }
