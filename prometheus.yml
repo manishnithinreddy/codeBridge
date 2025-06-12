@@ -7,28 +7,18 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'gateway'
-    metrics_path: '/actuator/prometheus'
+  - job_name: 'identity-platform'
+    metrics_path: '/identity/actuator/prometheus'
     static_configs:
-      - targets: ['gateway:8080']
+      - targets: ['identity-platform:8081']
 
-  - job_name: 'user-service'
-    metrics_path: '/actuator/prometheus'
+  - job_name: 'teams-service'
+    metrics_path: '/teams/actuator/prometheus'
     static_configs:
-      - targets: ['user-service:8081']
+      - targets: ['teams-service:8082']
 
-  - job_name: 'docker-service'
-    metrics_path: '/actuator/prometheus'
+  - job_name: 'platform-ops'
+    metrics_path: '/ops/actuator/prometheus'
     static_configs:
-      - targets: ['docker-service:8084']
-
-  - job_name: 'server-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['server-service:8085']
-
-  - job_name: 'api-testing-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['api-testing-service:8086']
+      - targets: ['platform-ops:8083']
 
