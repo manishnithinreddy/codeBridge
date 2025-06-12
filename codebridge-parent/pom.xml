@@ -24,6 +24,7 @@
         <module>codebridge-core</module>
         <module>codebridge-api-gateway</module>
         <module>codebridge-service-discovery</module>
+        <module>codebridge-security</module>
     </modules>
 
     <properties>
