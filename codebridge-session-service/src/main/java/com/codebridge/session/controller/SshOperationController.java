@@ -1,5 +1,8 @@
 package com.codebridge.session.controller;
 
+import com.codebridge.core.resilience.CircuitBreaker;
+import com.codebridge.core.ratelimit.RateLimit;
+import com.codebridge.core.tracing.Observed;
 import com.codebridge.session.dto.CommandResponse;
 import com.codebridge.session.dto.SshSessionMetadata;
 import com.codebridge.session.exception.AccessDeniedException;
@@ -24,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -43,6 +47,9 @@ public class SshOperationController {
     }
 
     @PostMapping("/command")
+    @CircuitBreaker(name = "sshCommandExecution")
+    @RateLimit(name = "sshCommand", type = RateLimit.RateLimitType.USER)
+    @Observed(name = "ssh.command.execution")
     public ResponseEntity<CommandResponse> executeCommand(
             @RequestHeader("Authorization") String authHeader,
             @RequestBody @Valid CommandRequest commandRequest) {
@@ -77,6 +84,44 @@ public class SshOperationController {
             logger.error("Unexpected error executing SSH command: {}", e.getMessage(), e);
             throw new RemoteOperationException("Failed to execute SSH command: " + e.getMessage(), e);
         }
+    }
+
+    @PostMapping("/command/async")
+    @CircuitBreaker(name = "sshAsyncCommandExecution")
+    @RateLimit(name = "sshAsyncCommand", type = RateLimit.RateLimitType.USER)
+    @Observed(name = "ssh.command.async.execution")
+    public CompletableFuture<ResponseEntity<CommandResponse>> executeCommandAsync(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody @Valid CommandRequest commandRequest) {
+
+        String sessionToken = extractToken(authHeader);
+        SessionKey sessionKey = validateSessionAndGetKey(sessionToken, "async command execution");
+        SshSessionWrapper wrapper = getValidatedSessionWrapper(sessionKey, "async command execution");
+        
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                int timeoutMs = commandRequest.timeoutMs() != null && commandRequest.timeoutMs() > 0 
+                        ? commandRequest.timeoutMs() : DEFAULT_COMMAND_TIMEOUT_MS;
+                
+                CommandResult result = executeRemoteCommand(wrapper, commandRequest.command(), timeoutMs);
+                sessionLifecycleManager.updateSessionAccessTime(sessionKey, wrapper);
+                
+                return ResponseEntity.ok(new CommandResponse(result.output(), result.exitCode()));
+            } catch (JSchException e) {
+                logger.error("JSch error executing async SSH command: {}", e.getMessage(), e);
+                throw new RemoteOperationException("SSH connection error: " + e.getMessage(), e);
+            } catch (IOException e) {
+                logger.error("I/O error executing async SSH command: {}", e.getMessage(), e);
+                throw new RemoteOperationException("I/O error during async command execution: " + e.getMessage(), e);
+            } catch (InterruptedException e) {
+                logger.error("Async command execution interrupted: {}", e.getMessage(), e);
+                Thread.currentThread().interrupt(); // Restore interrupted state
+                throw new RemoteOperationException("Async command execution was interrupted", e);
+            } catch (Exception e) {
+                logger.error("Unexpected error executing async SSH command: {}", e.getMessage(), e);
+                throw new RemoteOperationException("Failed to execute async SSH command: " + e.getMessage(), e);
+            }
+        });
     }
 
     private String extractToken(String authHeader) {
@@ -139,6 +184,8 @@ public class SshOperationController {
         return wrapper;
     }
 
+    @CircuitBreaker(name = "sshRemoteCommandExecution")
+    @Observed(name = "ssh.remote.command.execution")
     private CommandResult executeRemoteCommand(SshSessionWrapper wrapper, String command, int timeoutMs) 
             throws JSchException, IOException, InterruptedException {
         ChannelExec channel = null;
@@ -225,3 +272,4 @@ public class SshOperationController {
 
     private record CommandResult(String output, int exitCode) {}
 }
+
