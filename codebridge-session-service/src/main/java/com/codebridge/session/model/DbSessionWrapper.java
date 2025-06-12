@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DbSessionWrapper {
     private static final Logger logger = LoggerFactory.getLogger(DbSessionWrapper.class);
@@ -16,6 +17,8 @@ public class DbSessionWrapper {
     private final DbType dbType;
     private final long createdAt; // Epoch millis
     private volatile long lastAccessedTime; // Epoch millis
+    // Add inUse flag for connection pooling
+    private final AtomicBoolean inUse;
 
     public DbSessionWrapper(Connection connection, SessionKey sessionKey, DbType dbType) {
         this.connection = connection;
@@ -23,6 +26,8 @@ public class DbSessionWrapper {
         this.dbType = dbType;
         this.createdAt = Instant.now().toEpochMilli();
         this.lastAccessedTime = this.createdAt;
+        // Initialize inUse flag
+        this.inUse = new AtomicBoolean(false);
     }
 
     public Connection getConnection() {
@@ -72,5 +77,23 @@ public class DbSessionWrapper {
                 logger.error("Error closing DB connection for session key {}: {}", sessionKey, e.getMessage(), e);
             }
         }
+    }
+    
+    // Add connection pooling methods
+    public boolean isInUse() {
+        return inUse.get();
+    }
+    
+    public void setInUse(boolean inUse) {
+        this.inUse.set(inUse);
+    }
+    
+    public boolean tryAcquire() {
+        return inUse.compareAndSet(false, true);
+    }
+    
+    public void release() {
+        inUse.set(false);
+        updateLastAccessedTime();
     }
 }
