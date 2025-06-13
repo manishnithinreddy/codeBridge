@@ -1,4 +1,4 @@
-package com.codebridge.platform.ops;
+package com.codebridge.monitoring.platform.ops;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,11 +1,11 @@
 package com.codebridge.aidb.client;
 
 import com.codebridge.aidb.config.AiConfigProperties;
-import com.codebridge.aidb.dto.ai.GeminiCandidateDto;
-import com.codebridge.aidb.dto.ai.GeminiContentDto;
-import com.codebridge.aidb.dto.ai.GeminiPartDto;
-import com.codebridge.aidb.dto.ai.GeminiRequestPayloadDto;
-import com.codebridge.aidb.dto.ai.AiTextToSqlResponseDto; // Ensure this is the updated one
+import com.codebridge.aidb.agent.ai.GeminiCandidateDto;
+import com.codebridge.aidb.agent.ai.GeminiContentDto;
+import com.codebridge.aidb.agent.ai.GeminiPartDto;
+import com.codebridge.aidb.agent.ai.GeminiRequestPayloadDto;
+import com.codebridge.aidb.agent.ai.AiTextToSqlResponseDto; // Ensure this is the updated one
 import com.codebridge.aidb.exception.AIServiceException;
 import java.util.List; // Added
 // import com.codebridge.session.dto.schema.DbSchemaInfoResponse; // For later integration

@@ -1,6 +1,6 @@
-package com.codebridge.performance.service;
+package com.codebridge.monitoring.performance.service;
 
-import com.codebridge.performance.model.PerformanceMetric;
+import com.codebridge.monitoring.performance.model.PerformanceMetric;
 import lombok.extern.slf4j.Slf4j;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;

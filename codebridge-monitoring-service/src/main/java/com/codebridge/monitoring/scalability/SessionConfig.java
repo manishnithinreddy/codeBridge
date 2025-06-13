@@ -1,6 +1,6 @@
-package com.codebridge.scalability.config;
+package com.codebridge.monitoring.scalability.config;
 
-import com.codebridge.scalability.model.SessionStoreType;
+import com.codebridge.monitoring.scalability.model.SessionStoreType;
 import com.hazelcast.core.HazelcastInstance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

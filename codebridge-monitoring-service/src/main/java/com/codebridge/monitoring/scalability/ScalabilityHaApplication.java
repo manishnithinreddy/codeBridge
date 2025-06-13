@@ -1,4 +1,4 @@
-package com.codebridge.scalability;
+package com.codebridge.monitoring.scalability;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

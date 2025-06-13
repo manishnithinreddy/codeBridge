@@ -1,4 +1,4 @@
-package com.codebridge.discovery;
+package com.codebridge.gateway.discovery;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

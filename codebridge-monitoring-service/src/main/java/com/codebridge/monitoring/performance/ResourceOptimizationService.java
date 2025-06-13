@@ -1,11 +1,11 @@
-package com.codebridge.performance.service;
+package com.codebridge.monitoring.performance.service;
 
-import com.codebridge.performance.model.MetricType;
-import com.codebridge.performance.model.OptimizationRecommendation;
-import com.codebridge.performance.model.OptimizationRecommendationType;
-import com.codebridge.performance.model.PerformanceMetric;
-import com.codebridge.performance.repository.OptimizationRecommendationRepository;
-import com.codebridge.performance.repository.PerformanceMetricRepository;
+import com.codebridge.monitoring.performance.model.MetricType;
+import com.codebridge.monitoring.performance.model.OptimizationRecommendation;
+import com.codebridge.monitoring.performance.model.OptimizationRecommendationType;
+import com.codebridge.monitoring.performance.model.PerformanceMetric;
+import com.codebridge.monitoring.performance.repository.OptimizationRecommendationRepository;
+import com.codebridge.monitoring.performance.repository.PerformanceMetricRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

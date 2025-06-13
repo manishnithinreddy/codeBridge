@@ -1,4 +1,4 @@
-package com.codebridge.scalability.autoscaling;
+package com.codebridge.monitoring.scalability.autoscaling;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

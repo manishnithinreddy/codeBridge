@@ -1,4 +1,4 @@
-package com.codebridge.platform.ops.events.dto;
+package com.codebridge.monitoring.platform.ops.events.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

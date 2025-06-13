@@ -1,4 +1,4 @@
-package com.codebridge.db.dto;
+package com.codebridge.aidb.db.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,8 +1,8 @@
 package com.codebridge.aidb.util;
 
-import com.codebridge.aidb.dto.client.ColumnSchemaInfo;
-import com.codebridge.aidb.dto.client.DbSchemaInfoResponse;
-import com.codebridge.aidb.dto.client.TableSchemaInfo;
+import com.codebridge.aidb.agent.client.ColumnSchemaInfo;
+import com.codebridge.aidb.agent.client.DbSchemaInfoResponse;
+import com.codebridge.aidb.agent.client.TableSchemaInfo;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 

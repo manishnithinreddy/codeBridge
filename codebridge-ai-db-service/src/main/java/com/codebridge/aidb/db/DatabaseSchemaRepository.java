@@ -1,7 +1,7 @@
-package com.codebridge.db.repository;
+package com.codebridge.aidb.db.repository;
 
-import com.codebridge.db.model.DatabaseConnection;
-import com.codebridge.db.model.DatabaseSchema;
+import com.codebridge.aidb.db.model.DatabaseConnection;
+import com.codebridge.aidb.db.model.DatabaseSchema;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

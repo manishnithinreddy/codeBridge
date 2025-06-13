@@ -1,7 +1,7 @@
-package com.codebridge.platform.ops.events.controller;
+package com.codebridge.monitoring.platform.ops.events.controller;
 
-import com.codebridge.platform.ops.events.dto.AuditLogDto;
-import com.codebridge.platform.ops.events.service.AuditService;
+import com.codebridge.monitoring.platform.ops.events.dto.AuditLogDto;
+import com.codebridge.monitoring.platform.ops.events.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,4 +1,4 @@
-package com.codebridge.db.model;
+package com.codebridge.aidb.db.model;
 
 /**
  * Enum representing the different types of databases supported by the system.

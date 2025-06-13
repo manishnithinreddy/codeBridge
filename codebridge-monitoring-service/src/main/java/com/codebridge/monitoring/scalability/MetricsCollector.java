@@ -1,4 +1,4 @@
-package com.codebridge.scalability.autoscaling;
+package com.codebridge.monitoring.scalability.autoscaling;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;

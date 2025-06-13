@@ -1,9 +1,9 @@
-package com.codebridge.performance.collector;
+package com.codebridge.monitoring.performance.collector;
 
-import com.codebridge.performance.model.MetricType;
-import com.codebridge.performance.model.PerformanceMetric;
-import com.codebridge.performance.repository.PerformanceMetricRepository;
-import com.codebridge.performance.service.TimeSeriesService;
+import com.codebridge.monitoring.performance.model.MetricType;
+import com.codebridge.monitoring.performance.model.PerformanceMetric;
+import com.codebridge.monitoring.performance.repository.PerformanceMetricRepository;
+import com.codebridge.monitoring.performance.service.TimeSeriesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

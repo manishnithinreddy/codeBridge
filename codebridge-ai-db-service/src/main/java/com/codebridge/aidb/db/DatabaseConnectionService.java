@@ -1,12 +1,12 @@
-package com.codebridge.db.service;
+package com.codebridge.aidb.db.service;
 
-import com.codebridge.db.dto.QueryResult;
-import com.codebridge.db.exception.DatabaseConnectionException;
-import com.codebridge.db.model.DatabaseConnection;
-import com.codebridge.db.model.DatabaseType;
-import com.codebridge.db.repository.DatabaseConnectionRepository;
-import com.codebridge.db.service.connector.DatabaseConnector;
-import com.codebridge.db.service.connector.DatabaseConnectorFactory;
+import com.codebridge.aidb.db.dto.QueryResult;
+import com.codebridge.aidb.db.exception.DatabaseConnectionException;
+import com.codebridge.aidb.db.model.DatabaseConnection;
+import com.codebridge.aidb.db.model.DatabaseType;
+import com.codebridge.aidb.db.repository.DatabaseConnectionRepository;
+import com.codebridge.aidb.db.service.connector.DatabaseConnector;
+import com.codebridge.aidb.db.service.connector.DatabaseConnectorFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;

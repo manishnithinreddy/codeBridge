@@ -1,8 +1,8 @@
 package com.codebridge.aidb.controller;
 
-import com.codebridge.aidb.dto.DbSessionInitRequest;
-import com.codebridge.aidb.dto.KeepAliveResponse;
-import com.codebridge.aidb.dto.SessionResponse;
+import com.codebridge.aidb.agent.DbSessionInitRequest;
+import com.codebridge.aidb.agent.KeepAliveResponse;
+import com.codebridge.aidb.agent.SessionResponse;
 import com.codebridge.aidb.service.DbSessionLifecycleManager;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

@@ -1,6 +1,6 @@
-package com.codebridge.scalability.loadbalancer.impl;
+package com.codebridge.monitoring.scalability.loadbalancer.impl;
 
-import com.codebridge.scalability.loadbalancer.HealthCheckService;
+import com.codebridge.monitoring.scalability.loadbalancer.HealthCheckService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.ServiceInstance;

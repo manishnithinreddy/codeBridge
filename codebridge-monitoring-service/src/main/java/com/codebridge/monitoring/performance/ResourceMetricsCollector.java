@@ -1,4 +1,4 @@
-package com.codebridge.performance.collector;
+package com.codebridge.monitoring.performance.collector;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

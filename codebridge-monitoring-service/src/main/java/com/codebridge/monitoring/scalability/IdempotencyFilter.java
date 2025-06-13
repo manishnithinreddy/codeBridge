@@ -1,6 +1,6 @@
-package com.codebridge.scalability.filter;
+package com.codebridge.monitoring.scalability.filter;
 
-import com.codebridge.scalability.service.IdempotencyService;
+import com.codebridge.monitoring.scalability.service.IdempotencyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

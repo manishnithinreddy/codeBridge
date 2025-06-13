@@ -1,4 +1,4 @@
-package com.codebridge.aidb.dto;
+package com.codebridge.aidb.agent;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package com.codebridge.performance.model;
+package com.codebridge.monitoring.performance.model;
 
 /**
  * Enum representing optimization recommendation types.

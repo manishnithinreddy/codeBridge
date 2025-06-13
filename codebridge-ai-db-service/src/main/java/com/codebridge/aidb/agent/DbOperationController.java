@@ -1,10 +1,10 @@
 package com.codebridge.aidb.controller;
 
 import com.codebridge.aidb.config.ApplicationInstanceIdProvider;
-import com.codebridge.aidb.dto.DbSessionMetadata;
-import com.codebridge.aidb.dto.schema.DbSchemaInfoResponse;
-import com.codebridge.aidb.dto.sql.SqlExecutionRequest;
-import com.codebridge.aidb.dto.sql.SqlExecutionResponse;
+import com.codebridge.aidb.agent.DbSessionMetadata;
+import com.codebridge.aidb.agent.schema.DbSchemaInfoResponse;
+import com.codebridge.aidb.agent.sql.SqlExecutionRequest;
+import com.codebridge.aidb.agent.sql.SqlExecutionResponse;
 import com.codebridge.aidb.exception.AccessDeniedException;
 import com.codebridge.aidb.exception.RemoteOperationException;
 import com.codebridge.aidb.model.DbSessionWrapper;

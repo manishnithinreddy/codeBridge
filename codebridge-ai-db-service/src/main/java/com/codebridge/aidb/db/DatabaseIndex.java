@@ -1,4 +1,4 @@
-package com.codebridge.db.model;
+package com.codebridge.aidb.db.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

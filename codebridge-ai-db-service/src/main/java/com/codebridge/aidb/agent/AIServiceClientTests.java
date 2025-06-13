@@ -1,8 +1,8 @@
 package com.codebridge.aidb.client;
 
 import com.codebridge.aidb.config.AiConfigProperties;
-import com.codebridge.aidb.dto.ai.AiTextToSqlRequestDto;
-import com.codebridge.aidb.dto.ai.AiTextToSqlResponseDto;
+import com.codebridge.aidb.agent.ai.AiTextToSqlRequestDto;
+import com.codebridge.aidb.agent.ai.AiTextToSqlResponseDto;
 import com.codebridge.aidb.exception.AIServiceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
