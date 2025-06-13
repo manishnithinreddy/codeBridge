@@ -1,0 +1,260 @@
+spring:
+  application:
+    name: codebridge-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: auth-service
+          uri: lb://codebridge-auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: authCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+        - id: user-service
+          uri: lb://codebridge-user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: userCircuitBreaker
+                fallbackUri: forward:/fallback/user
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+        - id: server-service
+          uri: lb://codebridge-server-service
+          predicates:
+            - Path=/api/server/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: serverCircuitBreaker
+                fallbackUri: forward:/fallback/server
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 15
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
+        - id: session-service
+          uri: lb://codebridge-session-service
+          predicates:
+            - Path=/api/sessions/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: sessionCircuitBreaker
+                fallbackUri: forward:/fallback/session
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 60
+                redis-rate-limiter.requestedTokens: 1
+        - id: ai-db-agent-service
+          uri: lb://codebridge-ai-db-agent-service
+          predicates:
+            - Path=/api/ai-db-agent/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: aiDbAgentCircuitBreaker
+                fallbackUri: forward:/fallback/ai-db-agent
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+    loadbalancer:
+      ribbon:
+        enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/codebridge
+          jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:}
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    com.codebridge: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
+    reactor.netty: INFO
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      authCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      serverCircuitBreaker:
+        baseConfig: default
+      sessionCircuitBreaker:
+        baseConfig: default
+      aiDbAgentCircuitBreaker:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+        cancelRunningFuture: true
+    instances:
+      authCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      serverCircuitBreaker:
+        baseConfig: default
+      sessionCircuitBreaker:
+        baseConfig: default
+      aiDbAgentCircuitBreaker:
+        baseConfig: default
+  ratelimiter:
+    configs:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+    instances:
+      authRateLimiter:
+        baseConfig: default
+        limitForPeriod: 10
+      userRateLimiter:
+        baseConfig: default
+        limitForPeriod: 20
+      serverRateLimiter:
+        baseConfig: default
+        limitForPeriod: 15
+      sessionRateLimiter:
+        baseConfig: default
+        limitForPeriod: 30
+      aiDbAgentRateLimiter:
+        baseConfig: default
+        limitForPeriod: 5
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    config-url: /api-docs/swagger-config
+    urls:
+      - url: /api-docs
+        name: API Gateway
+      - url: /api/auth/v3/api-docs
+        name: Auth Service
+      - url: /api/users/v3/api-docs
+        name: User Service
+      - url: /api/server/v3/api-docs
+        name: Server Service
+      - url: /api/sessions/v3/api-docs
+        name: Session Service
+      - url: /api/ai-db-agent/v3/api-docs
+        name: AI DB Agent Service
+
+# Application-specific properties
+codebridge:
+  gateway:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "*"
+      allowed-headers: "*"
+      max-age: 3600
+    security:
+      public-paths:
+        - /api/auth/login
+        - /api/auth/register
+        - /api/auth/refresh-token
+        - /api/auth/forgot-password
+        - /api/auth/reset-password
+        - /api-docs/**
+        - /swagger-ui/**
+        - /actuator/**
+        - /fallback/**
+      jwt:
+        secret: ${JWT_SECRET:your-secret-key-here-change-in-production}
+    rate-limiting:
+      default-limit: 100
+      default-duration: 60
+      ip-header: X-Forwarded-For
+

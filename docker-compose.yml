@@ -1,153 +1,128 @@
 version: '3.8'
 
 services:
-  # Discovery Service
-  discovery-service:
-    image: codebridge/discovery-service:latest
-    container_name: discovery-service
+  # Eureka Service Discovery
+  eureka-server:
+    image: springcloud/eureka
+    container_name: eureka-server
     ports:
       - "8761:8761"
-    networks:
-      - codebridge-network
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_REGISTER-WITH-EUREKA=false
+      - EUREKA_CLIENT_FETCH-REGISTRY=false
 
-  # API Gateway
-  api-gateway:
-    image: codebridge/api-gateway:latest
-    container_name: api-gateway
+  # Identity Platform
+  identity-platform:
+    build:
+      context: ./codebridge-identity-platform
+      dockerfile: Dockerfile
+    container_name: identity-platform
     ports:
-      - "8080:8080"
-    depends_on:
-      - discovery-service
-    networks:
-      - codebridge-network
+      - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=codebridge-identity-platform-secret-key-for-jwt-token-generation
+    depends_on:
+      - eureka-server
 
-  # Databases
+  # Teams Service
+  teams-service:
+    build:
+      context: ./codebridge-teams-service
+      dockerfile: Dockerfile
+    container_name: teams-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - IDENTITY_SERVICE_URL=http://identity-platform:8081/identity
+    depends_on:
+      - eureka-server
+      - identity-platform
+
+  # Platform Operations
+  platform-ops:
+    build:
+      context: ./codebridge-platform-ops
+      dockerfile: Dockerfile
+    container_name: platform-ops
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - IDENTITY_SERVICE_URL=http://identity-platform:8081/identity
+      - TEAMS_SERVICE_URL=http://teams-service:8082/teams
+    depends_on:
+      - eureka-server
+      - identity-platform
+      - teams-service
+
+  # Documentation Service
+  documentation-service:
+    build:
+      context: ./codebridge-documentation-service
+      dockerfile: Dockerfile
+    container_name: documentation-service
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge_docs
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - DOCUMENTATION_STORAGE_BASE_PATH=/app/documentation
+    volumes:
+      - documentation-storage:/app/documentation
+    depends_on:
+      - eureka-server
+      - postgres
+
+  # PostgreSQL for Documentation Service
   postgres:
     image: postgres:14-alpine
     container_name: postgres
     ports:
       - "5432:5432"
-    networks:
-      - codebridge-network
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_MULTIPLE_DATABASES=codebridge_identity,codebridge_organization,codebridge_events,codebridge_gitlab,codebridge_docker,codebridge_server,codebridge_api_test
+      - POSTGRES_DB=codebridge_docs
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
 
-  # Core Services
-  gitlab-service:
-    image: codebridge/gitlab-service:latest
-    container_name: gitlab-service
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_gitlab
+      - identity-platform
+      - teams-service
+      - platform-ops
+      - documentation-service
 
-  docker-service:
-    image: codebridge/docker-service:latest
-    container_name: docker-service
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
     depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_docker
-
-  server-service:
-    image: codebridge/server-service:latest
-    container_name: server-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_server
-
-  api-test-service:
-    image: codebridge/api-test-service:latest
-    container_name: api-test-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_api_test
-
-  # Consolidated Services
-  identity-service:
-    image: codebridge/identity-service:latest
-    container_name: identity-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_identity
-      - JWT_SECRET=your-secret-key
-
-  organization-service:
-    image: codebridge/organization-service:latest
-    container_name: organization-service
-    depends_on:
-      - discovery-service
-      - postgres
-      - identity-service
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_organization
-
-  events-service:
-    image: codebridge/events-service:latest
-    container_name: events-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_events
-
-networks:
-  codebridge-network:
-    driver: bridge
+      - prometheus
 
 volumes:
+  grafana-storage:
   postgres-data:
+  documentation-storage:
 
