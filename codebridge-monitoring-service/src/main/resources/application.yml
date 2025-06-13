@@ -1,0 +1,100 @@
+spring:
+  application:
+    name: codebridge-monitoring-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/codebridge_monitoring
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  redis:
+    host: localhost
+    port: 6379
+  cache:
+    type: redis
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+server:
+  port: 8085
+  servlet:
+    context-path: /monitoring
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Performance monitoring settings
+performance:
+  metrics:
+    collection-interval-seconds: 60
+    retention-days: 30
+  alerts:
+    enabled: true
+    notification-endpoints:
+      - type: email
+        url: admin@codebridge.com
+      - type: webhook
+        url: http://localhost:8080/notifications/performance
+
+# Platform operations settings
+platform:
+  admin:
+    dashboard:
+      enabled: true
+  audit:
+    enabled: true
+    log-retention-days: 90
+  webhooks:
+    max-retries: 3
+    timeout-seconds: 5
+
+# Scalability and high availability settings
+scalability:
+  autoscaling:
+    enabled: true
+    min-instances: 1
+    max-instances: 5
+    cpu-threshold: 70
+  loadbalancer:
+    strategy: round-robin
+  resilience:
+    circuit-breaker:
+      enabled: true
+    rate-limiter:
+      enabled: true
+  session:
+    store-type: redis
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+

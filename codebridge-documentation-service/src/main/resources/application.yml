@@ -1,0 +1,117 @@
+server:
+  port: 8087
+  servlet:
+    context-path: /api/docs
+
+spring:
+  application:
+    name: documentation-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/codebridge_docs
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  cloud:
+    config:
+      enabled: true
+      uri: http://localhost:8888
+      fail-fast: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/codebridge
+          jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+documentation:
+  storage:
+    base-path: ${user.home}/codebridge/documentation
+  openapi:
+    scan-enabled: true
+    scan-packages: com.codebridge
+    scan-interval: 3600000  # 1 hour in milliseconds
+  versioning:
+    enabled: true
+    strategy: semantic  # semantic, date, or custom
+    default-version: latest
+  publishing:
+    auto-publish: true
+    publish-interval: 86400000  # 24 hours in milliseconds
+  code-generation:
+    enabled: true
+    languages:
+      - java
+      - python
+      - javascript
+      - typescript
+      - csharp
+      - go
+    templates-path: ${user.home}/codebridge/templates
+  interactive:
+    enabled: true
+    examples-enabled: true
+    search-enabled: true
+  services:
+    - name: api-gateway
+      url: http://localhost:8080
+      context-path: /api
+      scan: true
+    - name: api-test-service
+      url: http://localhost:8082
+      context-path: /api/test
+      scan: true
+    - name: ssh-service
+      url: http://localhost:8083
+      context-path: /api/ssh
+      scan: true
+    - name: database-service
+      url: http://localhost:8084
+      context-path: /api/db
+      scan: true
+    - name: performance-service
+      url: http://localhost:8086
+      context-path: /api/performance
+      scan: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    display-request-duration: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: true
+

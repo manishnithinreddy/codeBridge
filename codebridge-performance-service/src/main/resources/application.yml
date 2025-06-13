@@ -1,0 +1,118 @@
+server:
+  port: 8086
+  servlet:
+    context-path: /performance
+
+spring:
+  application:
+    name: codebridge-performance-service
+  datasource:
+    url: jdbc:h2:mem:performancedb
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  security:
+    user:
+      name: admin
+      password: admin
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+      slo:
+        http.server.requests: 50ms, 100ms, 200ms, 500ms
+
+# Performance Service Configuration
+performance:
+  metrics:
+    collection:
+      enabled: true
+      interval: 15000  # 15 seconds
+      retention-days: 30
+    influxdb:
+      url: http://localhost:8086
+      token: your_influxdb_token
+      org: codebridge
+      bucket: performance_metrics
+    prometheus:
+      push-gateway: http://localhost:9091
+      job-name: codebridge-performance
+  alerting:
+    enabled: true
+    check-interval: 60000  # 1 minute
+    notification:
+      email:
+        enabled: true
+        recipients: admin@codebridge.com
+      webhook:
+        enabled: true
+        url: http://localhost:8080/webhook/alerts
+  anomaly-detection:
+    enabled: true
+    sensitivity: 2.0  # Standard deviations for anomaly threshold
+    training-period-days: 7
+    min-data-points: 100
+  testing:
+    enabled: true
+    schedule: "0 0 2 * * *"  # 2 AM daily
+    duration: 300  # 5 minutes
+    concurrent-users: 10
+    ramp-up-period: 60  # 1 minute
+  dashboard:
+    refresh-interval: 30000  # 30 seconds
+    default-time-range: 3600000  # 1 hour
+  client-metrics:
+    collection-endpoint: /api/metrics/client
+    sampling-rate: 0.1  # 10% of requests
+
+# Service-specific metrics configuration
+services:
+  api:
+    metrics-enabled: true
+    endpoints-to-monitor: /api/test/execute, /api/test/validate
+  ssh:
+    metrics-enabled: true
+    connection-timeout: 5000
+  database:
+    metrics-enabled: true
+    slow-query-threshold: 1000  # 1 second
+  resource:
+    metrics-enabled: true
+    cpu-threshold: 80  # 80% utilization
+    memory-threshold: 80  # 80% utilization
+    disk-threshold: 90  # 90% utilization
+
