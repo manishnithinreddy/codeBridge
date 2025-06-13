@@ -1,6 +1,6 @@
-package com.codebridge.scalability.service.impl;
+package com.codebridge.monitoring.scalability.service.impl;
 
-import com.codebridge.scalability.service.IdempotencyService;
+import com.codebridge.monitoring.scalability.service.IdempotencyService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

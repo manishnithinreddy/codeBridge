@@ -1,6 +1,6 @@
 package com.codebridge.aidb.config;
 
-import com.codebridge.aidb.dto.DbSessionMetadata;
+import com.codebridge.aidb.agent.DbSessionMetadata;
 import com.codebridge.aidb.model.SessionKey;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,7 +1,7 @@
-package com.codebridge.performance.repository;
+package com.codebridge.monitoring.performance.repository;
 
-import com.codebridge.performance.model.PerformanceSla;
-import com.codebridge.performance.model.PerformanceSlaViolation;
+import com.codebridge.monitoring.performance.model.PerformanceSla;
+import com.codebridge.monitoring.performance.model.PerformanceSlaViolation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,4 +1,4 @@
-package com.codebridge.discovery.config;
+package com.codebridge.gateway.discovery.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

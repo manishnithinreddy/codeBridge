@@ -1,9 +1,9 @@
-package com.codebridge.scalability.config;
+package com.codebridge.monitoring.scalability.config;
 
-import com.codebridge.scalability.loadbalancer.HealthCheckService;
-import com.codebridge.scalability.loadbalancer.LoadBalancingStrategy;
-import com.codebridge.scalability.loadbalancer.ServiceInstanceSelector;
-import com.codebridge.scalability.loadbalancer.impl.*;
+import com.codebridge.monitoring.scalability.loadbalancer.HealthCheckService;
+import com.codebridge.monitoring.scalability.loadbalancer.LoadBalancingStrategy;
+import com.codebridge.monitoring.scalability.loadbalancer.ServiceInstanceSelector;
+import com.codebridge.monitoring.scalability.loadbalancer.impl.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.ServiceInstance;

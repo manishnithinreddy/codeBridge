@@ -1,4 +1,4 @@
-package com.codebridge.scalability.loadbalancer;
+package com.codebridge.monitoring.scalability.loadbalancer;
 
 import org.springframework.cloud.client.ServiceInstance;
 

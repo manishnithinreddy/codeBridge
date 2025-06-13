@@ -1,7 +1,7 @@
-package com.codebridge.db.service.connector;
+package com.codebridge.aidb.db;
 
-import com.codebridge.db.model.DatabaseConnection;
-import com.codebridge.db.model.DatabaseType;
+import com.codebridge.aidb.db.model.DatabaseConnection;
+import com.codebridge.aidb.db.model.DatabaseType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -75,4 +75,3 @@ public class DatabaseConnectorFactory {
         return connector;
     }
 }
-

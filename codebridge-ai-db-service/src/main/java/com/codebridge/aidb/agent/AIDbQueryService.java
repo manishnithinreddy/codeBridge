@@ -2,12 +2,12 @@ package com.codebridge.aidb.service;
 
 import com.codebridge.aidb.client.AIServiceClient;
 import com.codebridge.aidb.config.SessionServiceConfigProperties;
-import com.codebridge.aidb.dto.NaturalLanguageQueryResponse;
-import com.codebridge.aidb.dto.client.ClientSqlExecutionRequest;
-import com.codebridge.aidb.dto.client.ClientSqlExecutionResponse;
-import com.codebridge.aidb.dto.client.DbSchemaInfoResponse; // Local stub
-import com.codebridge.aidb.dto.client.TableSchemaInfo;
-import com.codebridge.aidb.dto.client.ColumnSchemaInfo;
+import com.codebridge.aidb.agent.NaturalLanguageQueryResponse;
+import com.codebridge.aidb.agent.client.ClientSqlExecutionRequest;
+import com.codebridge.aidb.agent.client.ClientSqlExecutionResponse;
+import com.codebridge.aidb.agent.client.DbSchemaInfoResponse; // Local stub
+import com.codebridge.aidb.agent.client.TableSchemaInfo;
+import com.codebridge.aidb.agent.client.ColumnSchemaInfo;
 import com.codebridge.aidb.exception.AIServiceException;
 import com.codebridge.aidb.exception.InvalidSqlException;
 import com.codebridge.aidb.util.SchemaToStringFormatter; // Added

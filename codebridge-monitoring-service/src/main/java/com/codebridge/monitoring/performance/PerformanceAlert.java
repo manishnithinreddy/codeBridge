@@ -1,4 +1,4 @@
-package com.codebridge.performance.model;
+package com.codebridge.monitoring.performance.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

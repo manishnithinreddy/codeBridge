@@ -1,6 +1,6 @@
-package com.codebridge.scalability.config;
+package com.codebridge.monitoring.scalability.config;
 
-import com.codebridge.scalability.model.SessionStoreType;
+import com.codebridge.monitoring.scalability.model.SessionStoreType;
 import org.springframework.context.annotation.Conditional;
 
 import java.lang.annotation.*;

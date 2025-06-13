@@ -1,7 +1,7 @@
-package com.codebridge.db.service.connector;
+package com.codebridge.aidb.db.service.connector;
 
-import com.codebridge.db.dto.QueryResult;
-import com.codebridge.db.model.DatabaseConnection;
+import com.codebridge.aidb.db.dto.QueryResult;
+import com.codebridge.aidb.db.model.DatabaseConnection;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
 import com.influxdb.client.QueryApi;

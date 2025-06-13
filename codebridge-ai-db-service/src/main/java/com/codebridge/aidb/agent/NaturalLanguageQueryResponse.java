@@ -1,6 +1,6 @@
-package com.codebridge.aidb.dto;
+package com.codebridge.aidb.agent;
 
-import com.codebridge.aidb.dto.client.ClientSqlExecutionResponse; // Stub DTO
+import com.codebridge.aidb.agent.client.ClientSqlExecutionResponse; // Stub DTO
 import java.io.Serializable;
 
 public class NaturalLanguageQueryResponse implements Serializable {

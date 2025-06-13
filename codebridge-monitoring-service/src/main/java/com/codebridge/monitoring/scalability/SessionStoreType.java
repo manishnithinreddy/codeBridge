@@ -1,4 +1,4 @@
-package com.codebridge.scalability.model;
+package com.codebridge.monitoring.scalability.model;
 
 /**
  * Enumeration of supported session store types.

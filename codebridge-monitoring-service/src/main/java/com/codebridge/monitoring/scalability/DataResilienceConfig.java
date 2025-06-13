@@ -1,11 +1,11 @@
-package com.codebridge.scalability.config;
+package com.codebridge.monitoring.scalability.config;
 
-import com.codebridge.scalability.resilience.BackupService;
-import com.codebridge.scalability.resilience.DataPartitioningService;
-import com.codebridge.scalability.resilience.ReplicationService;
-import com.codebridge.scalability.resilience.impl.DefaultBackupService;
-import com.codebridge.scalability.resilience.impl.DefaultDataPartitioningService;
-import com.codebridge.scalability.resilience.impl.DefaultReplicationService;
+import com.codebridge.monitoring.scalability.resilience.BackupService;
+import com.codebridge.monitoring.scalability.resilience.DataPartitioningService;
+import com.codebridge.monitoring.scalability.resilience.ReplicationService;
+import com.codebridge.monitoring.scalability.resilience.impl.DefaultBackupService;
+import com.codebridge.monitoring.scalability.resilience.impl.DefaultDataPartitioningService;
+import com.codebridge.monitoring.scalability.resilience.impl.DefaultReplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

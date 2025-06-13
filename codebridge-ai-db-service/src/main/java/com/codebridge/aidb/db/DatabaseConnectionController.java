@@ -1,9 +1,9 @@
-package com.codebridge.db.controller;
+package com.codebridge.aidb.db.controller;
 
-import com.codebridge.db.dto.QueryResult;
-import com.codebridge.db.model.DatabaseConnection;
-import com.codebridge.db.model.DatabaseType;
-import com.codebridge.db.service.DatabaseConnectionService;
+import com.codebridge.aidb.db.dto.QueryResult;
+import com.codebridge.aidb.db.model.DatabaseConnection;
+import com.codebridge.aidb.db.model.DatabaseType;
+import com.codebridge.aidb.db.service.DatabaseConnectionService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

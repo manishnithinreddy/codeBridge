@@ -1,4 +1,4 @@
-package com.codebridge.scalability.resilience;
+package com.codebridge.monitoring.scalability.resilience;
 
 import java.util.List;
 

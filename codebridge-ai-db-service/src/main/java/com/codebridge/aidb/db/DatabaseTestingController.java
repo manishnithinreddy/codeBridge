@@ -1,6 +1,6 @@
-package com.codebridge.db.controller;
+package com.codebridge.aidb.db.controller;
 
-import com.codebridge.db.service.DatabaseTestingService;
+import com.codebridge.aidb.db.service.DatabaseTestingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

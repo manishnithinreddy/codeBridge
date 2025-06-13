@@ -1,4 +1,4 @@
-package com.codebridge.scalability.service;
+package com.codebridge.monitoring.scalability.service;
 
 import java.util.Optional;
 

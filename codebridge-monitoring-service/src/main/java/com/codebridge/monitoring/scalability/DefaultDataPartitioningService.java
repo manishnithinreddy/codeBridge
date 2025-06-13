@@ -1,6 +1,6 @@
-package com.codebridge.scalability.resilience.impl;
+package com.codebridge.monitoring.scalability.resilience.impl;
 
-import com.codebridge.scalability.resilience.DataPartitioningService;
+import com.codebridge.monitoring.scalability.resilience.DataPartitioningService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 

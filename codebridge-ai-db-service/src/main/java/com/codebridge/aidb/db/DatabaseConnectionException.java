@@ -1,4 +1,4 @@
-package com.codebridge.db.exception;
+package com.codebridge.aidb.db.exception;
 
 /**
  * Exception thrown when there is an issue with a database connection.

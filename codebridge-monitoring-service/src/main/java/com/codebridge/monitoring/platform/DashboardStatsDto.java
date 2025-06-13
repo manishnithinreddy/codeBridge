@@ -1,4 +1,4 @@
-package com.codebridge.platform.ops.admin.dto;
+package com.codebridge.monitoring.platform.ops.admin.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

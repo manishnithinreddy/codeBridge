@@ -1,4 +1,4 @@
-package com.codebridge.aidb.dto.ai;
+package com.codebridge.aidb.agent.ai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;

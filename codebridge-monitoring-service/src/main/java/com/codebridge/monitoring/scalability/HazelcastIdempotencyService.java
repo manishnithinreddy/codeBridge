@@ -1,6 +1,6 @@
-package com.codebridge.scalability.service.impl;
+package com.codebridge.monitoring.scalability.service.impl;
 
-import com.codebridge.scalability.service.IdempotencyService;
+import com.codebridge.monitoring.scalability.service.IdempotencyService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import lombok.RequiredArgsConstructor;
