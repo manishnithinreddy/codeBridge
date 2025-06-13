@@ -1,10 +1,10 @@
-package com.codebridge.performance.service;
+package com.codebridge.monitoring.performance.service;
 
-import com.codebridge.performance.model.AlertRule;
-import com.codebridge.performance.model.AlertSeverity;
-import com.codebridge.performance.model.MetricType;
-import com.codebridge.performance.model.PerformanceMetric;
-import com.codebridge.performance.repository.PerformanceMetricRepository;
+import com.codebridge.monitoring.performance.model.AlertRule;
+import com.codebridge.monitoring.performance.model.AlertSeverity;
+import com.codebridge.monitoring.performance.model.MetricType;
+import com.codebridge.monitoring.performance.model.PerformanceMetric;
+import com.codebridge.monitoring.performance.repository.PerformanceMetricRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.springframework.beans.factory.annotation.Autowired;

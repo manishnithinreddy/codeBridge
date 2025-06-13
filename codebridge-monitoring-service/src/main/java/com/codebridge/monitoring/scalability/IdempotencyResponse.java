@@ -1,4 +1,4 @@
-package com.codebridge.scalability.filter;
+package com.codebridge.monitoring.scalability.filter;
 
 import lombok.Data;
 

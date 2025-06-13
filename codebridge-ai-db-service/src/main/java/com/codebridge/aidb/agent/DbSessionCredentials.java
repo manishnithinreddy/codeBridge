@@ -1,4 +1,4 @@
-package com.codebridge.aidb.dto;
+package com.codebridge.aidb.agent;
 
 import com.codebridge.aidb.model.DbType;
 import jakarta.validation.constraints.NotBlank;

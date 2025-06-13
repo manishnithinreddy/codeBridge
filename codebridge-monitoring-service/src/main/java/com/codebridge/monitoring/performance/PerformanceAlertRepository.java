@@ -1,8 +1,8 @@
-package com.codebridge.performance.repository;
+package com.codebridge.monitoring.performance.repository;
 
-import com.codebridge.performance.model.AlertRule;
-import com.codebridge.performance.model.AlertStatus;
-import com.codebridge.performance.model.PerformanceAlert;
+import com.codebridge.monitoring.performance.model.AlertRule;
+import com.codebridge.monitoring.performance.model.AlertStatus;
+import com.codebridge.monitoring.performance.model.PerformanceAlert;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

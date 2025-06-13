@@ -1,4 +1,4 @@
-package com.codebridge.aidb.dto.sql;
+package com.codebridge.aidb.agent.sql;
 
 import jakarta.validation.constraints.NotBlank;
 import java.io.Serializable;

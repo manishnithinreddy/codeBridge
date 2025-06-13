@@ -1,6 +1,6 @@
-package com.codebridge.scalability.loadbalancer.impl;
+package com.codebridge.monitoring.scalability.loadbalancer.impl;
 
-import com.codebridge.scalability.loadbalancer.ServiceInstanceSelector;
+import com.codebridge.monitoring.scalability.loadbalancer.ServiceInstanceSelector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.web.context.request.RequestContextHolder;

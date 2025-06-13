@@ -1,4 +1,4 @@
-package com.codebridge.aidb.dto.sql;
+package com.codebridge.aidb.agent.sql;
 
 import java.io.Serializable;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.codebridge.aidb.controller;
 
-import com.codebridge.aidb.dto.NaturalLanguageQueryRequest;
-import com.codebridge.aidb.dto.NaturalLanguageQueryResponse;
+import com.codebridge.aidb.agent.NaturalLanguageQueryRequest;
+import com.codebridge.aidb.agent.NaturalLanguageQueryResponse;
 import com.codebridge.aidb.service.AIDbQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

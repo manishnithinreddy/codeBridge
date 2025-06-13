@@ -1,4 +1,4 @@
-package com.codebridge.platform.ops.events.dto;
+package com.codebridge.monitoring.platform.ops.events.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

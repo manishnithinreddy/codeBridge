@@ -1,7 +1,7 @@
-package com.codebridge.db.controller;
+package com.codebridge.aidb.db.controller;
 
-import com.codebridge.db.dto.QueryResult;
-import com.codebridge.db.service.QueryBuilderService;
+import com.codebridge.aidb.db.dto.QueryResult;
+import com.codebridge.aidb.db.service.QueryBuilderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

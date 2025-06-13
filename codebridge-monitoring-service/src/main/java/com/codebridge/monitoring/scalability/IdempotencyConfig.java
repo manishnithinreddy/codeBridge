@@ -1,9 +1,9 @@
-package com.codebridge.scalability.config;
+package com.codebridge.monitoring.scalability.config;
 
-import com.codebridge.scalability.service.IdempotencyService;
-import com.codebridge.scalability.service.impl.HazelcastIdempotencyService;
-import com.codebridge.scalability.service.impl.JdbcIdempotencyService;
-import com.codebridge.scalability.service.impl.RedisIdempotencyService;
+import com.codebridge.monitoring.scalability.service.IdempotencyService;
+import com.codebridge.monitoring.scalability.service.impl.HazelcastIdempotencyService;
+import com.codebridge.monitoring.scalability.service.impl.JdbcIdempotencyService;
+import com.codebridge.monitoring.scalability.service.impl.RedisIdempotencyService;
 import com.hazelcast.core.HazelcastInstance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

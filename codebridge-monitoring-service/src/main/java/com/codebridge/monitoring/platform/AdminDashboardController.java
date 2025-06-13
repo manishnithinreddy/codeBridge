@@ -1,8 +1,8 @@
-package com.codebridge.platform.ops.admin.controller;
+package com.codebridge.monitoring.platform.ops.admin.controller;
 
-import com.codebridge.platform.ops.admin.dto.DashboardStatsDto;
-import com.codebridge.platform.ops.admin.dto.SystemHealthDto;
-import com.codebridge.platform.ops.admin.service.AdminDashboardService;
+import com.codebridge.monitoring.platform.ops.admin.dto.DashboardStatsDto;
+import com.codebridge.monitoring.platform.ops.admin.dto.SystemHealthDto;
+import com.codebridge.monitoring.platform.ops.admin.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

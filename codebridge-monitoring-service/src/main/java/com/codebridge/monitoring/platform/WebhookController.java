@@ -1,9 +1,9 @@
-package com.codebridge.platform.ops.events.controller;
+package com.codebridge.monitoring.platform.ops.events.controller;
 
-import com.codebridge.platform.ops.events.dto.WebhookDto;
-import com.codebridge.platform.ops.events.dto.WebhookEventDto;
-import com.codebridge.platform.ops.events.dto.WebhookRequest;
-import com.codebridge.platform.ops.events.service.WebhookService;
+import com.codebridge.monitoring.platform.ops.events.dto.WebhookDto;
+import com.codebridge.monitoring.platform.ops.events.dto.WebhookEventDto;
+import com.codebridge.monitoring.platform.ops.events.dto.WebhookRequest;
+import com.codebridge.monitoring.platform.ops.events.service.WebhookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

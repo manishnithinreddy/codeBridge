@@ -1,7 +1,7 @@
 package com.codebridge.aidb.controller;
 
-import com.codebridge.aidb.dto.NaturalLanguageQueryRequest;
-import com.codebridge.aidb.dto.NaturalLanguageQueryResponse;
+import com.codebridge.aidb.agent.NaturalLanguageQueryRequest;
+import com.codebridge.aidb.agent.NaturalLanguageQueryResponse;
 import com.codebridge.aidb.service.AIDbQueryService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

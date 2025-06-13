@@ -1,7 +1,7 @@
-package com.codebridge.performance.repository;
+package com.codebridge.monitoring.performance.repository;
 
-import com.codebridge.performance.model.MetricType;
-import com.codebridge.performance.model.PerformanceMetric;
+import com.codebridge.monitoring.performance.model.MetricType;
+import com.codebridge.monitoring.performance.model.PerformanceMetric;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

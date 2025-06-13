@@ -1,6 +1,6 @@
-package com.codebridge.scalability.loadbalancer.impl;
+package com.codebridge.monitoring.scalability.loadbalancer.impl;
 
-import com.codebridge.scalability.loadbalancer.LoadBalancingStrategy;
+import com.codebridge.monitoring.scalability.loadbalancer.LoadBalancingStrategy;
 import org.springframework.cloud.client.ServiceInstance;
 
 import java.util.List;
