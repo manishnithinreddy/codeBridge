@@ -1,0 +1,180 @@
+spring:
+  application:
+    name: codebridge-server-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:codebridge_server}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8080/auth/realms/codebridge}
+          jwk-set-uri: ${OAUTH2_JWK_SET_URI:http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs}
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+  session:
+    store-type: redis
+    redis:
+      namespace: codebridge:session
+      flush-mode: on-save
+    timeout: 1800s
+  cloud:
+    discovery:
+      enabled: true
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+server:
+  port: ${SERVER_PORT:8083}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+  servlet:
+    context-path: /api/server
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    com.codebridge: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      serverService:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+        cancelRunningFuture: true
+    instances:
+      serverService:
+        baseConfig: default
+  ratelimiter:
+    configs:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+    instances:
+      serverService:
+        baseConfig: default
+        limitForPeriod: 50
+
+# Application-specific properties
+codebridge:
+  scalability:
+    load-balancing:
+      strategy: round-robin
+      sticky-sessions: true
+      health-check-interval-seconds: 30
+    auto-scaling:
+      enabled: true
+      cpu-threshold: 70
+      memory-threshold: 80
+      min-instances: 2
+      max-instances: 10
+      scale-up-cooldown-seconds: 300
+      scale-down-cooldown-seconds: 600
+      check-interval-seconds: 60
+    data-resilience:
+      replication:
+        enabled: true
+        read-from-replicas: true
+        consistency-level: QUORUM
+      backup:
+        enabled: true
+        schedule: "0 0 2 * * ?"
+        retention-days: 30
+        verify: true
+      partitioning:
+        enabled: true
+        strategy: hash
+        shard-count: 4
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-secret-key-here-change-in-production}
+      expiration: 86400
+  integration:
+    ai-db-agent:
+      url: ${AI_DB_AGENT_URL:http://localhost:8085}
+      timeout: 30000
+    session-service:
+      url: ${SESSION_SERVICE_URL:http://localhost:8084}
+      timeout: 30000
+
