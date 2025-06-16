@@ -16,14 +16,13 @@
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>CodeBridge Parent</name>
+    <n>CodeBridge Parent</n>
     <description>Parent POM for CodeBridge microservices</description>
 
     <modules>
         <module>codebridge-common</module>
         <module>codebridge-core</module>
         <module>codebridge-api-gateway</module>
-        <module>codebridge-service-discovery</module>
         <module>codebridge-security</module>
     </modules>
 
@@ -123,4 +122,3 @@
         </pluginManagement>
     </build>
 </project>
-
