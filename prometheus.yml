@@ -17,13 +17,12 @@ scrape_configs:
     static_configs:
       - targets: ['teams-service:8082']
 
-  - job_name: 'platform-ops'
-    metrics_path: '/ops/actuator/prometheus'
+  - job_name: 'monitoring-service'
+    metrics_path: '/monitoring/actuator/prometheus'
     static_configs:
-      - targets: ['platform-ops:8083']
+      - targets: ['monitoring-service:8083']
       
   - job_name: 'documentation-service'
     metrics_path: '/api/docs/actuator/prometheus'
     static_configs:
       - targets: ['documentation-service:8087']
-
