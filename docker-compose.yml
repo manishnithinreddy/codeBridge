@@ -1,87 +1,33 @@
 version: '3.8'
 
 services:
-  # Redis for session storage
-  redis:
-    image: redis:6-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # Session Service (Go implementation)
-  session-service:
+  gitlab-service:
     build:
-      context: ./session-service/go-implementation
-    ports:
-      - "8080:8080"
-    environment:
-      - SESSION_REDIS_HOST=redis
-      - SESSION_REDIS_PORT=6379
-      - SESSION_JWT_SECRET=your-jwt-secret-key-change-in-production
-      - SESSION_JWT_REFRESHSECRET=your-refresh-secret-key-change-in-production
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # DB Service (Go implementation)
-  db-service:
-    build:
-      context: ./db-service/go-implementation
+      context: ./codebridge-gitlab-service
+      dockerfile: Dockerfile
     ports:
       - "8081:8081"
     environment:
-      - DB_SESSIONSERVICE_URL=http://session-service:8080/api
-      - DB_DATABASE_DEFAULTTYPE=sqlite
-      - DB_DATABASE_SQLITE_PATH=/data/codebridge.db
-    volumes:
-      - db-data:/data
-    depends_on:
-      session-service:
-        condition: service_healthy
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
-  # AI Service (Python implementation)
-  ai-service:
+  docker-service:
     build:
-      context: ./ai-service/python-implementation
+      context: ./codebridge-docker-service
+      dockerfile: Dockerfile
     ports:
       - "8082:8082"
     environment:
-      - SESSION_SERVICE_URL=http://session-service:8080/api
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-    depends_on:
-      session-service:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - codebridge-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
-volumes:
-  redis-data:
-  db-data:
+networks:
+  codebridge-network:
+    driver: bridge
 
