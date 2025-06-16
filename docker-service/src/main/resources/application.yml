@@ -1,0 +1,29 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /api/docker
+
+spring:
+  application:
+    name: docker-service
+
+docker:
+  api:
+    host: unix:///var/run/docker.sock
+    connect-timeout: 5000
+    read-timeout: 30000
+    write-timeout: 10000
+  auth:
+    token-expiration: 86400000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.codebridge.docker: DEBUG
+    org.springframework.web: INFO
+

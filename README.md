@@ -1,126 +1,167 @@
-# CodeBridge
+# CodeBridge - GitLab and Docker Services
 
-CodeBridge is a scalable, multi-language platform designed to provide a comprehensive set of services for software development and integration.
+This project provides microservices for integrating with GitLab and Docker, allowing for seamless management of CI/CD pipelines and containerized applications.
 
-## Architecture Overview
+## Services
 
-CodeBridge follows a microservices architecture with services implemented in different programming languages based on their specific requirements and strengths.
+### GitLab Service
 
-### Directory Structure
+The GitLab Service provides a RESTful API for interacting with GitLab, focusing on:
 
-```
-codebridge/
-├── teams-service/           # Teams and collaboration service
-├── api-test-service/        # API testing and validation service
-├── gitlab-service/          # GitLab integration service
-├── docker-service/          # Docker management service
-├── server-service/          # Server management service
-├── session-service/         # Authentication and session management
-│   ├── java-implementation/ # Java implementation
-│   └── go-implementation/   # Go implementation
-├── db-service/              # Database management service
-│   ├── java-implementation/ # Java implementation
-│   └── go-implementation/   # Go implementation
-└── ai-service/              # AI and machine learning service
-    └── python-implementation/ # Python implementation
-```
+- Authentication with GitLab using personal access tokens
+- Project management
+- Pipeline management
+- Job management and log retrieval
 
-### Core Services
+### Docker Service
 
-#### Session Service (Go Implementation)
+The Docker Service provides a RESTful API for interacting with Docker, focusing on:
 
-The Session Service handles user authentication, session management, and token handling. It provides:
+- Authentication with Docker Registry
+- Container management (create, start, stop, remove)
+- Container log retrieval with filtering options
+- Image management (pull, remove, build)
 
-- User registration and authentication
-- JWT-based token generation and validation
-- Session management
-- Refresh token handling
-- Redis-backed storage for scalability
-- Secure password hashing with bcrypt
+## Technology Stack
 
-#### DB Service (Go Implementation)
-
-The DB Service manages database connections, query execution, and schema information retrieval. It supports:
-
-- Multiple database types (MySQL, PostgreSQL, SQLite)
-- Connection pooling and management
-- Query execution with parameter binding
-- Batch query execution
-- Transaction support
-- Schema information retrieval
-
-#### AI Service (Python Implementation)
-
-The AI Service provides artificial intelligence capabilities such as text completion and embeddings. It features:
-
-- Text completion using various models
-- Text embedding generation
-- Model information retrieval
-- Support for multiple model providers (currently OpenAI)
-
-### Communication Between Services
-
-Services communicate with each other via RESTful APIs. Authentication between services is handled using JWT tokens validated by the Session Service.
+- Java 17
+- Spring Boot 3.2.0
+- Spring Cloud 2023.0.0
+- Spring Security with JWT authentication
+- Docker Java Client 3.3.3
+- Maven
 
 ## Getting Started
 
 ### Prerequisites
 
-- Go 1.20 or higher (for Go services)
-- Python 3.10 or higher (for Python services)
-- Redis 6.0 or higher (for Session Service)
-- MySQL, PostgreSQL, or SQLite (for DB Service)
-- OpenAI API key (for AI Service)
+- Java 17 or higher
+- Maven 3.6 or higher
+- Docker (for Docker Service)
+- GitLab account (for GitLab Service)
 
-### Building and Running
-
-Each service can be built and run independently. See the README.md file in each service directory for specific instructions.
-
-#### Using Docker
-
-Each service includes a Dockerfile for containerized deployment:
+### Building the Services
 
 ```bash
-# Build and run Session Service
-cd session-service/go-implementation
-docker build -t codebridge/session-service-go .
-docker run -p 8080:8080 codebridge/session-service-go
+# Build GitLab Service
+cd gitlab-service
+mvn clean package
 
-# Build and run DB Service
-cd db-service/go-implementation
-docker build -t codebridge/db-service-go .
-docker run -p 8081:8081 codebridge/db-service-go
-
-# Build and run AI Service
-cd ai-service/python-implementation
-docker build -t codebridge/ai-service-python .
-docker run -p 8082:8082 -e OPENAI_API_KEY=your-api-key codebridge/ai-service-python
+# Build Docker Service
+cd ../docker-service
+mvn clean package
 ```
 
-## Scalability Considerations
+### Running the Services
 
-CodeBridge is designed for horizontal scalability:
+```bash
+# Run GitLab Service
+cd gitlab-service
+java -jar target/gitlab-service-0.0.1-SNAPSHOT.jar
 
-- **Stateless Design**: Services maintain no local state
-- **Distributed Storage**: Redis for session data, databases for persistent storage
-- **Connection Pooling**: Efficient resource management
-- **Graceful Shutdown**: Proper handling of shutdown signals
-- **Health Checks**: Monitoring endpoints for load balancers
+# Run Docker Service
+cd ../docker-service
+java -jar target/docker-service-0.0.1-SNAPSHOT.jar
+```
 
-## Security Features
+## API Documentation
 
-- **JWT Authentication**: Token-based authentication across services
-- **Password Hashing**: Secure password storage with bcrypt
-- **Token Validation**: Comprehensive token validation
-- **Parameter Binding**: Protection against SQL injection
-- **CORS Protection**: Configurable CORS headers
+### GitLab Service API
 
-## Future Enhancements
+- **Base URL**: `/api/gitlab`
 
-- Implement additional services (Teams, API Test, GitLab, Docker, Server)
-- Add Java implementations for Session and DB services
-- Implement service discovery and registration
-- Add metrics collection and monitoring
-- Implement CI/CD pipelines
-- Add comprehensive documentation
+#### Authentication
+
+- `POST /auth/login`: Authenticate with GitLab
+
+#### Projects
+
+- `GET /projects`: Get all accessible projects
+- `GET /projects/{projectId}`: Get a specific project
+
+#### Pipelines
+
+- `GET /projects/{projectId}/pipelines`: Get all pipelines for a project
+- `GET /projects/{projectId}/pipelines/{pipelineId}`: Get a specific pipeline
+- `GET /projects/{projectId}/pipelines/{pipelineId}/jobs`: Get jobs for a pipeline
+
+#### Jobs
+
+- `GET /projects/{projectId}/jobs`: Get all jobs for a project
+- `GET /projects/{projectId}/jobs/{jobId}`: Get a specific job
+- `GET /projects/{projectId}/jobs/{jobId}/logs`: Get logs for a job
+
+### Docker Service API
+
+- **Base URL**: `/api/docker`
+
+#### Authentication
+
+- `POST /auth/login`: Authenticate with Docker Registry
+
+#### Containers
+
+- `GET /containers`: Get all containers
+- `GET /containers/{containerId}`: Get a specific container
+- `POST /containers`: Create a new container
+- `POST /containers/{containerId}/start`: Start a container
+- `POST /containers/{containerId}/stop`: Stop a container
+- `DELETE /containers/{containerId}`: Remove a container
+- `GET /containers/{containerId}/logs`: Get logs for a container
+
+#### Images
+
+- `GET /images`: Get all images
+- `GET /images/{imageId}`: Get a specific image
+- `POST /images/pull`: Pull an image
+- `DELETE /images/{imageId}`: Remove an image
+- `POST /images/build`: Build an image
+
+## Security
+
+Both services implement JWT-based authentication for secure API access. The authentication flow is as follows:
+
+1. Client authenticates with the service using credentials or tokens
+2. Service validates credentials and returns a JWT token
+3. Client includes the JWT token in the Authorization header for subsequent requests
+4. Service validates the token for each request
+
+## Configuration
+
+Configuration for both services is managed through `application.yml` files:
+
+- GitLab Service: `gitlab-service/src/main/resources/application.yml`
+- Docker Service: `docker-service/src/main/resources/application.yml`
+
+Key configuration properties:
+
+### GitLab Service
+
+```yaml
+gitlab:
+  api:
+    base-url: https://gitlab.com/api/v4
+    connect-timeout: 5000
+    read-timeout: 30000
+    write-timeout: 10000
+  auth:
+    token-expiration: 86400000
+```
+
+### Docker Service
+
+```yaml
+docker:
+  api:
+    host: unix:///var/run/docker.sock
+    connect-timeout: 5000
+    read-timeout: 30000
+    write-timeout: 10000
+  auth:
+    token-expiration: 86400000
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
