@@ -1,0 +1,253 @@
+syntax = "proto3";
+
+package com.codebridge.featureflag.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.codebridge.featureflag.grpc";
+option java_outer_classname = "FeatureFlagProto";
+option go_package = "github.com/codebridge/featureflag/grpc";
+
+// Feature Flag Service API
+service FeatureFlagService {
+  // Get a flag by key
+  rpc GetFlag(FlagRequest) returns (FlagResponse) {}
+  
+  // Get multiple flags by keys
+  rpc GetFlags(MultiFlagRequest) returns (MultiFlagResponse) {}
+  
+  // Evaluate a flag with context
+  rpc EvaluateFlag(FlagEvaluationRequest) returns (FlagEvaluationResponse) {}
+  
+  // Set a flag
+  rpc SetFlag(SetFlagRequest) returns (SetFlagResponse) {}
+  
+  // Stream flag updates
+  rpc StreamFlagUpdates(FlagStreamRequest) returns (stream FlagUpdateEvent) {}
+  
+  // List flags
+  rpc ListFlags(ListFlagsRequest) returns (ListFlagsResponse) {}
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
+}
+
+// Request to get a flag
+message FlagRequest {
+  string flag_key = 1;
+  string namespace = 2;
+}
+
+// Response with flag details
+message FlagResponse {
+  string flag_key = 1;
+  bool exists = 2;
+  FlagMetadata metadata = 3;
+  
+  // Value (one of)
+  oneof value {
+    bool bool_value = 4;
+    string string_value = 5;
+    int64 int_value = 6;
+    double double_value = 7;
+    string json_value = 8;
+  }
+}
+
+// Flag metadata
+message FlagMetadata {
+  string description = 1;
+  int64 created_at = 2;
+  int64 updated_at = 3;
+  string created_by = 4;
+  string updated_by = 5;
+  string version = 6;
+  map<string, string> tags = 7;
+}
+
+// Request to get multiple flags
+message MultiFlagRequest {
+  repeated string flag_keys = 1;
+  string namespace = 2;
+}
+
+// Response with multiple flags
+message MultiFlagResponse {
+  repeated FlagResponse flags = 1;
+}
+
+// Evaluation context
+message EvaluationContext {
+  string user_id = 1;
+  string session_id = 2;
+  map<string, string> attributes = 3;
+  map<string, double> numeric_attributes = 4;
+  map<string, bool> boolean_attributes = 5;
+  ServiceContext service_context = 6;
+}
+
+// Service context
+message ServiceContext {
+  string service_name = 1;
+  string service_version = 2;
+  string instance_id = 3;
+  string environment = 4;
+  map<string, string> metrics = 5;
+}
+
+// Request to evaluate a flag
+message FlagEvaluationRequest {
+  string flag_key = 1;
+  string namespace = 2;
+  EvaluationContext context = 3;
+}
+
+// Response with evaluation result
+message FlagEvaluationResponse {
+  string flag_key = 1;
+  string variation_id = 2;
+  string rule_id = 3;
+  EvaluationReason reason = 4;
+  
+  // Value (one of)
+  oneof value {
+    bool bool_value = 5;
+    string string_value = 6;
+    int64 int_value = 7;
+    double double_value = 8;
+    string json_value = 9;
+  }
+}
+
+// Evaluation reason
+message EvaluationReason {
+  ReasonType type = 1;
+  string rule_id = 2;
+  string description = 3;
+  string error_message = 4;
+}
+
+// Reason types
+enum ReasonType {
+  DEFAULT = 0;
+  RULE_MATCH = 1;
+  PREREQUISITE_FAILED = 2;
+  ERROR = 3;
+  DISABLED = 4;
+  FALLTHROUGH = 5;
+  TARGET_MATCH = 6;
+}
+
+// Request to set a flag
+message SetFlagRequest {
+  string flag_key = 1;
+  string namespace = 2;
+  string description = 3;
+  map<string, string> tags = 4;
+  bool temporary = 5;
+  int64 expiration_time = 6;
+  string version = 7;
+  
+  // Value (one of)
+  oneof value {
+    bool bool_value = 8;
+    string string_value = 9;
+    int64 int_value = 10;
+    double double_value = 11;
+    string json_value = 12;
+  }
+}
+
+// Response to setting a flag
+message SetFlagResponse {
+  bool success = 1;
+  string message = 2;
+  string version = 3;
+}
+
+// Request to stream flag updates
+message FlagStreamRequest {
+  repeated string flag_keys = 1;
+  string namespace = 2;
+}
+
+// Flag update event
+message FlagUpdateEvent {
+  EventType event_type = 1;
+  string flag_key = 2;
+  string namespace = 3;
+  string version = 4;
+  int64 timestamp = 5;
+  
+  // Value (one of)
+  oneof value {
+    bool bool_value = 6;
+    string string_value = 7;
+    int64 int_value = 8;
+    double double_value = 9;
+    string json_value = 10;
+  }
+}
+
+// Event types
+enum EventType {
+  CREATED = 0;
+  UPDATED = 1;
+  DELETED = 2;
+}
+
+// Request to list flags
+message ListFlagsRequest {
+  string namespace = 1;
+  string prefix = 2;
+  string tag_filter = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+// Response with flag list
+message ListFlagsResponse {
+  repeated FlagSummary flags = 1;
+  int32 total_count = 2;
+  string next_page_token = 3;
+}
+
+// Flag summary
+message FlagSummary {
+  string flag_key = 1;
+  string namespace = 2;
+  string description = 3;
+  ValueType value_type = 4;
+  int64 updated_at = 5;
+  bool temporary = 6;
+  int64 expiration_time = 7;
+  map<string, string> tags = 8;
+}
+
+// Value types
+enum ValueType {
+  BOOLEAN = 0;
+  STRING = 1;
+  INTEGER = 2;
+  DOUBLE = 3;
+  JSON = 4;
+}
+
+// Health check request
+message HealthCheckRequest {
+  // Empty
+}
+
+// Health check response
+message HealthCheckResponse {
+  Status status = 1;
+  string version = 2;
+  map<string, string> details = 3;
+  
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+}
+

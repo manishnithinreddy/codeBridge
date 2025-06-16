@@ -1,0 +1,309 @@
+syntax = "proto3";
+
+package com.codebridge.server.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.codebridge.server.grpc";
+option java_outer_classname = "ServerServiceProto";
+option go_package = "github.com/codebridge/server/grpc";
+
+// Server Service API
+service ServerService {
+  // Register a server
+  rpc RegisterServer(RegisterServerRequest) returns (ServerResponse) {}
+  
+  // Get server details
+  rpc GetServer(ServerRequest) returns (ServerResponse) {}
+  
+  // List servers
+  rpc ListServers(ListServersRequest) returns (ListServersResponse) {}
+  
+  // Update server
+  rpc UpdateServer(UpdateServerRequest) returns (ServerResponse) {}
+  
+  // Delete server
+  rpc DeleteServer(ServerRequest) returns (DeleteServerResponse) {}
+  
+  // Test connection to server
+  rpc TestConnection(TestConnectionRequest) returns (TestConnectionResponse) {}
+  
+  // Get server metrics
+  rpc GetServerMetrics(ServerMetricsRequest) returns (ServerMetricsResponse) {}
+  
+  // Request session
+  rpc RequestSession(SessionRequest) returns (SessionResponse) {}
+  
+  // List sessions
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {}
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
+}
+
+// Request to register a server
+message RegisterServerRequest {
+  string name = 1;
+  string hostname = 2;
+  int32 port = 3;
+  ServerType server_type = 4;
+  AuthConfig auth_config = 5;
+  map<string, string> metadata = 6;
+  string owner_id = 7;
+  repeated string tags = 8;
+}
+
+// Server types
+enum ServerType {
+  LINUX = 0;
+  WINDOWS = 1;
+  DATABASE = 2;
+  CUSTOM = 3;
+}
+
+// Authentication configuration
+message AuthConfig {
+  AuthType auth_type = 1;
+  string username = 2;
+  string password = 3;
+  string key_id = 4;
+  string key_passphrase = 5;
+  string certificate_id = 6;
+  bool use_agent = 7;
+}
+
+// Authentication types
+enum AuthType {
+  PASSWORD = 0;
+  PUBLIC_KEY = 1;
+  CERTIFICATE = 2;
+  KERBEROS = 3;
+  OAUTH = 4;
+}
+
+// Request for a specific server
+message ServerRequest {
+  string server_id = 1;
+}
+
+// Response with server details
+message ServerResponse {
+  string server_id = 1;
+  string name = 2;
+  string hostname = 3;
+  int32 port = 4;
+  ServerType server_type = 5;
+  ServerStatus status = 6;
+  int64 created_at = 7;
+  int64 updated_at = 8;
+  string owner_id = 9;
+  map<string, string> metadata = 10;
+  repeated string tags = 11;
+  ConnectionInfo connection_info = 12;
+}
+
+// Server status
+enum ServerStatus {
+  UNKNOWN = 0;
+  ONLINE = 1;
+  OFFLINE = 2;
+  MAINTENANCE = 3;
+  ERROR = 4;
+}
+
+// Connection information
+message ConnectionInfo {
+  int32 active_connections = 1;
+  int64 last_connection_time = 2;
+  int32 failed_connection_attempts = 3;
+  string last_error = 4;
+  int64 uptime_seconds = 5;
+}
+
+// Request to list servers
+message ListServersRequest {
+  string owner_id = 1;
+  ServerType server_type = 2;
+  ServerStatus status = 3;
+  repeated string tags = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+// Response with server list
+message ListServersResponse {
+  repeated ServerResponse servers = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to update a server
+message UpdateServerRequest {
+  string server_id = 1;
+  string name = 2;
+  string hostname = 3;
+  int32 port = 4;
+  AuthConfig auth_config = 5;
+  map<string, string> metadata = 6;
+  repeated string tags = 7;
+  ServerStatus status = 8;
+}
+
+// Response to deleting a server
+message DeleteServerResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request to test connection to a server
+message TestConnectionRequest {
+  string server_id = 1;
+  AuthConfig auth_config = 2;
+  int32 timeout_seconds = 3;
+}
+
+// Response to testing a connection
+message TestConnectionResponse {
+  bool success = 1;
+  string message = 2;
+  int64 connection_time_ms = 3;
+  ServerInfo server_info = 4;
+}
+
+// Server information
+message ServerInfo {
+  string os_type = 1;
+  string os_version = 2;
+  string hostname = 3;
+  int32 cpu_cores = 4;
+  int64 memory_bytes = 5;
+  int64 disk_bytes = 6;
+  map<string, string> environment = 7;
+}
+
+// Request for server metrics
+message ServerMetricsRequest {
+  string server_id = 1;
+  repeated MetricType metrics = 2;
+  int64 start_time = 3;
+  int64 end_time = 4;
+  int32 resolution_seconds = 5;
+}
+
+// Metric types
+enum MetricType {
+  CPU_USAGE = 0;
+  MEMORY_USAGE = 1;
+  DISK_USAGE = 2;
+  NETWORK_IN = 3;
+  NETWORK_OUT = 4;
+  CONNECTIONS = 5;
+  LOAD_AVERAGE = 6;
+}
+
+// Response with server metrics
+message ServerMetricsResponse {
+  string server_id = 1;
+  map<string, MetricSeries> metrics = 2;
+}
+
+// Metric series
+message MetricSeries {
+  MetricType metric_type = 1;
+  repeated MetricPoint points = 2;
+  string unit = 3;
+}
+
+// Metric point
+message MetricPoint {
+  int64 timestamp = 1;
+  double value = 2;
+}
+
+// Request for a session
+message SessionRequest {
+  string server_id = 1;
+  string user_id = 2;
+  SessionType session_type = 3;
+  SessionOptions options = 4;
+}
+
+// Session types
+enum SessionType {
+  SSH = 0;
+  SFTP = 1;
+  TERMINAL = 2;
+  DATABASE = 3;
+}
+
+// Session options
+message SessionOptions {
+  string username = 1;
+  AuthType auth_type = 2;
+  string key_id = 3;
+  string password = 4;
+  string initial_directory = 5;
+  int32 terminal_width = 6;
+  int32 terminal_height = 7;
+  int32 timeout_seconds = 8;
+  bool record_session = 9;
+  map<string, string> environment_variables = 10;
+}
+
+// Response with session details
+message SessionResponse {
+  string session_id = 1;
+  string server_id = 2;
+  string user_id = 3;
+  SessionType session_type = 4;
+  SessionState state = 5;
+  string connection_url = 6;
+  map<string, string> connection_params = 7;
+  int64 created_at = 8;
+  int64 expires_at = 9;
+}
+
+// Session states
+enum SessionState {
+  PENDING = 0;
+  ACTIVE = 1;
+  DISCONNECTED = 2;
+  EXPIRED = 3;
+  ERROR = 4;
+}
+
+// Request to list sessions
+message ListSessionsRequest {
+  string server_id = 1;
+  string user_id = 2;
+  SessionType session_type = 3;
+  SessionState state = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+// Response with session list
+message ListSessionsResponse {
+  repeated SessionResponse sessions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Health check request
+message HealthCheckRequest {
+  // Empty
+}
+
+// Health check response
+message HealthCheckResponse {
+  Status status = 1;
+  string version = 2;
+  map<string, string> details = 3;
+  
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+}
+

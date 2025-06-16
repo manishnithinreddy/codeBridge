@@ -1,0 +1,318 @@
+syntax = "proto3";
+
+package com.codebridge.dbproxy.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.codebridge.dbproxy.grpc";
+option java_outer_classname = "DbProxyProto";
+option go_package = "github.com/codebridge/dbproxy/grpc";
+
+// DB-Proxy Service API
+service DbProxyService {
+  // Execute a query
+  rpc ExecuteQuery(QueryRequest) returns (QueryResponse) {}
+  
+  // Stream query results
+  rpc StreamQuery(QueryRequest) returns (stream ResultBatch) {}
+  
+  // Execute a batch of queries
+  rpc ExecuteBatch(BatchQueryRequest) returns (BatchQueryResponse) {}
+  
+  // Begin a transaction
+  rpc BeginTransaction(TransactionRequest) returns (TransactionResponse) {}
+  
+  // Commit a transaction
+  rpc CommitTransaction(TransactionRequest) returns (TransactionResponse) {}
+  
+  // Rollback a transaction
+  rpc RollbackTransaction(TransactionRequest) returns (TransactionResponse) {}
+  
+  // Get connection status
+  rpc GetConnectionStatus(ConnectionStatusRequest) returns (ConnectionStatusResponse) {}
+  
+  // Get database metadata
+  rpc GetDatabaseMetadata(MetadataRequest) returns (MetadataResponse) {}
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
+}
+
+// Request to execute a query
+message QueryRequest {
+  string connection_id = 1;
+  string query = 2;
+  repeated Parameter parameters = 3;
+  string transaction_id = 4;
+  QueryOptions options = 5;
+}
+
+// Query parameter
+message Parameter {
+  string name = 1;
+  DataType type = 2;
+  
+  oneof value {
+    string string_value = 3;
+    int64 int_value = 4;
+    double double_value = 5;
+    bool bool_value = 6;
+    bytes bytes_value = 7;
+    int64 timestamp_value = 8;
+    string json_value = 9;
+    NullValue null_value = 10;
+  }
+}
+
+// Data types
+enum DataType {
+  STRING = 0;
+  INTEGER = 1;
+  FLOAT = 2;
+  BOOLEAN = 3;
+  BYTES = 4;
+  TIMESTAMP = 5;
+  JSON = 6;
+  NULL = 7;
+}
+
+// Null value
+enum NullValue {
+  NULL_VALUE = 0;
+}
+
+// Query options
+message QueryOptions {
+  int32 timeout_seconds = 1;
+  int32 max_rows = 2;
+  bool include_metadata = 3;
+  bool read_only = 4;
+  FetchSize fetch_size = 5;
+}
+
+// Fetch size
+enum FetchSize {
+  DEFAULT = 0;
+  SMALL = 1;
+  MEDIUM = 2;
+  LARGE = 3;
+  CUSTOM = 4;
+}
+
+// Response with query results
+message QueryResponse {
+  ResultSet result_set = 1;
+  QueryMetadata metadata = 2;
+}
+
+// Result set
+message ResultSet {
+  repeated ColumnInfo columns = 1;
+  repeated Row rows = 2;
+  int32 total_rows = 3;
+  bool has_more = 4;
+}
+
+// Column information
+message ColumnInfo {
+  string name = 1;
+  string label = 2;
+  DataType type = 3;
+  string table = 4;
+  bool nullable = 5;
+  int32 precision = 6;
+  int32 scale = 7;
+}
+
+// Row of data
+message Row {
+  repeated Value values = 1;
+}
+
+// Value
+message Value {
+  oneof value {
+    string string_value = 1;
+    int64 int_value = 2;
+    double double_value = 3;
+    bool bool_value = 4;
+    bytes bytes_value = 5;
+    int64 timestamp_value = 6;
+    string json_value = 7;
+    NullValue null_value = 8;
+  }
+}
+
+// Query metadata
+message QueryMetadata {
+  int64 execution_time_ms = 1;
+  int32 affected_rows = 2;
+  string query_type = 3;
+  string warning = 4;
+  string info = 5;
+}
+
+// Result batch for streaming
+message ResultBatch {
+  repeated ColumnInfo columns = 1;
+  repeated Row rows = 2;
+  int32 batch_index = 3;
+  bool has_more = 4;
+  QueryMetadata metadata = 5;
+}
+
+// Request to execute a batch of queries
+message BatchQueryRequest {
+  string connection_id = 1;
+  repeated BatchQuery queries = 2;
+  string transaction_id = 3;
+  BatchOptions options = 4;
+}
+
+// Batch query
+message BatchQuery {
+  string query = 1;
+  repeated Parameter parameters = 2;
+}
+
+// Batch options
+message BatchOptions {
+  int32 timeout_seconds = 1;
+  bool continue_on_error = 2;
+  bool return_results = 3;
+}
+
+// Response with batch results
+message BatchQueryResponse {
+  repeated BatchResult results = 1;
+  int32 successful_queries = 2;
+  int32 failed_queries = 3;
+  int64 total_execution_time_ms = 4;
+}
+
+// Batch result
+message BatchResult {
+  int32 index = 1;
+  bool success = 2;
+  ResultSet result_set = 3;
+  QueryMetadata metadata = 4;
+  string error_message = 5;
+}
+
+// Request to begin, commit, or rollback a transaction
+message TransactionRequest {
+  string connection_id = 1;
+  string transaction_id = 2;
+  TransactionOptions options = 3;
+}
+
+// Transaction options
+message TransactionOptions {
+  IsolationLevel isolation_level = 1;
+  bool read_only = 2;
+  int32 timeout_seconds = 3;
+}
+
+// Isolation levels
+enum IsolationLevel {
+  DEFAULT = 0;
+  READ_UNCOMMITTED = 1;
+  READ_COMMITTED = 2;
+  REPEATABLE_READ = 3;
+  SERIALIZABLE = 4;
+}
+
+// Response to transaction operations
+message TransactionResponse {
+  bool success = 1;
+  string transaction_id = 2;
+  string message = 3;
+}
+
+// Request for connection status
+message ConnectionStatusRequest {
+  string connection_id = 1;
+}
+
+// Response with connection status
+message ConnectionStatusResponse {
+  string connection_id = 1;
+  ConnectionState state = 2;
+  string database_type = 3;
+  string database_version = 4;
+  string url = 5;
+  string username = 6;
+  int64 connected_since = 7;
+  int32 active_transactions = 8;
+  ConnectionStats stats = 9;
+}
+
+// Connection states
+enum ConnectionState {
+  CONNECTED = 0;
+  DISCONNECTED = 1;
+  BUSY = 2;
+  ERROR = 3;
+}
+
+// Connection statistics
+message ConnectionStats {
+  int32 queries_executed = 1;
+  int64 rows_fetched = 2;
+  int64 rows_modified = 3;
+  int64 total_execution_time_ms = 4;
+  int32 active_queries = 5;
+  int32 waiting_queries = 6;
+}
+
+// Request for database metadata
+message MetadataRequest {
+  string connection_id = 1;
+  string catalog = 2;
+  string schema_pattern = 3;
+  string table_pattern = 4;
+  MetadataType type = 5;
+}
+
+// Metadata types
+enum MetadataType {
+  CATALOGS = 0;
+  SCHEMAS = 1;
+  TABLES = 2;
+  COLUMNS = 3;
+  PRIMARY_KEYS = 4;
+  FOREIGN_KEYS = 5;
+  INDEXES = 6;
+  PROCEDURES = 7;
+  FUNCTIONS = 8;
+}
+
+// Response with database metadata
+message MetadataResponse {
+  repeated MetadataObject objects = 1;
+}
+
+// Metadata object
+message MetadataObject {
+  MetadataType type = 1;
+  map<string, string> attributes = 2;
+}
+
+// Health check request
+message HealthCheckRequest {
+  // Empty
+}
+
+// Health check response
+message HealthCheckResponse {
+  Status status = 1;
+  string version = 2;
+  map<string, string> details = 3;
+  
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+}
+
