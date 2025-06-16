@@ -1,0 +1,16 @@
+package com.codebridge.gitlab.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+@Data
+@Configuration
+@ConfigurationProperties(prefix = "gitlab.api")
+public class GitLabApiConfig {
+    private String baseUrl;
+    private int connectTimeout;
+    private int readTimeout;
+    private int writeTimeout;
+}
+
