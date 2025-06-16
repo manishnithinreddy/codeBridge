@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.codebridge</groupId>
-    <artifactId>codebridge-scalability-ha</artifactId>
+    <artifactId>codebridge-monitoring-service</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>CodeBridge Scalability and High Availability</name>
-    <description>Scalability and High Availability components for the CodeBridge platform</description>
+    <name>CodeBridge Monitoring Service</name>
+    <description>Monitoring, Scalability and High Availability components for the CodeBridge platform</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -222,4 +222,3 @@
         </plugins>
     </build>
 </project>
-

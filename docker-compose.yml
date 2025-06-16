@@ -42,12 +42,12 @@ services:
       - eureka-server
       - identity-platform
 
-  # Platform Operations
-  platform-ops:
+  # Monitoring Service
+  monitoring-service:
     build:
-      context: ./codebridge-platform-ops
+      context: ./codebridge-monitoring-service
       dockerfile: Dockerfile
-    container_name: platform-ops
+    container_name: monitoring-service
     ports:
       - "8083:8083"
     environment:
@@ -105,7 +105,7 @@ services:
     depends_on:
       - identity-platform
       - teams-service
-      - platform-ops
+      - monitoring-service
       - documentation-service
 
   # Grafana for visualization
@@ -125,4 +125,3 @@ volumes:
   grafana-storage:
   postgres-data:
   documentation-storage:
-
