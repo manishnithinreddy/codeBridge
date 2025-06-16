@@ -1,0 +1,34 @@
+server:
+  port: 8081
+  readTimeout: 10s
+  writeTimeout: 10s
+  idleTimeout: 60s
+
+database:
+  defaultType: sqlite  # mysql, postgres, sqlite
+  maxOpenConns: 10
+  maxIdleConns: 5
+  connMaxLife: 5m
+  
+  mysql:
+    host: localhost
+    port: 3306
+    user: root
+    password: ""
+    dbName: codebridge
+    params: "parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
+  
+  postgres:
+    host: localhost
+    port: 5432
+    user: postgres
+    password: ""
+    dbName: codebridge
+    sslMode: disable
+  
+  sqlite:
+    path: codebridge.db
+
+sessionService:
+  url: http://localhost:8080/api
+
