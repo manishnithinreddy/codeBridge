@@ -1,0 +1,24 @@
+server:
+  port: 0
+  servlet:
+    context-path: /api/docker
+
+spring:
+  application:
+    name: codebridge-docker-service
+
+docker:
+  api:
+    host: unix:///var/run/docker.sock
+    connect-timeout: 1000
+    read-timeout: 5000
+    write-timeout: 2000
+  auth:
+    token-expiration: 86400000
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework.web: INFO
+
