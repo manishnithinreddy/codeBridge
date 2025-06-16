@@ -1,237 +1,126 @@
-# CodeBridge Scalability and High Availability Module
+# CodeBridge
 
-This module implements Phase 8 of the CodeBridge project, focusing on Scalability and High Availability features.
+CodeBridge is a scalable, multi-language platform designed to provide a comprehensive set of services for software development and integration.
 
-## Features
+## Architecture Overview
 
-### Horizontal Scaling
+CodeBridge follows a microservices architecture with services implemented in different programming languages based on their specific requirements and strengths.
 
-- **Load Balancing**: Multiple strategies including Round Robin, Least Connections, Weighted, and IP Hash
-- **Auto-Scaling**: Metric-based scaling decisions with configurable thresholds and cooldown periods
-- **Session Management**: Distributed session support with Redis, Hazelcast, and JDBC backends
-
-### Data Resilience
-
-- **Replication**: Data replication with configurable consistency levels (ONE, QUORUM, ALL)
-- **Backup and Recovery**: Scheduled backups with verification and point-in-time recovery
-- **Data Partitioning**: Horizontal data sharding with support for hash, range, and list partitioning strategies
-
-### High Availability
-
-- **Idempotency Support**: Ensures operations are only executed once, even if requests are retried
-- **Circuit Breakers**: Prevents cascading failures by failing fast when dependencies are unavailable
-- **Rate Limiting**: Protects services from being overwhelmed by too many requests
-
-## Configuration
-
-The module is highly configurable through the `application.yml` file and environment variables:
-
-### Session Configuration
-
-```yaml
-codebridge:
-  scalability:
-    session:
-      store-type: redis  # Options: redis, hazelcast, jdbc
-      cookie:
-        secure: true
-        http-only: true
-        same-site: lax
-        max-age: 1800
-```
-
-### Load Balancing Configuration
-
-```yaml
-codebridge:
-  scalability:
-    load-balancing:
-      strategy: round-robin  # Options: round-robin, least-connections, weighted, ip-hash
-      sticky-sessions: true
-      health-check-interval-seconds: 30
-```
-
-### Auto-Scaling Configuration
-
-```yaml
-codebridge:
-  scalability:
-    auto-scaling:
-      enabled: true
-      cpu-threshold: 70
-      memory-threshold: 80
-      min-instances: 2
-      max-instances: 10
-      scale-up-cooldown-seconds: 300
-      scale-down-cooldown-seconds: 600
-```
-
-### Data Resilience Configuration
-
-```yaml
-codebridge:
-  scalability:
-    data-resilience:
-      replication:
-        enabled: true
-        read-from-replicas: true
-        consistency-level: QUORUM  # Options: ONE, QUORUM, ALL
-      backup:
-        enabled: true
-        schedule: "0 0 2 * * ?"  # Cron expression
-        retention-days: 30
-        verify: true
-      partitioning:
-        enabled: true
-        strategy: hash  # Options: hash, range, list
-        shard-count: 4
-```
-
-### Idempotency Configuration
-
-```yaml
-codebridge:
-  scalability:
-    idempotency:
-      enabled: true
-      header-name: X-Idempotency-Key
-      storage-type: redis  # Options: redis, hazelcast, jdbc
-      expiration-hours: 24
-```
-
-## Architecture
-
-The module is designed with the following components:
-
-1. **Session Management**: Configurable session store with support for multiple backends
-2. **Load Balancing**: Client-side load balancing with health checking and multiple strategies
-3. **Auto-Scaling**: Metric-based scaling decisions with configurable thresholds
-4. **Data Resilience**: Replication, backup, and partitioning services
-5. **Idempotency**: Filter and service for ensuring idempotent operations
-
-## Usage
-
-### Session Management
-
-The module automatically configures session management based on the configured store type:
-
-```java
-@Controller
-public class UserController {
-    
-    @GetMapping("/user")
-    public String getUserInfo(HttpSession session) {
-        // Session is automatically distributed
-        User user = (User) session.getAttribute("user");
-        // ...
-    }
-}
-```
-
-### Load Balancing
-
-The module provides a `ServiceInstanceSelector` for client-side load balancing:
-
-```java
-@Service
-public class UserService {
-    
-    private final ServiceInstanceSelector serviceInstanceSelector;
-    private final RestTemplate restTemplate;
-    
-    @Autowired
-    public UserService(ServiceInstanceSelector serviceInstanceSelector, RestTemplate restTemplate) {
-        this.serviceInstanceSelector = serviceInstanceSelector;
-        this.restTemplate = restTemplate;
-    }
-    
-    public User getUser(String userId) {
-        Optional<ServiceInstance> instance = serviceInstanceSelector.selectInstance("user-service", userId);
-        
-        if (instance.isPresent()) {
-            String url = instance.get().getUri() + "/users/" + userId;
-            return restTemplate.getForObject(url, User.class);
-        }
-        
-        throw new ServiceUnavailableException("No instances available for user-service");
-    }
-}
-```
-
-### Idempotency
-
-The module automatically handles idempotent requests when the idempotency header is present:
+### Directory Structure
 
 ```
-POST /api/orders
-X-Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
-Content-Type: application/json
-
-{
-  "productId": "product-123",
-  "quantity": 1
-}
+codebridge/
+├── teams-service/           # Teams and collaboration service
+├── api-test-service/        # API testing and validation service
+├── gitlab-service/          # GitLab integration service
+├── docker-service/          # Docker management service
+├── server-service/          # Server management service
+├── session-service/         # Authentication and session management
+│   ├── java-implementation/ # Java implementation
+│   └── go-implementation/   # Go implementation
+├── db-service/              # Database management service
+│   ├── java-implementation/ # Java implementation
+│   └── go-implementation/   # Go implementation
+└── ai-service/              # AI and machine learning service
+    └── python-implementation/ # Python implementation
 ```
 
-If the same request is sent again with the same idempotency key, the original response will be returned without executing the operation again.
+### Core Services
 
-### Data Resilience
+#### Session Service (Go Implementation)
 
-The module provides services for data replication, backup, and partitioning:
+The Session Service handles user authentication, session management, and token handling. It provides:
 
-```java
-@Service
-public class OrderService {
-    
-    private final ReplicationService replicationService;
-    private final DataPartitioningService dataPartitioningService;
-    
-    @Autowired
-    public OrderService(ReplicationService replicationService, DataPartitioningService dataPartitioningService) {
-        this.replicationService = replicationService;
-        this.dataPartitioningService = dataPartitioningService;
-    }
-    
-    public void createOrder(Order order) {
-        // Determine the shard for the order
-        int shardId = dataPartitioningService.getShardForKey(order.getCustomerId());
-        
-        // Execute the insert on the appropriate shard
-        dataPartitioningService.executeUpdateOnShard(
-            shardId,
-            "INSERT INTO orders (id, customer_id, product_id, quantity) VALUES (?, ?, ?, ?)",
-            order.getId(), order.getCustomerId(), order.getProductId(), order.getQuantity()
-        );
-        
-        // Replicate the data to all replicas
-        replicationService.replicateData(
-            "INSERT INTO orders (id, customer_id, product_id, quantity) VALUES (?, ?, ?, ?)",
-            order.getId(), order.getCustomerId(), order.getProductId(), order.getQuantity()
-        );
-    }
-}
+- User registration and authentication
+- JWT-based token generation and validation
+- Session management
+- Refresh token handling
+- Redis-backed storage for scalability
+- Secure password hashing with bcrypt
+
+#### DB Service (Go Implementation)
+
+The DB Service manages database connections, query execution, and schema information retrieval. It supports:
+
+- Multiple database types (MySQL, PostgreSQL, SQLite)
+- Connection pooling and management
+- Query execution with parameter binding
+- Batch query execution
+- Transaction support
+- Schema information retrieval
+
+#### AI Service (Python Implementation)
+
+The AI Service provides artificial intelligence capabilities such as text completion and embeddings. It features:
+
+- Text completion using various models
+- Text embedding generation
+- Model information retrieval
+- Support for multiple model providers (currently OpenAI)
+
+### Communication Between Services
+
+Services communicate with each other via RESTful APIs. Authentication between services is handled using JWT tokens validated by the Session Service.
+
+## Getting Started
+
+### Prerequisites
+
+- Go 1.20 or higher (for Go services)
+- Python 3.10 or higher (for Python services)
+- Redis 6.0 or higher (for Session Service)
+- MySQL, PostgreSQL, or SQLite (for DB Service)
+- OpenAI API key (for AI Service)
+
+### Building and Running
+
+Each service can be built and run independently. See the README.md file in each service directory for specific instructions.
+
+#### Using Docker
+
+Each service includes a Dockerfile for containerized deployment:
+
+```bash
+# Build and run Session Service
+cd session-service/go-implementation
+docker build -t codebridge/session-service-go .
+docker run -p 8080:8080 codebridge/session-service-go
+
+# Build and run DB Service
+cd db-service/go-implementation
+docker build -t codebridge/db-service-go .
+docker run -p 8081:8081 codebridge/db-service-go
+
+# Build and run AI Service
+cd ai-service/python-implementation
+docker build -t codebridge/ai-service-python .
+docker run -p 8082:8082 -e OPENAI_API_KEY=your-api-key codebridge/ai-service-python
 ```
 
-## Deployment
+## Scalability Considerations
 
-The module is designed to be deployed in a containerized environment such as Kubernetes or Docker Swarm. It integrates with Eureka for service discovery and supports auto-scaling through external orchestration platforms.
+CodeBridge is designed for horizontal scalability:
 
-## Monitoring
+- **Stateless Design**: Services maintain no local state
+- **Distributed Storage**: Redis for session data, databases for persistent storage
+- **Connection Pooling**: Efficient resource management
+- **Graceful Shutdown**: Proper handling of shutdown signals
+- **Health Checks**: Monitoring endpoints for load balancers
 
-The module exposes metrics through Spring Boot Actuator and Prometheus endpoints:
+## Security Features
 
-- `/actuator/health`: Health check endpoint
-- `/actuator/info`: Information about the application
-- `/actuator/metrics`: Metrics endpoint
-- `/actuator/prometheus`: Prometheus metrics endpoint
+- **JWT Authentication**: Token-based authentication across services
+- **Password Hashing**: Secure password storage with bcrypt
+- **Token Validation**: Comprehensive token validation
+- **Parameter Binding**: Protection against SQL injection
+- **CORS Protection**: Configurable CORS headers
 
-## Dependencies
+## Future Enhancements
 
-- Spring Boot 2.7.x
-- Spring Cloud
-- Resilience4j
-- Hazelcast
-- Redis
-- Bucket4j
-- PostgreSQL
+- Implement additional services (Teams, API Test, GitLab, Docker, Server)
+- Add Java implementations for Session and DB services
+- Implement service discovery and registration
+- Add metrics collection and monitoring
+- Implement CI/CD pipelines
+- Add comprehensive documentation
 
