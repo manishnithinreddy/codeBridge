@@ -1,0 +1,24 @@
+server:
+  port: 0
+  servlet:
+    context-path: /api/gitlab
+
+spring:
+  application:
+    name: codebridge-gitlab-service
+
+gitlab:
+  api:
+    base-url: https://gitlab.com/api/v4
+    connect-timeout: 1000
+    read-timeout: 5000
+    write-timeout: 2000
+  auth:
+    token-expiration: 86400000
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework.web: INFO
+
