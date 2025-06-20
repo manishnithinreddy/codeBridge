@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.HashSet;
@@ -34,7 +33,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectResponse createProject(ProjectRequest projectRequest, UUID platformUserId) {
+    public ProjectResponse createProject(ProjectRequest projectRequest, Long platformUserId) {
         if (projectRepository.existsByNameAndPlatformUserId(projectRequest.getName(), platformUserId)) {
             throw new DuplicateResourceException("Project with name '" + projectRequest.getName() + "' already exists for this user.");
         }
@@ -47,7 +46,7 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public ProjectResponse getProjectByIdForUser(UUID projectId, UUID platformUserId) {
+    public ProjectResponse getProjectByIdForUser(Long projectId, Long platformUserId) {
         SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
         if (effectivePermission == null) {
             throw new ResourceNotFoundException("Project", "id", projectId + " or access denied.");
@@ -58,7 +57,7 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectResponse> listProjectsForUser(UUID platformUserId) {
+    public List<ProjectResponse> listProjectsForUser(Long platformUserId) {
         Set<ProjectResponse> projectsSet = new HashSet<>();
 
         projectRepository.findByPlatformUserId(platformUserId).stream()
@@ -74,7 +73,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectResponse updateProject(UUID projectId, ProjectRequest projectRequest, UUID platformUserId) {
+    public ProjectResponse updateProject(Long projectId, ProjectRequest projectRequest, Long platformUserId) {
         SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
         if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
             throw new AccessDeniedException("User does not have permission to update project " + projectId);
@@ -96,7 +95,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public void deleteProject(UUID projectId, UUID platformUserId) {
+    public void deleteProject(Long projectId, Long platformUserId) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
