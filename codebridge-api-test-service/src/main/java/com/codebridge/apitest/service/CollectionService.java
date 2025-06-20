@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.HashSet;
@@ -36,9 +35,16 @@ public class CollectionService {
         this.projectSharingService = projectSharingService;
     }
 
+    /**
+     * Creates a new collection.
+     *
+     * @param collectionRequest the collection request
+     * @param platformUserId the user ID
+     * @return the created collection response
+     */
     @Transactional
-    public CollectionResponse createCollection(CollectionRequest collectionRequest, UUID platformUserId) {
-        UUID projectId = collectionRequest.getProjectId();
+    public CollectionResponse createCollection(CollectionRequest collectionRequest, Long platformUserId) {
+        Long projectId = collectionRequest.getProjectId();
         SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
 
         if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
@@ -58,26 +64,21 @@ public class CollectionService {
     }
 
     @Transactional(readOnly = true)
-    public CollectionResponse getCollectionByIdForUser(UUID collectionId, UUID platformUserId) {
+    public CollectionResponse getCollectionByIdForUser(Long collectionId, Long platformUserId) {
         Collection collection = collectionRepository.findById(collectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
 
-        if (collection.getProject() != null) {
-            UUID projectId = collection.getProject().getId();
-            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
-            if (effectivePermission == null) {
-                throw new ResourceNotFoundException("Collection", "projectAccess", "denied_for_project_" + projectId.toString());
-            }
-        } else { // Standalone collection
-            if (!collection.getUserId().equals(platformUserId)) {
-                throw new ResourceNotFoundException("Collection", "ownerAccess", "denied_for_user_" + platformUserId.toString());
-            }
+        Long projectId = collection.getProject().getId();
+        SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
+        if (effectivePermission == null) {
+            throw new ResourceNotFoundException("Collection", "projectAccess", "denied_for_project_" + projectId.toString());
         }
+
         return mapToCollectionResponse(collection);
     }
 
     @Transactional(readOnly = true)
-    public List<CollectionResponse> getAllCollectionsForUser(UUID platformUserId) {
+    public List<CollectionResponse> getAllCollectionsForUser(Long platformUserId) {
         Set<CollectionResponse> resultSet = new HashSet<>();
 
         collectionRepository.findByUserId(platformUserId).stream()
@@ -107,7 +108,7 @@ public class CollectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<CollectionResponse> getAllCollectionsForProject(UUID projectId, UUID platformUserId) {
+    public List<CollectionResponse> getAllCollectionsForProject(Long projectId, Long platformUserId) {
         SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
         if (effectivePermission == null) {
             throw new AccessDeniedException("User does not have permission to view collections in project " + projectId);
@@ -122,12 +123,12 @@ public class CollectionService {
 
 
     @Transactional
-    public CollectionResponse updateCollection(UUID collectionId, CollectionRequest collectionRequest, UUID platformUserId) {
+    public CollectionResponse updateCollection(Long collectionId, CollectionRequest collectionRequest, Long platformUserId) {
         Collection collection = collectionRepository.findById(collectionId)
             .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
 
         if (collection.getProject() != null) {
-            UUID projectId = collection.getProject().getId();
+            Long projectId = collection.getProject().getId();
             SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
             if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
                 throw new AccessDeniedException("User does not have permission to update collections in project " + projectId);
@@ -157,12 +158,12 @@ public class CollectionService {
     }
 
     @Transactional
-    public void deleteCollection(UUID collectionId, UUID platformUserId) {
+    public void deleteCollection(Long collectionId, Long platformUserId) {
         Collection collection = collectionRepository.findById(collectionId)
             .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
 
         if (collection.getProject() != null) {
-            UUID projectId = collection.getProject().getId();
+            Long projectId = collection.getProject().getId();
             SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
             if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
                 throw new AccessDeniedException("User does not have permission to delete collections in project " + projectId);
