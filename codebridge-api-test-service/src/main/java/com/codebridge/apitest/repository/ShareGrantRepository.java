@@ -9,25 +9,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface ShareGrantRepository extends JpaRepository<ShareGrant, UUID> {
+public interface ShareGrantRepository extends JpaRepository<ShareGrant, Long> {
 
-    Optional<ShareGrant> findByProjectIdAndGranteeUserId(UUID projectId, UUID granteeUserId);
+    Optional<ShareGrant> findByProjectIdAndGranteeUserId(Long projectId, Long granteeUserId);
 
-    List<ShareGrant> findByProjectId(UUID projectId);
+    List<ShareGrant> findByProjectId(Long projectId);
 
-    List<ShareGrant> findByGranteeUserId(UUID granteeUserId);
+    List<ShareGrant> findByGranteeUserId(Long granteeUserId);
 
-    // Custom query for delete often requires @Modifying and @Transactional
-    // However, Spring Data JPA can derive simple deletes by method name.
-    // For consistency and clarity if more complex logic were needed, @Query could be used.
+    @Modifying
     @Transactional
-    void deleteByProjectIdAndGranteeUserId(UUID projectId, UUID granteeUserId);
-
-    @Transactional
-    @Modifying // Required for DML operations that are not part of standard JpaRepository methods
-    @Query("DELETE FROM ShareGrant sg WHERE sg.project.id = :projectId")
-    void deleteByProjectId(UUID projectId);
+    void deleteByProjectId(Long projectId);
 }
+
