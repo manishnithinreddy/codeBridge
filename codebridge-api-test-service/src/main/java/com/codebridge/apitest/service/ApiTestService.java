@@ -134,7 +134,7 @@ public class ApiTestService {
         
         try {
             if (request.getHeaders() != null) {
-                apiTest.setHeaders(objectMapper.writeValueAsString(request.getHeaders()));
+                apiTest.setHeaders(objectMapper.readValue(request.getHeaders(), new TypeReference<Map<String, String>>() {}));
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error processing headers JSON", e);
@@ -211,7 +211,7 @@ public class ApiTestService {
         
         try {
             if (request.getHeaders() != null) {
-                test.setHeaders(objectMapper.writeValueAsString(request.getHeaders()));
+                test.setHeaders(objectMapper.readValue(request.getHeaders(), new TypeReference<Map<String, String>>() {}));
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error processing headers JSON", e);
@@ -248,14 +248,13 @@ public class ApiTestService {
     }
 
     /**
-     * Executes an API test.
+     * Executes a test.
      *
-     * @param id the API test ID
+     * @param id the test ID
      * @param userId the user ID
      * @return the test result
      */
-    @Transactional
-    public TestResultResponse executeTest(UUID id, UUID userId) {
+    public TestResultResponse executeTest(Long id, Long userId) {
         long startTime = System.currentTimeMillis();
         
         ApiTest test = apiTestRepository.findByIdAndUserId(id, userId)
@@ -306,7 +305,7 @@ public class ApiTestService {
                     testResult.setResponseBody(response.getResponseBody());
                     
                     try {
-                        testResult.setResponseHeaders(objectMapper.writeValueAsString(response.getResponseHeaders()));
+                        response.setResponseHeaders(objectMapper.readValue(response.getResponseHeaders(), new TypeReference<Map<String, String>>() {}));
                     } catch (JsonProcessingException e) {
                         logger.error("Error processing response headers JSON", e);
                     }
@@ -374,7 +373,7 @@ public class ApiTestService {
             testResult.setResponseBody(responseBody);
             
             try {
-                testResult.setResponseHeaders(objectMapper.writeValueAsString(responseHeaders));
+                response.setResponseHeaders(objectMapper.readValue(testResult.getResponseHeaders(), new TypeReference<Map<String, String>>() {}));
             } catch (JsonProcessingException e) {
                 logger.error("Error processing response headers JSON", e);
             }

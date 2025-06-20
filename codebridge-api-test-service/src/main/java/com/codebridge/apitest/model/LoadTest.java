@@ -28,13 +28,13 @@ public class LoadTest {
     private Long userId;
 
     @Column
-    private UUID testId;
+    private Long testId;
 
     @Column
-    private UUID chainId;
+    private Long chainId;
 
     @Column
-    private UUID environmentId;
+    private Long environmentId;
 
     @Column(nullable = false)
     private Integer virtualUsers;
@@ -133,27 +133,27 @@ public class LoadTest {
         this.userId = userId;
     }
 
-    public UUID getTestId() {
+    public Long getTestId() {
         return testId;
     }
 
-    public void setTestId(UUID testId) {
+    public void setTestId(Long testId) {
         this.testId = testId;
     }
 
-    public UUID getChainId() {
+    public Long getChainId() {
         return chainId;
     }
 
-    public void setChainId(UUID chainId) {
+    public void setChainId(Long chainId) {
         this.chainId = chainId;
     }
 
-    public UUID getEnvironmentId() {
+    public Long getEnvironmentId() {
         return environmentId;
     }
 
-    public void setEnvironmentId(UUID environmentId) {
+    public void setEnvironmentId(Long environmentId) {
         this.environmentId = environmentId;
     }
 

@@ -236,8 +236,7 @@ public class TestChainService {
      * @param userId the user ID
      * @return the list of test results
      */
-    @Transactional
-    public List<TestResultResponse> executeTestChain(UUID chainId, UUID environmentId, UUID userId) {
+    public List<TestResultResponse> executeTestChain(Long chainId, Long environmentId, Long userId) {
         TestChain testChain = testChainRepository.findById(chainId)
             .orElseThrow(() -> new ResourceNotFoundException("TestChain", "id", chainId.toString()));
         
