@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull; // Added for @NotNull
 
 import java.util.Map;
-import java.util.UUID; // Added for UUID
 
 /**
  * Request DTO for collection operations.
@@ -17,7 +16,7 @@ public class CollectionRequest {
     private String description;
 
     @NotNull(message = "Project ID cannot be null") // Added projectId
-    private UUID projectId;                         // Added projectId
+    private Long projectId;                         // Changed from UUID to Long
 
     private Map<String, String> variables;
 
@@ -76,12 +75,11 @@ public class CollectionRequest {
     }
 
     // Getter and Setter for projectId
-    public UUID getProjectId() {
+    public Long getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(UUID projectId) {
+    public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
 }
-

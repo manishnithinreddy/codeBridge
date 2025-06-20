@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 public class CollectionResponse {
 
-    private UUID id;
+    private Long id;
     private String name;
     private String description;
     private Map<String, String> variables;
@@ -20,16 +20,16 @@ public class CollectionResponse {
     private List<CollectionTestResponse> tests;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    // Added for project integration
-    private UUID projectId;
+    private Long userId;
+    private String userName;
+    private Long projectId;
     private String projectName;
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -105,12 +105,27 @@ public class CollectionResponse {
         this.updatedAt = updatedAt;
     }
 
-    // Getters and setters for projectId and projectName
-    public UUID getProjectId() {
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public Long getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(UUID projectId) {
+    public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
 
@@ -122,4 +137,3 @@ public class CollectionResponse {
         this.projectName = projectName;
     }
 }
-
