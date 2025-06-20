@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/collections")
@@ -22,34 +21,34 @@ public class CollectionController {
         this.collectionService = collectionService;
     }
 
-    private UUID getPlatformUserId(Authentication authentication) {
+    private Long getUserId(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
-            // For testing purposes, return a fixed UUID
-            return UUID.fromString("00000000-0000-0000-0000-000000000001");
+            // For testing purposes, return a fixed ID
+            return 1L;
         }
-        return UUID.fromString(authentication.getName());
+        return Long.parseLong(authentication.getName());
     }
 
     @PostMapping
-    public ResponseEntity<CollectionResponse> createCollection(@PathVariable UUID projectId,
+    public ResponseEntity<CollectionResponse> createCollection(@PathVariable Long projectId,
                                                                @Valid @RequestBody CollectionRequest collectionRequest,
                                                                Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+        Long userId = getUserId(authentication);
         collectionRequest.setProjectId(projectId); // Set projectId from path
-        CollectionResponse createdCollection = collectionService.createCollection(collectionRequest, platformUserId);
+        CollectionResponse createdCollection = collectionService.createCollection(collectionRequest, userId);
         return new ResponseEntity<>(createdCollection, HttpStatus.CREATED);
     }
 
     @GetMapping("/{collectionId}")
-    public ResponseEntity<CollectionResponse> getCollectionById(@PathVariable UUID projectId,
-                                                                @PathVariable UUID collectionId,
+    public ResponseEntity<CollectionResponse> getCollectionById(@PathVariable Long projectId,
+                                                                @PathVariable Long collectionId,
                                                                 Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+        Long userId = getUserId(authentication);
         // The service 'getCollectionByIdForUser' currently checks direct ownership.
         // It will need enhancement in Phase E for shared project access.
         // For now, we also pass projectId, but the service might not use it yet for auth.
         // A check in controller:
-        CollectionResponse collection = collectionService.getCollectionByIdForUser(collectionId, platformUserId);
+        CollectionResponse collection = collectionService.getCollectionByIdForUser(collectionId, userId);
         if (!collection.getProjectId().equals(projectId)) {
              // Or throw ResourceNotFoundException / AccessDeniedException
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -58,34 +57,33 @@ public class CollectionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CollectionResponse>> getAllCollectionsForProject(@PathVariable UUID projectId,
+    public ResponseEntity<List<CollectionResponse>> getAllCollectionsForProject(@PathVariable Long projectId,
                                                                                 Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
-        List<CollectionResponse> collections = collectionService.getAllCollectionsForProject(projectId, platformUserId);
+        Long userId = getUserId(authentication);
+        List<CollectionResponse> collections = collectionService.getAllCollectionsForProject(projectId, userId);
         return ResponseEntity.ok(collections);
     }
 
     @PutMapping("/{collectionId}")
-    public ResponseEntity<CollectionResponse> updateCollection(@PathVariable UUID projectId,
-                                                               @PathVariable UUID collectionId,
+    public ResponseEntity<CollectionResponse> updateCollection(@PathVariable Long projectId,
+                                                               @PathVariable Long collectionId,
                                                                @Valid @RequestBody CollectionRequest collectionRequest,
                                                                Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+        Long userId = getUserId(authentication);
         collectionRequest.setProjectId(projectId); // Ensure projectId is set for the service
-        CollectionResponse updatedCollection = collectionService.updateCollection(collectionId, collectionRequest, platformUserId);
+        CollectionResponse updatedCollection = collectionService.updateCollection(collectionId, collectionRequest, userId);
         return ResponseEntity.ok(updatedCollection);
     }
 
     @DeleteMapping("/{collectionId}")
-    public ResponseEntity<Void> deleteCollection(@PathVariable UUID projectId,
-                                                 @PathVariable UUID collectionId,
+    public ResponseEntity<Void> deleteCollection(@PathVariable Long projectId,
+                                                 @PathVariable Long collectionId,
                                                  Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+        Long userId = getUserId(authentication);
         // The service 'deleteCollection' should ideally also verify that the collection belongs to the project,
         // or that the user has direct rights.
         // For now, basic ownership check is in service.
-        collectionService.deleteCollection(collectionId, platformUserId);
+        collectionService.deleteCollection(collectionId, userId);
         return ResponseEntity.noContent().build();
     }
 }
-
