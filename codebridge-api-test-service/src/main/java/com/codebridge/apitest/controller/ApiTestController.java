@@ -50,10 +50,10 @@ public class ApiTestController {
      * @return the created API test
      */
     @PostMapping
-    public ResponseEntity<ApiTestResponse> createTest(
+    public ResponseEntity<ApiTestResponse> createApiTest(
             @Valid @RequestBody ApiTestRequest request,
             Authentication authentication) {
-        ApiTestResponse response = apiTestService.createTest(request, getUserId(authentication));
+        ApiTestResponse response = apiTestService.createApiTest(request, getUserId(authentication));
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -64,8 +64,8 @@ public class ApiTestController {
      * @return the list of API tests
      */
     @GetMapping
-    public ResponseEntity<List<ApiTestResponse>> getAllTests(Authentication authentication) {
-        List<ApiTestResponse> tests = apiTestService.getAllTests(getUserId(authentication));
+    public ResponseEntity<List<ApiTestResponse>> getApiTests(Authentication authentication) {
+        List<ApiTestResponse> tests = apiTestService.getApiTests(getUserId(authentication));
         return ResponseEntity.ok(tests);
     }
 
@@ -77,10 +77,10 @@ public class ApiTestController {
      * @return the API test
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiTestResponse> getTestById(
+    public ResponseEntity<ApiTestResponse> getApiTest(
             @PathVariable Long id,
             Authentication authentication) {
-        ApiTestResponse test = apiTestService.getTestById(id, getUserId(authentication));
+        ApiTestResponse test = apiTestService.getApiTest(id, getUserId(authentication));
         return ResponseEntity.ok(test);
     }
 
@@ -93,11 +93,11 @@ public class ApiTestController {
      * @return the updated API test
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ApiTestResponse> updateTest(
+    public ResponseEntity<ApiTestResponse> updateApiTest(
             @PathVariable Long id,
             @Valid @RequestBody ApiTestRequest request,
             Authentication authentication) {
-        ApiTestResponse response = apiTestService.updateTest(id, request, getUserId(authentication));
+        ApiTestResponse response = apiTestService.updateApiTest(id, request, getUserId(authentication));
         return ResponseEntity.ok(response);
     }
 
@@ -109,10 +109,10 @@ public class ApiTestController {
      * @return no content
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTest(
+    public ResponseEntity<Void> deleteApiTest(
             @PathVariable Long id,
             Authentication authentication) {
-        apiTestService.deleteTest(id, getUserId(authentication));
+        apiTestService.deleteApiTest(id, getUserId(authentication));
         return ResponseEntity.noContent().build();
     }
 
