@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 public interface CollectionRepository extends JpaRepository<Collection, Long> {
@@ -27,3 +26,4 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     // Finds a specific collection by its ID, within a specific project, and owned by a specific user.
     Optional<Collection> findByIdAndProjectIdAndUserId(Long id, Long projectId, Long userId);
 }
+
