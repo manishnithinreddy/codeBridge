@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.Objects;
 
 /**
@@ -20,8 +19,8 @@ import java.util.Objects;
 public class ShareGrant {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,42 +29,32 @@ public class ShareGrant {
 
     @NotNull
     @Column(name = "grantee_user_id", nullable = false)
-    private UUID granteeUserId; // The user with whom the project is shared
+    private Long granteeUserId;
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "permission_level", nullable = false)
     private SharePermissionLevel permissionLevel;
 
     @NotNull
-    @Column(name = "granted_by_user_id", nullable = false, updatable = false)
-    private UUID grantedByUserId; // The platformUserId of who granted this share
+    @Column(name = "granter_user_id", nullable = false, updatable = false)
+    private Long granterUserId;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Constructors
-    public ShareGrant() {
-    }
-
-    public ShareGrant(Project project, UUID granteeUserId, SharePermissionLevel permissionLevel, UUID grantedByUserId) {
-        this.project = project;
-        this.granteeUserId = granteeUserId;
-        this.permissionLevel = permissionLevel;
-        this.grantedByUserId = grantedByUserId;
-    }
-
     // Getters and Setters
-    public UUID getId() {
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -77,11 +66,11 @@ public class ShareGrant {
         this.project = project;
     }
 
-    public UUID getGranteeUserId() {
+    public Long getGranteeUserId() {
         return granteeUserId;
     }
 
-    public void setGranteeUserId(UUID granteeUserId) {
+    public void setGranteeUserId(Long granteeUserId) {
         this.granteeUserId = granteeUserId;
     }
 
@@ -93,12 +82,12 @@ public class ShareGrant {
         this.permissionLevel = permissionLevel;
     }
 
-    public UUID getGrantedByUserId() {
-        return grantedByUserId;
+    public Long getGranterUserId() {
+        return granterUserId;
     }
 
-    public void setGrantedByUserId(UUID grantedByUserId) {
-        this.grantedByUserId = grantedByUserId;
+    public void setGranterUserId(Long granterUserId) {
+        this.granterUserId = granterUserId;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -117,7 +106,8 @@ public class ShareGrant {
         this.updatedAt = updatedAt;
     }
 
-    // equals, hashCode, toString
+    // Equals and HashCode
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -130,17 +120,5 @@ public class ShareGrant {
     public int hashCode() {
         return Objects.hash(id);
     }
-
-    @Override
-    public String toString() {
-        return "ShareGrant{" +
-               "id=" + id +
-               ", projectId=" + (project != null ? project.getId() : null) +
-               ", granteeUserId=" + granteeUserId +
-               ", permissionLevel=" + permissionLevel +
-               ", grantedByUserId=" + grantedByUserId +
-               ", createdAt=" + createdAt +
-               ", updatedAt=" + updatedAt +
-               '}';
-    }
 }
+
