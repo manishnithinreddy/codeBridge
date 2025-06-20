@@ -79,6 +79,10 @@ public class ApiTest {
     private String scripts;
 
     @Column
+    @Lob
+    private String validationScript;
+
+    @Column
     private Integer timeout;
 
     @Column
@@ -239,6 +243,14 @@ public class ApiTest {
 
     public void setScripts(String scripts) {
         this.scripts = scripts;
+    }
+
+    public String getValidationScript() {
+        return validationScript;
+    }
+
+    public void setValidationScript(String validationScript) {
+        this.validationScript = validationScript;
     }
 
     public Integer getTimeout() {

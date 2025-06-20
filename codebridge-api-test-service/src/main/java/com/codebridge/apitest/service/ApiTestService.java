@@ -527,16 +527,16 @@ public class ApiTestService {
                 break;
             case POST:
                 HttpPost post = new HttpPost(processedUrl);
-                if (test.getBody() != null) {
-                    String processedBody = processEnvironmentVariables(test.getBody(), environmentVariables);
+                if (test.getRequestBody() != null) {
+                    String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
                     post.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
                 }
                 request = post;
                 break;
             case PUT:
                 HttpPut put = new HttpPut(processedUrl);
-                if (test.getBody() != null) {
-                    String processedBody = processEnvironmentVariables(test.getBody(), environmentVariables);
+                if (test.getRequestBody() != null) {
+                    String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
                     put.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
                 }
                 request = put;
@@ -546,8 +546,8 @@ public class ApiTestService {
                 break;
             case PATCH:
                 HttpPatch patch = new HttpPatch(processedUrl);
-                if (test.getBody() != null) {
-                    String processedBody = processEnvironmentVariables(test.getBody(), environmentVariables);
+                if (test.getRequestBody() != null) {
+                    String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
                     patch.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
                 }
                 request = patch;
@@ -839,67 +839,9 @@ public class ApiTestService {
      * @return the HTTP request
      * @throws Exception if an error occurs
      */
-    private HttpUriRequest createHttpRequest(String processedUrl, HttpMethod method, Map<String, String> environmentVariables) throws Exception {
-        HttpUriRequest request;
-
-        switch (method) {
-            case GET:
-                request = new HttpGet(processedUrl);
-                break;
-            case POST:
-                HttpPost post = new HttpPost(processedUrl);
-                // We need to get the test object from somewhere else since it's not passed as a parameter anymore
-                ApiTest test = getCurrentTest(); // This is a placeholder, you need to implement this method
-                if (test.getBody() != null) {
-                    String processedBody = processEnvironmentVariables(test.getBody(), environmentVariables);
-                    post.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
-                }
-                request = post;
-                break;
-            case PUT:
-                HttpPut put = new HttpPut(processedUrl);
-                if (test.getRequestBody() != null) {
-                    String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
-                    put.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
-                }
-                request = put;
-                break;
-            case DELETE:
-                request = new HttpDelete(processedUrl);
-                break;
-            case PATCH:
-                HttpPatch patch = new HttpPatch(processedUrl);
-                if (test.getRequestBody() != null) {
-                    String processedBody = processEnvironmentVariables(test.getRequestBody(), environmentVariables);
-                    patch.setEntity(new StringEntity(processedBody, ContentType.APPLICATION_JSON));
-                }
-                request = patch;
-                break;
-            case HEAD:
-                request = new HttpHead(processedUrl);
-                break;
-            case OPTIONS:
-                request = new HttpOptions(processedUrl);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported HTTP method: " + test.getMethod());
-        }
-
-        if (test.getHeaders() != null) {
-            Map<String, String> headersMap = objectMapper.readValue(test.getHeaders(), new TypeReference<Map<String, String>>() {});
-            for (Map.Entry<String, String> header : headersMap.entrySet()) {
-                String processedValue = processEnvironmentVariables(header.getValue(), environmentVariables);
-                request.addHeader(header.getKey(), processedValue);
-            }
-        }
-        
-        // Auto-inject project tokens if available
-        if (test.getProjectId() != null) {
-            injectProjectTokens(request, test.getProjectId());
-        }
-        
-        // Timeout is set in executeHttpTest/executeGraphQLTest using RequestConfig
-        return request;
+    private HttpUriRequest createHttpRequest(String url, HttpMethod method, Map<String, String> environmentVariables) throws Exception {
+        // This method is no longer used as we've moved the implementation directly into executeHttpTest
+        throw new UnsupportedOperationException("This method is deprecated. Use the implementation in executeHttpTest instead.");
     }
 
     /**
