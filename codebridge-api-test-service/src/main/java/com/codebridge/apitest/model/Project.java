@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Entity for projects that organize collections of API tests.
@@ -24,40 +23,32 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "Project name is required")
+    @Size(max = 100, message = "Project name cannot exceed 100 characters")
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "description")
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
+    @Column(length = 500)
     private String description;
 
-    @NotNull
+    @NotNull(message = "Platform user ID is required")
     @Column(name = "platform_user_id", nullable = false)
-    private Long platformUserId; // Owner of the project
+    private Long platformUserId;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Collection> collections = new ArrayList<>();
 
-    // Constructors
-    public Project() {
-    }
-
-    public Project(String name, String description, Long platformUserId) {
-        this.name = name;
-        this.description = description;
-        this.platformUserId = platformUserId;
-    }
-
     // Getters and Setters
+
     public Long getId() {
         return id;
     }
@@ -114,7 +105,6 @@ public class Project {
         this.collections = collections;
     }
 
-    // Convenience methods
     public void addCollection(Collection collection) {
         collections.add(collection);
         collection.setProject(this);
@@ -125,7 +115,8 @@ public class Project {
         collection.setProject(null);
     }
 
-    // equals, hashCode, toString
+    // Equals and HashCode
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -138,15 +129,5 @@ public class Project {
     public int hashCode() {
         return Objects.hash(id);
     }
-
-    @Override
-    public String toString() {
-        return "Project{" +
-               "id=" + id +
-               ", name='" + name + '\'' +
-               ", platformUserId=" + platformUserId +
-               ", createdAt=" + createdAt +
-               ", updatedAt=" + updatedAt +
-               '}';
-    }
 }
+
