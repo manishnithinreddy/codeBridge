@@ -9,11 +9,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ProjectRepository extends JpaRepository<Project, UUID> {
+public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    Optional<Project> findByIdAndPlatformUserId(UUID id, UUID platformUserId);
+    Optional<Project> findByIdAndPlatformUserId(Long id, Long platformUserId);
 
-    List<Project> findByPlatformUserId(UUID platformUserId);
+    List<Project> findByPlatformUserId(Long platformUserId);
 
-    boolean existsByNameAndPlatformUserId(String name, UUID platformUserId);
+    boolean existsByNameAndPlatformUserId(String name, Long platformUserId);
 }
