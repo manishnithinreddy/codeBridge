@@ -8,8 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Entity for collections of API tests.
@@ -20,20 +20,20 @@ import java.util.Objects;
 public class Collection {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotBlank
     @Size(max = 255)
     @Column(nullable = false)
     private String name;
 
-    // This field represents the platformUserId of the owner,
-    // especially if the collection is standalone (project is null).
-    // If associated with a project, ownership might be primarily derived from the project's owner.
+    @Column(name = "description")
+    private String description;
+
     @NotNull
-    @Column(nullable = false, updatable = false)
-    private UUID userId;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = true) // Nullable to allow standalone collections
@@ -51,23 +51,23 @@ public class Collection {
     public Collection() {
     }
 
-    public Collection(String name, UUID userId) {
+    public Collection(String name, Long userId) {
         this.name = name;
         this.userId = userId;
     }
 
-    public Collection(String name, UUID userId, Project project) {
+    public Collection(String name, Long userId, Project project) {
         this.name = name;
         this.userId = userId;
         this.project = project;
     }
 
     // Getters and Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -79,11 +79,19 @@ public class Collection {
         this.name = name;
     }
 
-    public UUID getUserId() {
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
@@ -130,6 +138,7 @@ public class Collection {
         return "Collection{" +
                "id=" + id +
                ", name='" + name + '\'' +
+               ", description='" + description + '\'' +
                ", userId=" + userId +
                ", projectId=" + (project != null ? project.getId() : null) +
                ", createdAt=" + createdAt +
@@ -137,4 +146,3 @@ public class Collection {
                '}';
     }
 }
-
