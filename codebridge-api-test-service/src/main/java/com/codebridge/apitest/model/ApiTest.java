@@ -35,7 +35,7 @@ public class ApiTest {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private ApiType type;
+    private ProtocolType protocolType;
 
     @Column(nullable = false)
     private String url;
@@ -84,6 +84,17 @@ public class ApiTest {
     @Column
     private Boolean followRedirects;
 
+    // gRPC specific fields
+    @Column
+    private String grpcServiceName;
+    
+    @Column
+    private String grpcMethodName;
+    
+    @Column
+    @Lob
+    private String grpcProtoDefinition;
+
     @Column(nullable = false)
     private UUID createdBy;
 
@@ -103,6 +114,11 @@ public class ApiTest {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    // Add HttpMethod enum field
+    @Column
+    @Enumerated(EnumType.STRING)
+    private HttpMethod httpMethod;
 
     // Getters and Setters
     public Long getId() {
@@ -129,12 +145,12 @@ public class ApiTest {
         this.projectId = projectId;
     }
 
-    public ApiType getType() {
-        return type;
+    public ProtocolType getProtocolType() {
+        return protocolType;
     }
 
-    public void setType(ApiType type) {
-        this.type = type;
+    public void setProtocolType(ProtocolType protocolType) {
+        this.protocolType = protocolType;
     }
 
     public String getUrl() {
@@ -241,6 +257,30 @@ public class ApiTest {
         this.followRedirects = followRedirects;
     }
 
+    public String getGrpcServiceName() {
+        return grpcServiceName;
+    }
+
+    public void setGrpcServiceName(String grpcServiceName) {
+        this.grpcServiceName = grpcServiceName;
+    }
+
+    public String getGrpcMethodName() {
+        return grpcMethodName;
+    }
+
+    public void setGrpcMethodName(String grpcMethodName) {
+        this.grpcMethodName = grpcMethodName;
+    }
+
+    public String getGrpcProtoDefinition() {
+        return grpcProtoDefinition;
+    }
+
+    public void setGrpcProtoDefinition(String grpcProtoDefinition) {
+        this.grpcProtoDefinition = grpcProtoDefinition;
+    }
+
     public UUID getCreatedBy() {
         return createdBy;
     }
@@ -264,5 +304,12 @@ public class ApiTest {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-}
 
+    public HttpMethod getHttpMethod() {
+        return httpMethod;
+    }
+
+    public void setHttpMethod(HttpMethod httpMethod) {
+        this.httpMethod = httpMethod;
+    }
+}
