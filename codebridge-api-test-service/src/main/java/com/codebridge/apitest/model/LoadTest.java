@@ -15,8 +15,8 @@ import java.util.UUID;
 public class LoadTest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -25,7 +25,7 @@ public class LoadTest {
     private String description;
 
     @Column(nullable = false)
-    private UUID userId;
+    private Long userId;
 
     @Column
     private UUID testId;
@@ -101,11 +101,11 @@ public class LoadTest {
     private LocalDateTime completedAt;
 
     // Getters and Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -125,11 +125,11 @@ public class LoadTest {
         this.description = description;
     }
 
-    public UUID getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
@@ -317,4 +317,3 @@ public class LoadTest {
         this.completedAt = completedAt;
     }
 }
-

@@ -69,8 +69,7 @@ public class LoadTestService {
      * @param userId the user ID
      * @return the created load test
      */
-    @Transactional
-    public LoadTest createLoadTest(LoadTestRequest request, UUID userId) {
+    public LoadTest createLoadTest(LoadTestRequest request, Long userId) {
         // Validate test or chain exists
         if (request.getTestId() != null) {
             apiTestRepository.findById(request.getTestId())
@@ -84,7 +83,7 @@ public class LoadTestService {
         
         // Create load test
         LoadTest loadTest = new LoadTest();
-        loadTest.setId(UUID.randomUUID());
+        // ID will be auto-generated
         loadTest.setName(request.getName());
         loadTest.setDescription(request.getDescription());
         loadTest.setUserId(userId);
@@ -114,8 +113,7 @@ public class LoadTestService {
      * @param userId the user ID
      * @return the list of load tests
      */
-    @Transactional(readOnly = true)
-    public List<LoadTest> getAllLoadTests(UUID userId) {
+    public List<LoadTest> getAllLoadTests(Long userId) {
         return loadTestRepository.findByUserId(userId);
     }
     
@@ -126,21 +124,18 @@ public class LoadTestService {
      * @param userId the user ID
      * @return the load test
      */
-    @Transactional(readOnly = true)
-    public LoadTest getLoadTestById(UUID id, UUID userId) {
+    public LoadTest getLoadTestById(Long id, Long userId) {
         return loadTestRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new ResourceNotFoundException("LoadTest", "id", id.toString()));
     }
     
     /**
-     * Executes a load test asynchronously.
+     * Executes a load test.
      *
      * @param id the load test ID
      * @param userId the user ID
      */
-    @Async
-    @Transactional
-    public void executeLoadTest(UUID id, UUID userId) {
+    public void executeLoadTest(Long id, Long userId) {
         LoadTest loadTest = loadTestRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new ResourceNotFoundException("LoadTest", "id", id.toString()));
         
@@ -189,7 +184,7 @@ public class LoadTestService {
      * @param userId the user ID
      * @return the load test result
      */
-    private LoadTestResult executeLoadTestInternal(LoadTest loadTest, UUID userId) {
+    private LoadTestResult executeLoadTestInternal(LoadTest loadTest, Long userId) {
         int virtualUsers = loadTest.getVirtualUsers();
         int durationSeconds = loadTest.getDurationSeconds();
         int rampUpSeconds = loadTest.getRampUpSeconds() != null ? loadTest.getRampUpSeconds() : 0;
@@ -430,14 +425,13 @@ public class LoadTestService {
     }
     
     /**
-     * Cancels a running load test.
+     * Cancels a load test.
      *
      * @param id the load test ID
      * @param userId the user ID
-     * @return the updated load test
+     * @return the cancelled load test
      */
-    @Transactional
-    public LoadTest cancelLoadTest(UUID id, UUID userId) {
+    public LoadTest cancelLoadTest(Long id, Long userId) {
         LoadTest loadTest = loadTestRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new ResourceNotFoundException("LoadTest", "id", id.toString()));
         
@@ -458,8 +452,7 @@ public class LoadTestService {
      * @param id the load test ID
      * @param userId the user ID
      */
-    @Transactional
-    public void deleteLoadTest(UUID id, UUID userId) {
+    public void deleteLoadTest(Long id, Long userId) {
         LoadTest loadTest = loadTestRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new ResourceNotFoundException("LoadTest", "id", id.toString()));
         
@@ -470,4 +463,3 @@ public class LoadTestService {
         loadTestRepository.delete(loadTest);
     }
 }
-

@@ -6,13 +6,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repository for load tests.
  */
 @Repository
-public interface LoadTestRepository extends JpaRepository<LoadTest, UUID> {
+public interface LoadTestRepository extends JpaRepository<LoadTest, Long> {
     
     /**
      * Find all load tests for a user.
@@ -20,7 +19,7 @@ public interface LoadTestRepository extends JpaRepository<LoadTest, UUID> {
      * @param userId the user ID
      * @return the list of load tests
      */
-    List<LoadTest> findByUserId(UUID userId);
+    List<LoadTest> findByUserId(Long userId);
     
     /**
      * Find a load test by ID and user ID.
@@ -29,6 +28,6 @@ public interface LoadTestRepository extends JpaRepository<LoadTest, UUID> {
      * @param userId the user ID
      * @return the load test
      */
-    Optional<LoadTest> findByIdAndUserId(UUID id, UUID userId);
+    Optional<LoadTest> findByIdAndUserId(Long id, Long userId);
 }
 
