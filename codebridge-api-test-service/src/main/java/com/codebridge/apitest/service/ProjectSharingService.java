@@ -71,8 +71,15 @@ public class ProjectSharingService {
         shareGrantRepository.deleteByProjectIdAndGranteeUserId(projectId, granteeUserId);
     }
 
+    /**
+     * Gets the effective permission level for a user on a project.
+     *
+     * @param projectId the project ID
+     * @param platformUserId the user ID
+     * @return the effective permission level
+     */
     @Transactional(readOnly = true)
-    public SharePermissionLevel getEffectivePermission(UUID projectId, UUID platformUserId) {
+    public SharePermissionLevel getEffectivePermission(Long projectId, Long platformUserId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
