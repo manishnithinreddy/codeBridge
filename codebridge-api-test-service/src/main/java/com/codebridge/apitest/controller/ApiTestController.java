@@ -78,7 +78,7 @@ public class ApiTestController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiTestResponse> getTestById(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             Authentication authentication) {
         ApiTestResponse test = apiTestService.getTestById(id, getUserId(authentication));
         return ResponseEntity.ok(test);
@@ -94,7 +94,7 @@ public class ApiTestController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiTestResponse> updateTest(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody ApiTestRequest request,
             Authentication authentication) {
         ApiTestResponse response = apiTestService.updateTest(id, request, getUserId(authentication));
@@ -110,7 +110,7 @@ public class ApiTestController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTest(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             Authentication authentication) {
         apiTestService.deleteTest(id, getUserId(authentication));
         return ResponseEntity.noContent().build();
@@ -125,7 +125,7 @@ public class ApiTestController {
      */
     @PostMapping("/{id}/run")
     public ResponseEntity<TestResultResponse> executeTest(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             Authentication authentication) {
         TestResultResponse result = apiTestService.executeTest(id, getUserId(authentication));
         return ResponseEntity.ok(result);
@@ -140,7 +140,7 @@ public class ApiTestController {
      */
     @GetMapping("/{id}/results")
     public ResponseEntity<List<TestResultResponse>> getTestResults(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             Authentication authentication) {
         List<TestResultResponse> results = apiTestService.getTestResults(id, getUserId(authentication));
         return ResponseEntity.ok(results);
