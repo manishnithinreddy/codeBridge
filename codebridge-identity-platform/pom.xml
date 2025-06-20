@@ -15,7 +15,7 @@
     <description>Consolidated identity and organization management service for CodeBridge</description>
     
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <spring-cloud.version>2022.0.4</spring-cloud.version>
         <jjwt.version>0.11.5</jjwt.version>
     </properties>
