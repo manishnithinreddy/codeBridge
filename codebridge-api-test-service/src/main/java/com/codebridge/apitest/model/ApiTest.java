@@ -48,8 +48,11 @@ public class ApiTest {
     private String headers;
 
     @Column
-    @Lob
     private String body;
+
+    @Column
+    @Lob
+    private String requestBody;
 
     @Column
     @Lob
@@ -123,6 +126,9 @@ public class ApiTest {
     @Column
     @Enumerated(EnumType.STRING)
     private HttpMethod httpMethod;
+
+    @Column
+    private Long userId;
 
     // Getters and Setters
     public Long getId() {
@@ -323,5 +329,21 @@ public class ApiTest {
 
     public void setHttpMethod(HttpMethod httpMethod) {
         this.httpMethod = httpMethod;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getRequestBody() {
+        return requestBody;
+    }
+
+    public void setRequestBody(String requestBody) {
+        this.requestBody = requestBody;
     }
 }
