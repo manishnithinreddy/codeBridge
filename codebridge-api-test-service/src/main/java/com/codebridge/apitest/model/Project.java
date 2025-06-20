@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Entity for projects that organize collections of API tests.
@@ -21,21 +21,20 @@ import java.util.Objects;
 public class Project {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotBlank
     @Size(max = 255)
     @Column(nullable = false)
     private String name;
 
-    @Lob
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "description")
     private String description;
 
     @NotNull
-    @Column(nullable = false, updatable = false) // platformUserId should not be updatable
-    private UUID platformUserId; // Owner of the project
+    @Column(name = "platform_user_id", nullable = false)
+    private Long platformUserId; // Owner of the project
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -52,18 +51,18 @@ public class Project {
     public Project() {
     }
 
-    public Project(String name, String description, UUID platformUserId) {
+    public Project(String name, String description, Long platformUserId) {
         this.name = name;
         this.description = description;
         this.platformUserId = platformUserId;
     }
 
     // Getters and Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -83,11 +82,11 @@ public class Project {
         this.description = description;
     }
 
-    public UUID getPlatformUserId() {
+    public Long getPlatformUserId() {
         return platformUserId;
     }
 
-    public void setPlatformUserId(UUID platformUserId) {
+    public void setPlatformUserId(Long platformUserId) {
         this.platformUserId = platformUserId;
     }
 
