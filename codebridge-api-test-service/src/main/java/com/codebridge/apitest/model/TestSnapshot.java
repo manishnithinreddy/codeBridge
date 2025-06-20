@@ -15,11 +15,11 @@ import java.util.UUID;
 public class TestSnapshot {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
-    private UUID testId;
+    private Long testId;
 
     @Column(nullable = false)
     private String name;
@@ -49,19 +49,19 @@ public class TestSnapshot {
     private LocalDateTime createdAt;
 
     // Getters and Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getTestId() {
+    public Long getTestId() {
         return testId;
     }
 
-    public void setTestId(UUID testId) {
+    public void setTestId(Long testId) {
         this.testId = testId;
     }
 
@@ -129,4 +129,3 @@ public class TestSnapshot {
         this.createdAt = createdAt;
     }
 }
-

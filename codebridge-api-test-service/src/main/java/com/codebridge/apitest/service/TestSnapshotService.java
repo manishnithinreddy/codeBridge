@@ -57,7 +57,7 @@ public class TestSnapshotService {
      * @return the created snapshot
      */
     @Transactional
-    public TestSnapshot createSnapshot(UUID testId, String name, String description, TestResult result, UUID userId) {
+    public TestSnapshot createSnapshot(Long testId, String name, String description, TestResult result, UUID userId) {
         ApiTest test = apiTestRepository.findById(testId)
             .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", testId.toString()));
         
@@ -69,7 +69,7 @@ public class TestSnapshotService {
         
         // Create snapshot
         TestSnapshot snapshot = new TestSnapshot();
-        snapshot.setId(UUID.randomUUID());
+        // Don't set ID for auto-generated identity column
         snapshot.setTestId(testId);
         snapshot.setName(name);
         snapshot.setDescription(description);
@@ -94,14 +94,14 @@ public class TestSnapshotService {
     }
     
     /**
-     * Get all snapshots for a test.
+     * Gets all snapshots for a test.
      *
      * @param testId the test ID
      * @param userId the user ID
      * @return the list of snapshots
      */
     @Transactional(readOnly = true)
-    public List<TestSnapshot> getSnapshots(UUID testId, UUID userId) {
+    public List<TestSnapshot> getSnapshots(Long testId, UUID userId) {
         ApiTest test = apiTestRepository.findById(testId)
             .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", testId.toString()));
         
@@ -122,7 +122,7 @@ public class TestSnapshotService {
      * @return the snapshot
      */
     @Transactional(readOnly = true)
-    public TestSnapshot getSnapshot(UUID snapshotId, UUID userId) {
+    public TestSnapshot getSnapshot(Long snapshotId, UUID userId) {
         TestSnapshot snapshot = testSnapshotRepository.findById(snapshotId)
             .orElseThrow(() -> new ResourceNotFoundException("TestSnapshot", "id", snapshotId.toString()));
         
@@ -139,14 +139,14 @@ public class TestSnapshotService {
     }
     
     /**
-     * Approve a snapshot.
+     * Approves a snapshot.
      *
      * @param snapshotId the snapshot ID
      * @param userId the user ID
      * @return the approved snapshot
      */
     @Transactional
-    public TestSnapshot approveSnapshot(UUID snapshotId, UUID userId) {
+    public TestSnapshot approveSnapshot(Long snapshotId, UUID userId) {
         TestSnapshot snapshot = testSnapshotRepository.findById(snapshotId)
             .orElseThrow(() -> new ResourceNotFoundException("TestSnapshot", "id", snapshotId.toString()));
         
@@ -177,13 +177,13 @@ public class TestSnapshotService {
     }
     
     /**
-     * Delete a snapshot.
+     * Deletes a snapshot.
      *
      * @param snapshotId the snapshot ID
      * @param userId the user ID
      */
     @Transactional
-    public void deleteSnapshot(UUID snapshotId, UUID userId) {
+    public void deleteSnapshot(Long snapshotId, UUID userId) {
         TestSnapshot snapshot = testSnapshotRepository.findById(snapshotId)
             .orElseThrow(() -> new ResourceNotFoundException("TestSnapshot", "id", snapshotId.toString()));
         
@@ -210,7 +210,7 @@ public class TestSnapshotService {
     }
     
     /**
-     * Compare a test result with the latest approved snapshot.
+     * Compares a test result with the approved snapshot.
      *
      * @param testId the test ID
      * @param result the test result
@@ -218,7 +218,7 @@ public class TestSnapshotService {
      * @return the comparison result
      */
     @Transactional(readOnly = true)
-    public SnapshotComparisonResult compareWithSnapshot(UUID testId, TestResult result, UUID userId) {
+    public SnapshotComparisonResult compareWithSnapshot(Long testId, TestResult result, UUID userId) {
         ApiTest test = apiTestRepository.findById(testId)
             .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", testId.toString()));
         

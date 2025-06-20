@@ -9,6 +9,8 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -22,36 +24,24 @@ import java.util.UUID;
 public class ApiTest {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
     private String name;
 
-    @Column
-    private String description;
+    @Column(nullable = false)
+    private Long projectId;
 
     @Column(nullable = false)
-    private UUID userId;
-
-    @Column
-    private UUID teamId;
-    
-    @Column
-    private UUID projectId;
+    @Enumerated(EnumType.STRING)
+    private ApiType type;
 
     @Column(nullable = false)
     private String url;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private HttpMethod method;
-
     @Column
-    @Enumerated(EnumType.STRING)
-    private ProtocolType protocolType;
-
-    @Column
-    private UUID environmentId;
+    private String method;
 
     @Column
     @Lob
@@ -59,56 +49,45 @@ public class ApiTest {
 
     @Column
     @Lob
-    private String requestBody;
+    private String body;
 
     @Column
     @Lob
-    private String graphqlQuery;
+    private String queryParams;
 
     @Column
     @Lob
-    private String graphqlVariables;
+    private String pathParams;
 
     @Column
     @Lob
-    private String grpcRequest;
+    private String formParams;
+
+    @Column
+    private String authType;
 
     @Column
     @Lob
-    private String grpcServiceDefinition;
-
-    @Column
-    private String grpcServiceName;
-
-    @Column
-    private String grpcMethodName;
-
-    @Column
-    private Integer expectedStatusCode;
+    private String authConfig;
 
     @Column
     @Lob
-    private String expectedResponseBody;
+    private String assertions;
 
     @Column
     @Lob
-    private String preRequestScript;
+    private String scripts;
 
     @Column
-    @Lob
-    private String postRequestScript;
+    private Integer timeout;
 
     @Column
-    @Lob
-    private String validationScript;
+    private Boolean followRedirects;
 
     @Column(nullable = false)
-    private Integer timeoutMs;
+    private UUID createdBy;
 
     @Column(nullable = false)
-    private boolean active;
-
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -125,11 +104,12 @@ public class ApiTest {
         updatedAt = LocalDateTime.now();
     }
 
-    public UUID getId() {
+    // Getters and Setters
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -141,36 +121,20 @@ public class ApiTest {
         this.name = name;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public UUID getTeamId() {
-        return teamId;
-    }
-
-    public void setTeamId(UUID teamId) {
-        this.teamId = teamId;
-    }
-
-    public UUID getProjectId() {
+    public Long getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(UUID projectId) {
+    public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public ApiType getType() {
+        return type;
+    }
+
+    public void setType(ApiType type) {
+        this.type = type;
     }
 
     public String getUrl() {
@@ -181,28 +145,12 @@ public class ApiTest {
         this.url = url;
     }
 
-    public HttpMethod getMethod() {
+    public String getMethod() {
         return method;
     }
 
-    public void setMethod(HttpMethod method) {
+    public void setMethod(String method) {
         this.method = method;
-    }
-
-    public ProtocolType getProtocolType() {
-        return protocolType;
-    }
-
-    public void setProtocolType(ProtocolType protocolType) {
-        this.protocolType = protocolType;
-    }
-
-    public UUID getEnvironmentId() {
-        return environmentId;
-    }
-
-    public void setEnvironmentId(UUID environmentId) {
-        this.environmentId = environmentId;
     }
 
     public String getHeaders() {
@@ -213,116 +161,92 @@ public class ApiTest {
         this.headers = headers;
     }
 
-    public String getRequestBody() {
-        return requestBody;
+    public String getBody() {
+        return body;
     }
 
-    public void setRequestBody(String requestBody) {
-        this.requestBody = requestBody;
+    public void setBody(String body) {
+        this.body = body;
     }
 
-    public String getGraphqlQuery() {
-        return graphqlQuery;
+    public String getQueryParams() {
+        return queryParams;
     }
 
-    public void setGraphqlQuery(String graphqlQuery) {
-        this.graphqlQuery = graphqlQuery;
+    public void setQueryParams(String queryParams) {
+        this.queryParams = queryParams;
     }
 
-    public String getGraphqlVariables() {
-        return graphqlVariables;
+    public String getPathParams() {
+        return pathParams;
     }
 
-    public void setGraphqlVariables(String graphqlVariables) {
-        this.graphqlVariables = graphqlVariables;
+    public void setPathParams(String pathParams) {
+        this.pathParams = pathParams;
     }
 
-    public String getGrpcRequest() {
-        return grpcRequest;
+    public String getFormParams() {
+        return formParams;
     }
 
-    public void setGrpcRequest(String grpcRequest) {
-        this.grpcRequest = grpcRequest;
+    public void setFormParams(String formParams) {
+        this.formParams = formParams;
     }
 
-    public String getGrpcServiceDefinition() {
-        return grpcServiceDefinition;
+    public String getAuthType() {
+        return authType;
     }
 
-    public void setGrpcServiceDefinition(String grpcServiceDefinition) {
-        this.grpcServiceDefinition = grpcServiceDefinition;
+    public void setAuthType(String authType) {
+        this.authType = authType;
     }
 
-    public String getGrpcServiceName() {
-        return grpcServiceName;
+    public String getAuthConfig() {
+        return authConfig;
     }
 
-    public void setGrpcServiceName(String grpcServiceName) {
-        this.grpcServiceName = grpcServiceName;
+    public void setAuthConfig(String authConfig) {
+        this.authConfig = authConfig;
     }
 
-    public String getGrpcMethodName() {
-        return grpcMethodName;
+    public String getAssertions() {
+        return assertions;
     }
 
-    public void setGrpcMethodName(String grpcMethodName) {
-        this.grpcMethodName = grpcMethodName;
+    public void setAssertions(String assertions) {
+        this.assertions = assertions;
     }
 
-    public Integer getExpectedStatusCode() {
-        return expectedStatusCode;
+    public String getScripts() {
+        return scripts;
     }
 
-    public void setExpectedStatusCode(Integer expectedStatusCode) {
-        this.expectedStatusCode = expectedStatusCode;
+    public void setScripts(String scripts) {
+        this.scripts = scripts;
     }
 
-    public String getExpectedResponseBody() {
-        return expectedResponseBody;
+    public Integer getTimeout() {
+        return timeout;
     }
 
-    public void setExpectedResponseBody(String expectedResponseBody) {
-        this.expectedResponseBody = expectedResponseBody;
+    public void setTimeout(Integer timeout) {
+        this.timeout = timeout;
     }
 
-    public String getPreRequestScript() {
-        return preRequestScript;
+    public Boolean getFollowRedirects() {
+        return followRedirects;
     }
 
-    public void setPreRequestScript(String preRequestScript) {
-        this.preRequestScript = preRequestScript;
+    public void setFollowRedirects(Boolean followRedirects) {
+        this.followRedirects = followRedirects;
     }
 
-    public String getPostRequestScript() {
-        return postRequestScript;
+    public UUID getCreatedBy() {
+        return createdBy;
     }
 
-    public void setPostRequestScript(String postRequestScript) {
-        this.postRequestScript = postRequestScript;
-    }
-
-    public String getValidationScript() {
-        return validationScript;
-    }
-
-    public void setValidationScript(String validationScript) {
-        this.validationScript = validationScript;
-    }
-
-    public Integer getTimeoutMs() {
-        return timeoutMs;
-    }
-
-    public void setTimeoutMs(Integer timeoutMs) {
-        this.timeoutMs = timeoutMs;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -341,3 +265,4 @@ public class ApiTest {
         this.updatedAt = updatedAt;
     }
 }
+

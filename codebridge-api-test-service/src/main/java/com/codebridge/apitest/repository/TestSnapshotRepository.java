@@ -12,7 +12,7 @@ import java.util.UUID;
  * Repository for test snapshots.
  */
 @Repository
-public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, UUID> {
+public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, Long> {
     
     /**
      * Find all snapshots for a test.
@@ -20,7 +20,7 @@ public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, UUID
      * @param testId the test ID
      * @return the list of snapshots
      */
-    List<TestSnapshot> findByTestId(UUID testId);
+    List<TestSnapshot> findByTestId(Long testId);
     
     /**
      * Find a snapshot by test ID and name.
@@ -29,7 +29,7 @@ public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, UUID
      * @param name the snapshot name
      * @return the snapshot if found
      */
-    Optional<TestSnapshot> findByTestIdAndName(UUID testId, String name);
+    Optional<TestSnapshot> findByTestIdAndName(Long testId, String name);
     
     /**
      * Find the latest approved snapshot for a test.
@@ -37,6 +37,6 @@ public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, UUID
      * @param testId the test ID
      * @return the latest approved snapshot if found
      */
-    Optional<TestSnapshot> findFirstByTestIdAndApprovedTrueOrderByCreatedAtDesc(UUID testId);
+    Optional<TestSnapshot> findFirstByTestIdAndApprovedTrueOrderByCreatedAtDesc(Long testId);
 }
 
