@@ -53,7 +53,9 @@ public class ApiTestController {
     public ResponseEntity<ApiTestResponse> createApiTest(
             @Valid @RequestBody ApiTestRequest request,
             Authentication authentication) {
-        ApiTestResponse response = apiTestService.createApiTest(request, getUserId(authentication));
+        // Assuming projectId is 1L for now, in a real app this would come from the request or context
+        Long projectId = 1L;
+        ApiTestResponse response = apiTestService.createApiTest(request, projectId, getUserId(authentication));
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -65,7 +67,9 @@ public class ApiTestController {
      */
     @GetMapping
     public ResponseEntity<List<ApiTestResponse>> getApiTests(Authentication authentication) {
-        List<ApiTestResponse> tests = apiTestService.getApiTests(getUserId(authentication));
+        // Assuming projectId is 1L for now, in a real app this would come from the request or context
+        Long projectId = 1L;
+        List<ApiTestResponse> tests = apiTestService.getApiTests(projectId, getUserId(authentication));
         return ResponseEntity.ok(tests);
     }
 
