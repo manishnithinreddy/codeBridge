@@ -6,7 +6,7 @@ echo "Starting CodeBridge services..."
 
 # Check if Java is installed
 if ! command -v java &> /dev/null; then
-    echo "Java is not installed. Please install Java 17 or higher."
+    echo "Java is not installed. Please install Java 21 or higher."
     exit 1
 fi
 
@@ -55,4 +55,3 @@ echo "Swagger UI for Teams Service: http://localhost:8082/teams/swagger-ui.html"
 echo "Swagger UI for Platform Operations: http://localhost:8083/ops/swagger-ui.html"
 
 echo "To stop all services, run: ./stop-local.sh"
-

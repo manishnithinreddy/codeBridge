@@ -17,7 +17,7 @@
     <description>Docker Service for CodeBridge</description>
     
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
         <docker-java.version>3.3.3</docker-java.version>
     </properties>
@@ -127,4 +127,3 @@
         </plugins>
     </build>
 </project>
-
