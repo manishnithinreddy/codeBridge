@@ -9,21 +9,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface CollectionRepository extends JpaRepository<Collection, UUID> {
+public interface CollectionRepository extends JpaRepository<Collection, Long> {
 
     // Finders for standalone collections (not associated with a project)
-    List<Collection> findByUserId(UUID userId);
-    Optional<Collection> findByIdAndUserId(UUID id, UUID userId);
+    List<Collection> findByUserId(Long userId);
+    Optional<Collection> findByIdAndUserId(Long id, Long userId);
 
     // Finders for collections associated with a project
-    List<Collection> findByProjectId(UUID projectId);
+    List<Collection> findByProjectId(Long projectId);
 
     // Finds collections within a specific project that are also primarily owned by a specific user.
     // The 'userId' on Collection entity is the direct owner.
     // This can be useful if you want to find collections in a project that a specific user "owns"
     // even if they have access to the project via sharing.
-    List<Collection> findByProjectIdAndUserId(UUID projectId, UUID userId);
+    List<Collection> findByProjectIdAndUserId(Long projectId, Long userId);
 
     // Finds a specific collection by its ID, within a specific project, and owned by a specific user.
-    Optional<Collection> findByIdAndProjectIdAndUserId(UUID id, UUID projectId, UUID userId);
+    Optional<Collection> findByIdAndProjectIdAndUserId(Long id, Long projectId, Long userId);
 }
