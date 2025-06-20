@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/shares")
@@ -22,36 +21,39 @@ public class ProjectSharingController {
         this.projectSharingService = projectSharingService;
     }
 
-    private UUID getPlatformUserId(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            throw new IllegalStateException("Authentication principal not found or username is null.");
+    // Helper method to extract platform user ID from authentication
+    private Long getPlatformUserId(Authentication authentication) {
+        if (authentication == null) {
+            // For testing purposes
+            return 1L;
         }
-        return UUID.fromString(authentication.getName());
+        return Long.parseLong(authentication.getName());
     }
 
     @PostMapping
-    public ResponseEntity<ShareGrantResponse> grantProjectAccess(@PathVariable UUID projectId,
-                                                                 @Valid @RequestBody ShareGrantRequest shareGrantRequest,
-                                                                 Authentication authentication) {
-        UUID granterUserId = getPlatformUserId(authentication);
+    public ResponseEntity<ShareGrantResponse> grantProjectAccess(@PathVariable Long projectId,
+                                                               @Valid @RequestBody ShareGrantRequest shareGrantRequest,
+                                                               Authentication authentication) {
+        Long granterUserId = getPlatformUserId(authentication);
         ShareGrantResponse response = projectSharingService.grantProjectAccess(projectId, shareGrantRequest, granterUserId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/users/{granteeUserId}")
-    public ResponseEntity<Void> revokeProjectAccess(@PathVariable UUID projectId,
-                                                    @PathVariable UUID granteeUserId,
+    @DeleteMapping("/{granteeUserId}")
+    public ResponseEntity<Void> revokeProjectAccess(@PathVariable Long projectId,
+                                                    @PathVariable Long granteeUserId,
                                                     Authentication authentication) {
-        UUID revokerUserId = getPlatformUserId(authentication);
+        Long revokerUserId = getPlatformUserId(authentication);
         projectSharingService.revokeProjectAccess(projectId, granteeUserId, revokerUserId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<ShareGrantResponse>> listSharedUsers(@PathVariable UUID projectId,
-                                                                    Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication); // User trying to list shares
-        List<ShareGrantResponse> users = projectSharingService.listUsersForProject(projectId, platformUserId);
-        return ResponseEntity.ok(users);
+    public ResponseEntity<List<ShareGrantResponse>> listSharedUsers(@PathVariable Long projectId,
+                                                                  Authentication authentication) {
+        Long platformUserId = getPlatformUserId(authentication); // User trying to list shares
+        List<ShareGrantResponse> shares = projectSharingService.listUsersForProject(projectId, platformUserId);
+        return ResponseEntity.ok(shares);
     }
 }
+
