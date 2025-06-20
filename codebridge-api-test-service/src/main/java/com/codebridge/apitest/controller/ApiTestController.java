@@ -30,20 +30,16 @@ public class ApiTestController {
         this.apiTestService = apiTestService;
     }
 
-    private UUID getUserId(Authentication authentication) {
-        if (authentication == null || authentication.getPrincipal() == null) {
-            // For testing purposes, return a fixed UUID
-            return UUID.fromString("00000000-0000-0000-0000-000000000001");
-        }
-        
-        if (authentication.getPrincipal() instanceof UserDetails) {
-            return UUID.fromString(((UserDetails) authentication.getPrincipal()).getUsername());
-        } else if (authentication.getPrincipal() instanceof String) {
-            return UUID.fromString((String) authentication.getPrincipal());
-        }
-        
-        // Default test user
-        return UUID.fromString("00000000-0000-0000-0000-000000000001");
+    /**
+     * Gets the user ID from the authentication.
+     *
+     * @param authentication the authentication
+     * @return the user ID
+     */
+    private Long getUserId(Authentication authentication) {
+        // Extract user ID from authentication
+        String userId = authentication.getName();
+        return Long.parseLong(userId);
     }
 
     /**
@@ -150,4 +146,3 @@ public class ApiTestController {
         return ResponseEntity.ok(results);
     }
 }
-
