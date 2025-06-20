@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -22,50 +21,51 @@ public class ProjectController {
         this.projectService = projectService;
     }
 
-    private UUID getPlatformUserId(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            // For testing purposes, return a fixed UUID
-            return UUID.fromString("00000000-0000-0000-0000-000000000001");
+    // Helper method to extract platform user ID from authentication
+    private Long getPlatformUserId(Authentication authentication) {
+        if (authentication == null) {
+            // For testing purposes, return a fixed ID
+            return 1L;
         }
-        return UUID.fromString(authentication.getName());
+        return Long.parseLong(authentication.getName());
     }
 
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(@Valid @RequestBody ProjectRequest projectRequest,
-                                                         Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+                                                        Authentication authentication) {
+        Long platformUserId = getPlatformUserId(authentication);
         ProjectResponse createdProject = projectService.createProject(projectRequest, platformUserId);
         return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<ProjectResponse> getProjectById(@PathVariable UUID projectId,
-                                                          Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
-        ProjectResponse project = projectService.getProjectByIdForUser(projectId, platformUserId);
+    public ResponseEntity<ProjectResponse> getProjectById(@PathVariable Long projectId,
+                                                         Authentication authentication) {
+        Long platformUserId = getPlatformUserId(authentication);
+        ProjectResponse project = projectService.getProjectById(projectId, platformUserId);
         return ResponseEntity.ok(project);
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> listProjects(Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
-        List<ProjectResponse> projects = projectService.listProjectsForUser(platformUserId);
+    public ResponseEntity<List<ProjectResponse>> getAllProjects(Authentication authentication) {
+        Long platformUserId = getPlatformUserId(authentication);
+        List<ProjectResponse> projects = projectService.getAllProjects(platformUserId);
         return ResponseEntity.ok(projects);
     }
 
     @PutMapping("/{projectId}")
-    public ResponseEntity<ProjectResponse> updateProject(@PathVariable UUID projectId,
-                                                         @Valid @RequestBody ProjectRequest projectRequest,
-                                                         Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+    public ResponseEntity<ProjectResponse> updateProject(@PathVariable Long projectId,
+                                                        @Valid @RequestBody ProjectRequest projectRequest,
+                                                        Authentication authentication) {
+        Long platformUserId = getPlatformUserId(authentication);
         ProjectResponse updatedProject = projectService.updateProject(projectId, projectRequest, platformUserId);
         return ResponseEntity.ok(updatedProject);
     }
 
     @DeleteMapping("/{projectId}")
-    public ResponseEntity<Void> deleteProject(@PathVariable UUID projectId,
-                                              Authentication authentication) {
-        UUID platformUserId = getPlatformUserId(authentication);
+    public ResponseEntity<Void> deleteProject(@PathVariable Long projectId,
+                                             Authentication authentication) {
+        Long platformUserId = getPlatformUserId(authentication);
         projectService.deleteProject(projectId, platformUserId);
         return ResponseEntity.noContent().build();
     }
