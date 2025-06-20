@@ -4,9 +4,6 @@ import com.codebridge.apitest.model.enums.ScheduleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 /**
  * Request DTO for scheduled test operations.
  */
@@ -17,24 +14,20 @@ public class ScheduledTestRequest {
     
     private String description;
     
-    private UUID testId;
+    private Long testId;
     
-    private UUID chainId;
+    private Long chainId;
     
-    private UUID loadTestId;
+    private Long loadTestId;
     
-    private UUID environmentId;
+    private Long environmentId;
     
     @NotNull(message = "Schedule type is required")
     private ScheduleType scheduleType;
     
     private String cronExpression;
     
-    private Integer fixedRateSeconds;
-    
-    private LocalDateTime oneTimeExecutionTime;
-    
-    private String webhookUrl;
+    private Integer intervalMinutes;
 
     public String getName() {
         return name;
@@ -52,35 +45,35 @@ public class ScheduledTestRequest {
         this.description = description;
     }
 
-    public UUID getTestId() {
+    public Long getTestId() {
         return testId;
     }
 
-    public void setTestId(UUID testId) {
+    public void setTestId(Long testId) {
         this.testId = testId;
     }
 
-    public UUID getChainId() {
+    public Long getChainId() {
         return chainId;
     }
 
-    public void setChainId(UUID chainId) {
+    public void setChainId(Long chainId) {
         this.chainId = chainId;
     }
 
-    public UUID getLoadTestId() {
+    public Long getLoadTestId() {
         return loadTestId;
     }
 
-    public void setLoadTestId(UUID loadTestId) {
+    public void setLoadTestId(Long loadTestId) {
         this.loadTestId = loadTestId;
     }
 
-    public UUID getEnvironmentId() {
+    public Long getEnvironmentId() {
         return environmentId;
     }
 
-    public void setEnvironmentId(UUID environmentId) {
+    public void setEnvironmentId(Long environmentId) {
         this.environmentId = environmentId;
     }
 
@@ -100,28 +93,12 @@ public class ScheduledTestRequest {
         this.cronExpression = cronExpression;
     }
 
-    public Integer getFixedRateSeconds() {
-        return fixedRateSeconds;
+    public Integer getIntervalMinutes() {
+        return intervalMinutes;
     }
 
-    public void setFixedRateSeconds(Integer fixedRateSeconds) {
-        this.fixedRateSeconds = fixedRateSeconds;
-    }
-
-    public LocalDateTime getOneTimeExecutionTime() {
-        return oneTimeExecutionTime;
-    }
-
-    public void setOneTimeExecutionTime(LocalDateTime oneTimeExecutionTime) {
-        this.oneTimeExecutionTime = oneTimeExecutionTime;
-    }
-
-    public String getWebhookUrl() {
-        return webhookUrl;
-    }
-
-    public void setWebhookUrl(String webhookUrl) {
-        this.webhookUrl = webhookUrl;
+    public void setIntervalMinutes(Integer intervalMinutes) {
+        this.intervalMinutes = intervalMinutes;
     }
 }
 

@@ -27,479 +27,493 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
- * Service for API tests.
+ * Service for API test operations.
  */
 @Service
 public class ApiTestService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ApiTestService.class);
-    
+
+    private final ApiTestRepository apiTestRepository;
+    private final TestResultRepository testResultRepository;
+    private final EnvironmentService environmentService;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+    private final TestSnapshotService testSnapshotService;
+
     @Autowired
-    private ApiTestRepository apiTestRepository;
-    
-    @Autowired
-    private TestResultRepository testResultRepository;
-    
-    @Autowired
-    private ObjectMapper objectMapper;
-    
-    @Autowired
-    private RestTemplate restTemplate;
-    
-    /**
-     * Creates a new API test.
-     *
-     * @param request the API test request
-     * @param projectId the project ID
-     * @param userId the user ID
-     * @return the created API test
-     */
-    public ApiTestResponse createApiTest(ApiTestRequest request, Long projectId, Long userId) {
-        // Validate project exists
-        // projectRepository.findById(projectId)
-        //     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
-        
-        // Create API test
-        ApiTest apiTest = new ApiTest();
-        // ID will be auto-generated
-        apiTest.setName(request.getName());
-        apiTest.setProjectId(projectId);
-        apiTest.setProtocolType(request.getProtocolType());
-        apiTest.setUrl(request.getUrl());
-        apiTest.setMethod(request.getMethod());
-        
-        try {
-            if (request.getHeaders() != null) {
-                apiTest.setHeaders(objectMapper.readValue(request.getHeaders(), new TypeReference<Map<String, String>>() {}));
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing headers JSON", e);
-        }
-        
-        apiTest.setRequestBody(request.getRequestBody());
-        apiTest.setGraphqlQuery(request.getGraphqlQuery());
-        apiTest.setGraphqlVariables(request.getGraphqlVariables());
-        apiTest.setGrpcRequest(request.getGrpcRequest());
-        apiTest.setGrpcServiceDefinition(request.getGrpcServiceDefinition());
-        apiTest.setExpectedStatusCode(request.getExpectedStatusCode());
-        // apiTest.setExpectedResponseBody(request.getExpectedResponseBody());
-        // apiTest.setPreRequestScript(request.getPreRequestScript());
-        // apiTest.setPostRequestScript(request.getPostRequestScript());
-        // apiTest.setValidationScript(request.getValidationScript());
-        apiTest.setTimeoutMs(request.getTimeoutMs());
-        apiTest.setActive(true);
-        
-        ApiTest savedTest = apiTestRepository.save(apiTest);
-        return mapToApiTestResponse(savedTest);
+    public ApiTestService(
+            ApiTestRepository apiTestRepository,
+            TestResultRepository testResultRepository,
+            EnvironmentService environmentService,
+            RestTemplate restTemplate,
+            ObjectMapper objectMapper,
+            TestSnapshotService testSnapshotService) {
+        this.apiTestRepository = apiTestRepository;
+        this.testResultRepository = testResultRepository;
+        this.environmentService = environmentService;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+        this.testSnapshotService = testSnapshotService;
     }
-    
+
     /**
-     * Updates an API test.
-     *
-     * @param id the API test ID
-     * @param request the API test request
-     * @param userId the user ID
-     * @return the updated API test
-     */
-    public ApiTestResponse updateApiTest(Long id, ApiTestRequest request, Long userId) {
-        ApiTest test = apiTestRepository.findByIdAndProjectId(id, request.getProjectId())
-            .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", id.toString()));
-        
-        // Update fields
-        test.setName(request.getName());
-        test.setProtocolType(request.getProtocolType());
-        test.setUrl(request.getUrl());
-        test.setMethod(request.getMethod());
-        
-        try {
-            if (request.getHeaders() != null) {
-                test.setHeaders(objectMapper.readValue(request.getHeaders(), new TypeReference<Map<String, String>>() {}));
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing headers JSON", e);
-        }
-        
-        test.setRequestBody(request.getRequestBody());
-        test.setGraphqlQuery(request.getGraphqlQuery());
-        test.setGraphqlVariables(request.getGraphqlVariables());
-        test.setGrpcRequest(request.getGrpcRequest());
-        test.setGrpcServiceDefinition(request.getGrpcServiceDefinition());
-        test.setExpectedStatusCode(request.getExpectedStatusCode());
-        // test.setExpectedResponseBody(request.getExpectedResponseBody());
-        // test.setPreRequestScript(request.getPreRequestScript());
-        // test.setPostRequestScript(request.getPostRequestScript());
-        // test.setValidationScript(request.getValidationScript());
-        test.setTimeoutMs(request.getTimeoutMs());
-        
-        ApiTest updatedTest = apiTestRepository.save(test);
-        return mapToApiTestResponse(updatedTest);
-    }
-    
-    /**
-     * Gets all API tests for a project.
+     * Get all API tests for a project.
      *
      * @param projectId the project ID
-     * @param userId the user ID
-     * @return the list of API tests
+     * @return list of API test responses
      */
-    public List<ApiTestResponse> getApiTests(Long projectId, Long userId) {
-        // Validate project exists and user has access
-        // projectRepository.findById(projectId)
-        //     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
-        
+    public List<ApiTestResponse> getApiTests(Long projectId) {
         List<ApiTest> tests = apiTestRepository.findByProjectId(projectId);
         return tests.stream()
-            .map(this::mapToApiTestResponse)
-            .collect(Collectors.toList());
+                .map(this::mapToResponse)
+                .toList();
     }
-    
+
     /**
-     * Gets an API test by ID.
+     * Get an API test by ID.
      *
      * @param id the API test ID
-     * @param userId the user ID
-     * @return the API test
+     * @param projectId the project ID
+     * @return the API test response
+     * @throws ResourceNotFoundException if the API test is not found
      */
-    public ApiTestResponse getApiTest(Long id, Long userId) {
-        ApiTest test = apiTestRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", id.toString()));
-        
-        // Validate user has access to the project
-        // projectRepository.findById(test.getProjectId())
-        //     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", test.getProjectId().toString()));
-        
-        return mapToApiTestResponse(test);
+    public ApiTestResponse getApiTest(Long id, Long projectId) {
+        ApiTest test = apiTestRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("API test not found"));
+        return mapToResponse(test);
     }
-    
+
     /**
-     * Executes a test.
+     * Create a new API test.
      *
-     * @param id the test ID
-     * @param userId the user ID
-     * @return the test result
+     * @param request the API test request
+     * @param projectId the project ID
+     * @return the created API test response
      */
-    public TestResultResponse executeTest(Long id, Long userId) {
-        long startTime = System.currentTimeMillis();
-        
-        ApiTest test = apiTestRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", id.toString()));
-        
-        TestResult testResult = new TestResult();
-        testResult.setId(UUID.randomUUID());
-        testResult.setTestId(test.getId());
-        testResult.setUserId(userId);
-        testResult.setStartTime(LocalDateTime.now());
+    public ApiTestResponse createApiTest(ApiTestRequest request, Long projectId) {
+        ApiTest test = new ApiTest();
+        test.setName(request.getName());
+        test.setDescription(request.getDescription());
+        test.setProjectId(projectId);
+        test.setMethod(request.getMethod());
+        test.setProtocol(request.getProtocol());
+        test.setEndpoint(request.getEndpoint());
+        test.setRequestBody(request.getRequestBody());
         
         try {
-            // Execute test based on protocol type
-            switch (test.getProtocolType()) {
-                case HTTP:
-                    executeHttpTest(test, testResult);
-                    break;
-                case WEBSOCKET:
-                    executeWebSocketTest(test, testResult);
-                    break;
-                case GRAPHQL:
-                    executeGraphQLTest(test, testResult);
-                    break;
-                case GRPC:
-                    executeGrpcTest(test, testResult);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported protocol type: " + test.getProtocolType());
+            if (request.getRequestHeaders() != null) {
+                test.setRequestHeaders(objectMapper.writeValueAsString(request.getRequestHeaders()));
             }
-            
-            // Run validation script if provided
-            if (test.getValidationScript() != null && !test.getValidationScript().isEmpty()) {
-                boolean validationPassed = runValidationScript(test, testResult);
-                testResult.setValidationPassed(validationPassed);
-            } else {
-                // If no validation script, check expected status code
-                if (test.getExpectedStatusCode() != null) {
-                    boolean statusCodeMatches = testResult.getStatusCode() != null && 
-                                               testResult.getStatusCode().equals(test.getExpectedStatusCode());
-                    testResult.setValidationPassed(statusCodeMatches);
-                } else {
-                    // No validation criteria, assume passed
-                    testResult.setValidationPassed(true);
-                }
+            if (request.getRequestParams() != null) {
+                test.setRequestParams(objectMapper.writeValueAsString(request.getRequestParams()));
             }
-        } catch (Exception e) {
-            logger.error("Error executing test", e);
-            testResult.setError(e.getMessage());
-            testResult.setValidationPassed(false);
-        } finally {
-            testResult.setEndTime(LocalDateTime.now());
-            testResult.setDurationMs(System.currentTimeMillis() - startTime);
-            testResultRepository.save(testResult);
+            if (request.getAssertions() != null) {
+                test.setAssertions(objectMapper.writeValueAsString(request.getAssertions()));
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error processing JSON", e);
         }
         
-        return mapToTestResultResponse(testResult);
+        ApiTest savedTest = apiTestRepository.save(test);
+        return mapToResponse(savedTest);
     }
-    
+
     /**
-     * Executes an HTTP test.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     */
-    private void executeHttpTest(ApiTest apiTest, TestResult testResult) {
-        try {
-            // Run pre-request script if provided
-            if (apiTest.getPreRequestScript() != null && !apiTest.getPreRequestScript().isEmpty()) {
-                runPreRequestScript(apiTest, testResult);
-            }
-            
-            // Prepare headers
-            HttpHeaders headers = new HttpHeaders();
-            if (apiTest.getHeaders() != null) {
-                try {
-                    Map<String, String> headersMap = objectMapper.readValue(apiTest.getHeaders(), new TypeReference<Map<String, String>>() {});
-                    headersMap.forEach(headers::add);
-                } catch (JsonProcessingException e) {
-                    logger.error("Error parsing headers", e);
-                    testResult.setError("Error parsing headers: " + e.getMessage());
-                    return;
-                }
-            }
-            
-            // Prepare request entity
-            HttpEntity<String> requestEntity = new HttpEntity<>(apiTest.getRequestBody(), headers);
-            
-            // Execute request
-            ResponseEntity<String> responseEntity;
-            try {
-                HttpMethod method = HttpMethod.valueOf(apiTest.getMethod());
-                responseEntity = restTemplate.exchange(apiTest.getUrl(), method, requestEntity, String.class);
-                
-                // Record response
-                testResult.setStatusCode(responseEntity.getStatusCode().value());
-                testResult.setResponseBody(responseEntity.getBody());
-                
-                try {
-                    testResult.setResponseHeaders(objectMapper.writeValueAsString(responseEntity.getHeaders().toSingleValueMap()));
-                } catch (JsonProcessingException e) {
-                    logger.error("Error processing response headers JSON", e);
-                }
-                
-                // Run post-request script if provided
-                if (apiTest.getPostRequestScript() != null && !apiTest.getPostRequestScript().isEmpty()) {
-                    runPostRequestScript(apiTest, testResult);
-                }
-            } catch (HttpStatusCodeException e) {
-                // Capture error response
-                testResult.setStatusCode(e.getRawStatusCode());
-                testResult.setResponseBody(e.getResponseBodyAsString());
-                
-                try {
-                    testResult.setResponseHeaders(objectMapper.writeValueAsString(e.getResponseHeaders().toSingleValueMap()));
-                } catch (JsonProcessingException ex) {
-                    logger.error("Error processing response headers JSON", ex);
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error executing HTTP test", e);
-            testResult.setError("Error executing HTTP test: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Executes a WebSocket test.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     */
-    private void executeWebSocketTest(ApiTest apiTest, TestResult testResult) {
-        // WebSocket implementation would go here
-        testResult.setError("WebSocket testing not implemented yet");
-    }
-    
-    /**
-     * Executes a GraphQL test.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     */
-    private void executeGraphQLTest(ApiTest apiTest, TestResult testResult) {
-        // GraphQL implementation would go here
-        testResult.setError("GraphQL testing not implemented yet");
-    }
-    
-    /**
-     * Executes a gRPC test.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     */
-    private void executeGrpcTest(ApiTest apiTest, TestResult testResult) {
-        // gRPC implementation would go here
-        testResult.setError("gRPC testing not implemented yet");
-    }
-    
-    /**
-     * Runs the pre-request script.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     */
-    private void runPreRequestScript(ApiTest apiTest, TestResult testResult) {
-        // Script execution would go here
-    }
-    
-    /**
-     * Runs the post-request script.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     */
-    private void runPostRequestScript(ApiTest apiTest, TestResult testResult) {
-        // Script execution would go here
-    }
-    
-    /**
-     * Runs the validation script.
-     *
-     * @param apiTest the API test
-     * @param testResult the test result
-     * @return true if validation passed, false otherwise
-     */
-    private boolean runValidationScript(ApiTest apiTest, TestResult testResult) {
-        // Script execution would go here
-        return true;
-    }
-    
-    /**
-     * Deletes an API test.
+     * Update an API test.
      *
      * @param id the API test ID
-     * @param userId the user ID
+     * @param request the API test request
+     * @param projectId the project ID
+     * @return the updated API test response
+     * @throws ResourceNotFoundException if the API test is not found
      */
-    public void deleteApiTest(Long id, Long userId) {
-        ApiTest test = apiTestRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", id.toString()));
+    public ApiTestResponse updateApiTest(Long id, ApiTestRequest request, Long projectId) {
+        ApiTest test = apiTestRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("API test not found"));
         
-        // Validate user has access to the project
-        // projectRepository.findById(test.getProjectId())
-        //     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", test.getProjectId().toString()));
+        test.setName(request.getName());
+        test.setDescription(request.getDescription());
+        test.setMethod(request.getMethod());
+        test.setProtocol(request.getProtocol());
+        test.setEndpoint(request.getEndpoint());
+        test.setRequestBody(request.getRequestBody());
         
+        try {
+            if (request.getRequestHeaders() != null) {
+                test.setRequestHeaders(objectMapper.writeValueAsString(request.getRequestHeaders()));
+            }
+            if (request.getRequestParams() != null) {
+                test.setRequestParams(objectMapper.writeValueAsString(request.getRequestParams()));
+            }
+            if (request.getAssertions() != null) {
+                test.setAssertions(objectMapper.writeValueAsString(request.getAssertions()));
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error processing JSON", e);
+        }
+        
+        ApiTest updatedTest = apiTestRepository.save(test);
+        return mapToResponse(updatedTest);
+    }
+
+    /**
+     * Delete an API test.
+     *
+     * @param id the API test ID
+     * @param projectId the project ID
+     * @throws ResourceNotFoundException if the API test is not found
+     */
+    public void deleteApiTest(Long id, Long projectId) {
+        ApiTest test = apiTestRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("API test not found"));
         apiTestRepository.delete(test);
     }
-    
+
     /**
-     * Gets test results for an API test.
+     * Execute an API test.
      *
-     * @param testId the API test ID
+     * @param id the API test ID
+     * @param projectId the project ID
      * @param userId the user ID
-     * @return the list of test results
+     * @param environmentId the environment ID
+     * @param additionalVariables additional variables to use
+     * @return the test result response
+     * @throws ResourceNotFoundException if the API test is not found
      */
-    public List<TestResultResponse> getTestResults(Long testId, Long userId) {
-        ApiTest test = apiTestRepository.findById(testId)
-            .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", testId.toString()));
-        
-        // Validate user has access to the project
-        // projectRepository.findById(test.getProjectId())
-        //     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", test.getProjectId().toString()));
-        
-        List<TestResult> results = testResultRepository.findByTestIdOrderByStartTimeDesc(testId);
-        return results.stream()
-            .map(this::mapToTestResultResponse)
-            .collect(Collectors.toList());
-    }
-    
-    /**
-     * Gets a test result by ID.
-     *
-     * @param id the test result ID
-     * @param userId the user ID
-     * @return the test result
-     */
-    public TestResultResponse getTestResult(UUID id, Long userId) {
-        TestResult result = testResultRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("TestResult", "id", id.toString()));
-        
-        // Validate user has access to the test
-        ApiTest test = apiTestRepository.findById(result.getTestId())
-            .orElseThrow(() -> new ResourceNotFoundException("ApiTest", "id", result.getTestId().toString()));
-        
-        // Validate user has access to the project
-        // projectRepository.findById(test.getProjectId())
-        //     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", test.getProjectId().toString()));
-        
-        return mapToTestResultResponse(result);
-    }
-    
-    /**
-     * Maps an API test to an API test response.
-     *
-     * @param apiTest the API test
-     * @return the API test response
-     */
-    private ApiTestResponse mapToApiTestResponse(ApiTest apiTest) {
-        ApiTestResponse response = new ApiTestResponse();
-        response.setId(apiTest.getId());
-        response.setName(apiTest.getName());
-        response.setProjectId(apiTest.getProjectId());
-        response.setProtocolType(apiTest.getProtocolType());
-        response.setUrl(apiTest.getUrl());
-        response.setMethod(apiTest.getMethod());
-        
-        if (apiTest.getHeaders() != null) {
-            try {
-                response.setHeaders(objectMapper.readValue(apiTest.getHeaders(), new TypeReference<Map<String, String>>() {}));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error processing headers JSON", e);
-            }
+    public TestResultResponse executeTest(Long id, Long projectId, Long userId, Long environmentId, Map<String, String> additionalVariables) {
+        ApiTest test;
+        if (projectId != null) {
+            test = apiTestRepository.findByIdAndProjectId(id, projectId)
+                    .orElseThrow(() -> new ResourceNotFoundException("API test not found"));
+        } else {
+            test = apiTestRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("API test not found"));
+            projectId = test.getProjectId();
         }
         
-        response.setRequestBody(apiTest.getRequestBody());
-        response.setGraphqlQuery(apiTest.getGraphqlQuery());
-        response.setGraphqlVariables(apiTest.getGraphqlVariables());
-        response.setGrpcRequest(apiTest.getGrpcRequest());
-        response.setGrpcServiceDefinition(apiTest.getGrpcServiceDefinition());
-        response.setExpectedStatusCode(apiTest.getExpectedStatusCode());
-        // These fields don't exist in ApiTest entity
-        // response.setExpectedResponseBody(apiTest.getExpectedResponseBody());
-        // response.setPreRequestScript(apiTest.getPreRequestScript());
-        // response.setPostRequestScript(apiTest.getPostRequestScript());
-        // response.setValidationScript(apiTest.getValidationScript());
-        response.setTimeoutMs(apiTest.getTimeoutMs());
-        response.setActive(apiTest.isActive());
-        response.setCreatedAt(apiTest.getCreatedAt());
-        response.setUpdatedAt(apiTest.getUpdatedAt());
+        // Get environment
+        var environment = environmentId != null
+                ? environmentService.getEnvironment(environmentId, projectId)
+                : environmentService.getDefaultEnvironment(projectId);
+        
+        // Prepare variables
+        Map<String, String> variables = new HashMap<>();
+        if (environment.getVariables() != null) {
+            variables.putAll(environment.getVariables());
+        }
+        if (additionalVariables != null) {
+            variables.putAll(additionalVariables);
+        }
+        
+        // Prepare request
+        String url = buildUrl(test, environment.getBaseUrl(), variables);
+        HttpMethod method = HttpMethod.valueOf(test.getMethod().name());
+        HttpHeaders headers = buildHeaders(test, environment.getHeaders(), variables);
+        String body = replaceVariables(test.getRequestBody(), variables);
+        
+        HttpEntity<String> requestEntity = new HttpEntity<>(body, headers);
+        
+        // Execute request
+        long startTime = System.currentTimeMillis();
+        ResponseEntity<String> response;
+        String responseBody = null;
+        int statusCode = 0;
+        Map<String, String> responseHeaders = new HashMap<>();
+        
+        try {
+            response = restTemplate.exchange(url, method, requestEntity, String.class);
+            responseBody = response.getBody();
+            statusCode = response.getStatusCode().value();
+            response.getHeaders().forEach((key, values) -> 
+                    responseHeaders.put(key, String.join(", ", values)));
+        } catch (HttpStatusCodeException e) {
+            responseBody = e.getResponseBodyAsString();
+            statusCode = e.getStatusCode().value();
+            e.getResponseHeaders().forEach((key, values) -> 
+                    responseHeaders.put(key, String.join(", ", values)));
+        } catch (Exception e) {
+            logger.error("Error executing test", e);
+            responseBody = "Error: " + e.getMessage();
+            statusCode = 500;
+        }
+        
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        
+        // Save test result
+        TestResult result = new TestResult();
+        result.setTestId(test.getId());
+        result.setEnvironmentId(environment.getId());
+        result.setUserId(userId);
+        result.setRequestUrl(url);
+        result.setRequestMethod(test.getMethod());
+        result.setRequestBody(body);
+        
+        try {
+            result.setRequestHeaders(objectMapper.writeValueAsString(headers.toSingleValueMap()));
+            result.setResponseHeaders(objectMapper.writeValueAsString(responseHeaders));
+        } catch (JsonProcessingException e) {
+            logger.error("Error serializing headers", e);
+        }
+        
+        result.setResponseBody(responseBody);
+        result.setResponseStatus(statusCode);
+        result.setResponseTime(duration);
+        
+        // Evaluate assertions
+        boolean passed = evaluateAssertions(test, result);
+        result.setPassed(passed);
+        
+        TestResult savedResult = testResultRepository.save(result);
+        
+        // Map to response
+        TestResultResponse resultResponse = mapResultToResponse(savedResult);
+        
+        // Compare with snapshot if available
+        Map<String, Object> snapshotComparison = testSnapshotService.compareWithSnapshot(test.getId(), savedResult);
+        resultResponse.setSnapshotComparison(snapshotComparison);
+        
+        return resultResponse;
+    }
+
+    /**
+     * Build the full URL for a test.
+     *
+     * @param test the API test
+     * @param baseUrl the base URL
+     * @param variables the variables
+     * @return the full URL
+     */
+    private String buildUrl(ApiTest test, String baseUrl, Map<String, String> variables) {
+        String protocol = test.getProtocol() == ProtocolType.HTTPS ? "https://" : "http://";
+        String endpoint = replaceVariables(test.getEndpoint(), variables);
+        
+        // If baseUrl already has protocol, don't add it again
+        if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) {
+            protocol = "";
+        }
+        
+        // Remove trailing slash from baseUrl and leading slash from endpoint
+        if (baseUrl.endsWith("/") && endpoint.startsWith("/")) {
+            endpoint = endpoint.substring(1);
+        } else if (!baseUrl.endsWith("/") && !endpoint.startsWith("/")) {
+            endpoint = "/" + endpoint;
+        }
+        
+        String url = protocol + baseUrl + endpoint;
+        
+        // Add query parameters
+        try {
+            if (test.getRequestParams() != null && !test.getRequestParams().isEmpty()) {
+                Map<String, String> params = objectMapper.readValue(
+                        test.getRequestParams(), new TypeReference<Map<String, String>>() {});
+                
+                if (!params.isEmpty()) {
+                    StringBuilder queryString = new StringBuilder();
+                    queryString.append(url.contains("?") ? "&" : "?");
+                    
+                    boolean first = true;
+                    for (Map.Entry<String, String> entry : params.entrySet()) {
+                        if (!first) {
+                            queryString.append("&");
+                        }
+                        String value = replaceVariables(entry.getValue(), variables);
+                        queryString.append(entry.getKey()).append("=").append(value);
+                        first = false;
+                    }
+                    
+                    url += queryString.toString();
+                }
+            }
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing request parameters", e);
+        }
+        
+        return url;
+    }
+
+    /**
+     * Build headers for a test.
+     *
+     * @param test the API test
+     * @param environmentHeaders the environment headers
+     * @param variables the variables
+     * @return the HTTP headers
+     */
+    private HttpHeaders buildHeaders(ApiTest test, Map<String, String> environmentHeaders, Map<String, String> variables) {
+        HttpHeaders headers = new HttpHeaders();
+        
+        // Add environment headers
+        if (environmentHeaders != null) {
+            environmentHeaders.forEach((key, value) -> 
+                    headers.add(key, replaceVariables(value, variables)));
+        }
+        
+        // Add test-specific headers
+        try {
+            if (test.getRequestHeaders() != null && !test.getRequestHeaders().isEmpty()) {
+                Map<String, String> testHeaders = objectMapper.readValue(
+                        test.getRequestHeaders(), new TypeReference<Map<String, String>>() {});
+                
+                testHeaders.forEach((key, value) -> 
+                        headers.add(key, replaceVariables(value, variables)));
+            }
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing request headers", e);
+        }
+        
+        return headers;
+    }
+
+    /**
+     * Replace variables in a string.
+     *
+     * @param input the input string
+     * @param variables the variables
+     * @return the string with variables replaced
+     */
+    private String replaceVariables(String input, Map<String, String> variables) {
+        if (input == null || variables == null || variables.isEmpty()) {
+            return input;
+        }
+        
+        String result = input;
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            String placeholder = "{{" + entry.getKey() + "}}";
+            result = result.replace(placeholder, entry.getValue());
+        }
+        
+        return result;
+    }
+
+    /**
+     * Evaluate assertions for a test result.
+     *
+     * @param test the API test
+     * @param result the test result
+     * @return true if all assertions pass
+     */
+    private boolean evaluateAssertions(ApiTest test, TestResult result) {
+        if (test.getAssertions() == null || test.getAssertions().isEmpty()) {
+            // No assertions, consider it passed
+            return true;
+        }
+        
+        try {
+            List<Map<String, Object>> assertions = objectMapper.readValue(
+                    test.getAssertions(), new TypeReference<List<Map<String, Object>>>() {});
+            
+            if (assertions.isEmpty()) {
+                return true;
+            }
+            
+            for (Map<String, Object> assertion : assertions) {
+                String type = (String) assertion.get("type");
+                
+                if ("status".equals(type)) {
+                    int expectedStatus = ((Number) assertion.get("value")).intValue();
+                    if (result.getResponseStatus() != expectedStatus) {
+                        return false;
+                    }
+                } else if ("responseTime".equals(type)) {
+                    long maxTime = ((Number) assertion.get("value")).longValue();
+                    if (result.getResponseTime() > maxTime) {
+                        return false;
+                    }
+                } else if ("contains".equals(type)) {
+                    String value = (String) assertion.get("value");
+                    if (result.getResponseBody() == null || !result.getResponseBody().contains(value)) {
+                        return false;
+                    }
+                } else if ("jsonPath".equals(type)) {
+                    // JSON path assertions would require a JSON path library
+                    // This is a placeholder for that functionality
+                    logger.warn("JSON path assertions not implemented yet");
+                }
+            }
+            
+            return true;
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing assertions", e);
+            return false;
+        }
+    }
+
+    /**
+     * Map an API test entity to a response DTO.
+     *
+     * @param test the API test entity
+     * @return the API test response DTO
+     */
+    private ApiTestResponse mapToResponse(ApiTest test) {
+        ApiTestResponse response = new ApiTestResponse();
+        response.setId(test.getId());
+        response.setName(test.getName());
+        response.setDescription(test.getDescription());
+        response.setProjectId(test.getProjectId());
+        response.setMethod(test.getMethod());
+        response.setProtocol(test.getProtocol());
+        response.setEndpoint(test.getEndpoint());
+        response.setRequestBody(test.getRequestBody());
+        response.setCreatedAt(test.getCreatedAt());
+        response.setUpdatedAt(test.getUpdatedAt());
+        
+        try {
+            if (test.getRequestHeaders() != null && !test.getRequestHeaders().isEmpty()) {
+                response.setRequestHeaders(objectMapper.readValue(
+                        test.getRequestHeaders(), new TypeReference<Map<String, String>>() {}));
+            }
+            if (test.getRequestParams() != null && !test.getRequestParams().isEmpty()) {
+                response.setRequestParams(objectMapper.readValue(
+                        test.getRequestParams(), new TypeReference<Map<String, String>>() {}));
+            }
+            if (test.getAssertions() != null && !test.getAssertions().isEmpty()) {
+                response.setAssertions(objectMapper.readValue(
+                        test.getAssertions(), new TypeReference<List<Map<String, Object>>>() {}));
+            }
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing JSON", e);
+        }
         
         return response;
     }
-    
+
     /**
-     * Maps a test result to a test result response.
+     * Map a test result entity to a response DTO.
      *
-     * @param testResult the test result
-     * @return the test result response
+     * @param result the test result entity
+     * @return the test result response DTO
      */
-    private TestResultResponse mapToTestResultResponse(TestResult testResult) {
+    private TestResultResponse mapResultToResponse(TestResult result) {
         TestResultResponse response = new TestResultResponse();
-        response.setId(testResult.getId());
-        response.setTestId(testResult.getTestId());
-        response.setStatusCode(testResult.getStatusCode());
-        response.setResponseBody(testResult.getResponseBody());
+        response.setId(result.getId());
+        response.setTestId(result.getTestId());
+        response.setEnvironmentId(result.getEnvironmentId());
+        response.setUserId(result.getUserId());
+        response.setRequestUrl(result.getRequestUrl());
+        response.setRequestMethod(result.getRequestMethod());
+        response.setRequestBody(result.getRequestBody());
+        response.setResponseBody(result.getResponseBody());
+        response.setResponseStatus(result.getResponseStatus());
+        response.setResponseTime(result.getResponseTime());
+        response.setPassed(result.getPassed());
+        response.setCreatedAt(result.getCreatedAt());
         
-        if (testResult.getResponseHeaders() != null) {
-            try {
-                response.setResponseHeaders(objectMapper.readValue(testResult.getResponseHeaders(), new TypeReference<Map<String, String>>() {}));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error processing response headers JSON", e);
+        try {
+            if (result.getRequestHeaders() != null && !result.getRequestHeaders().isEmpty()) {
+                response.setRequestHeaders(objectMapper.readValue(
+                        result.getRequestHeaders(), new TypeReference<Map<String, String>>() {}));
             }
+            if (result.getResponseHeaders() != null && !result.getResponseHeaders().isEmpty()) {
+                response.setResponseHeaders(objectMapper.readValue(
+                        result.getResponseHeaders(), new TypeReference<Map<String, String>>() {}));
+            }
+        } catch (JsonProcessingException e) {
+            logger.error("Error parsing JSON", e);
         }
-        
-        response.setError(testResult.getError());
-        response.setValidationPassed(testResult.isValidationPassed());
-        response.setDurationMs(testResult.getDurationMs());
-        response.setStartTime(testResult.getStartTime());
-        response.setEndTime(testResult.getEndTime());
         
         return response;
     }

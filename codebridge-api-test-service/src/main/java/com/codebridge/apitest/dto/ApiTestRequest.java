@@ -1,16 +1,15 @@
 package com.codebridge.apitest.dto;
 
-import jakarta.validation.constraints.Min;
+import com.codebridge.apitest.model.HttpMethod;
+import com.codebridge.apitest.model.ProtocolType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Request DTO for API test operations.
- * Supports HTTP, WebSocket, gRPC, and GraphQL requests.
  */
 public class ApiTestRequest {
 
@@ -19,43 +18,22 @@ public class ApiTestRequest {
 
     private String description;
 
-    @NotBlank(message = "URL cannot be blank")
-    private String url;
+    @NotNull(message = "Method cannot be null")
+    private HttpMethod method;
 
-    @NotBlank(message = "Method cannot be blank")
-    @Pattern(regexp = "GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS", message = "Method must be one of: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-    private String method;
+    @NotNull(message = "Protocol cannot be null")
+    private ProtocolType protocol;
 
-    @Pattern(regexp = "HTTP|WEBSOCKET|GRPC|GRAPHQL", message = "Protocol type must be one of: HTTP, WEBSOCKET, GRPC, GRAPHQL")
-    private String protocolType;
+    @NotBlank(message = "Endpoint cannot be blank")
+    private String endpoint;
 
-    private UUID environmentId;
+    private Map<String, String> requestHeaders;
 
-    private Map<String, String> headers;
+    private Map<String, String> requestParams;
 
     private String requestBody;
 
-    private String graphqlQuery;
-
-    private String graphqlVariables;
-
-    private String grpcRequest;
-
-    private String grpcServiceDefinition;
-
-    private Integer expectedStatusCode;
-
-    private String expectedResponseBody;
-
-    private String preRequestScript;
-
-    private String postRequestScript;
-
-    private String validationScript;
-
-    @NotNull(message = "Timeout cannot be null")
-    @Min(value = 1000, message = "Timeout must be at least 1000 ms")
-    private Integer timeoutMs;
+    private List<Map<String, Object>> assertions;
 
     public String getName() {
         return name;
@@ -73,44 +51,44 @@ public class ApiTestRequest {
         this.description = description;
     }
 
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getMethod() {
+    public HttpMethod getMethod() {
         return method;
     }
 
-    public void setMethod(String method) {
+    public void setMethod(HttpMethod method) {
         this.method = method;
     }
 
-    public String getProtocolType() {
-        return protocolType;
+    public ProtocolType getProtocol() {
+        return protocol;
     }
 
-    public void setProtocolType(String protocolType) {
-        this.protocolType = protocolType;
+    public void setProtocol(ProtocolType protocol) {
+        this.protocol = protocol;
     }
 
-    public UUID getEnvironmentId() {
-        return environmentId;
+    public String getEndpoint() {
+        return endpoint;
     }
 
-    public void setEnvironmentId(UUID environmentId) {
-        this.environmentId = environmentId;
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
-    public Map<String, String> getHeaders() {
-        return headers;
+    public Map<String, String> getRequestHeaders() {
+        return requestHeaders;
     }
 
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
+    public void setRequestHeaders(Map<String, String> requestHeaders) {
+        this.requestHeaders = requestHeaders;
+    }
+
+    public Map<String, String> getRequestParams() {
+        return requestParams;
+    }
+
+    public void setRequestParams(Map<String, String> requestParams) {
+        this.requestParams = requestParams;
     }
 
     public String getRequestBody() {
@@ -121,83 +99,12 @@ public class ApiTestRequest {
         this.requestBody = requestBody;
     }
 
-    public String getGraphqlQuery() {
-        return graphqlQuery;
+    public List<Map<String, Object>> getAssertions() {
+        return assertions;
     }
 
-    public void setGraphqlQuery(String graphqlQuery) {
-        this.graphqlQuery = graphqlQuery;
-    }
-
-    public String getGraphqlVariables() {
-        return graphqlVariables;
-    }
-
-    public void setGraphqlVariables(String graphqlVariables) {
-        this.graphqlVariables = graphqlVariables;
-    }
-
-    public String getGrpcRequest() {
-        return grpcRequest;
-    }
-
-    public void setGrpcRequest(String grpcRequest) {
-        this.grpcRequest = grpcRequest;
-    }
-
-    public String getGrpcServiceDefinition() {
-        return grpcServiceDefinition;
-    }
-
-    public void setGrpcServiceDefinition(String grpcServiceDefinition) {
-        this.grpcServiceDefinition = grpcServiceDefinition;
-    }
-
-    public Integer getExpectedStatusCode() {
-        return expectedStatusCode;
-    }
-
-    public void setExpectedStatusCode(Integer expectedStatusCode) {
-        this.expectedStatusCode = expectedStatusCode;
-    }
-
-    public String getExpectedResponseBody() {
-        return expectedResponseBody;
-    }
-
-    public void setExpectedResponseBody(String expectedResponseBody) {
-        this.expectedResponseBody = expectedResponseBody;
-    }
-
-    public String getPreRequestScript() {
-        return preRequestScript;
-    }
-
-    public void setPreRequestScript(String preRequestScript) {
-        this.preRequestScript = preRequestScript;
-    }
-
-    public String getPostRequestScript() {
-        return postRequestScript;
-    }
-
-    public void setPostRequestScript(String postRequestScript) {
-        this.postRequestScript = postRequestScript;
-    }
-
-    public String getValidationScript() {
-        return validationScript;
-    }
-
-    public void setValidationScript(String validationScript) {
-        this.validationScript = validationScript;
-    }
-
-    public Integer getTimeoutMs() {
-        return timeoutMs;
-    }
-
-    public void setTimeoutMs(Integer timeoutMs) {
-        this.timeoutMs = timeoutMs;
+    public void setAssertions(List<Map<String, Object>> assertions) {
+        this.assertions = assertions;
     }
 }
+

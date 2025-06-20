@@ -13,7 +13,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Service for audit logging.
@@ -35,33 +34,26 @@ public class AuditLogService {
      *
      * @param userId the user ID
      * @param action the action
-     * @param resourceId the resource ID
      * @param resourceType the resource type
+     * @param resourceId the resource ID
      * @param details the details
      * @return the created audit log
      */
-    public AuditLog logAction(UUID userId, String action, UUID resourceId, String resourceType, Object details) {
+    public AuditLog logAction(Long userId, String action, String resourceType, Long resourceId, Object details) {
         AuditLog auditLog = new AuditLog();
-        auditLog.setId(UUID.randomUUID());
         auditLog.setUserId(userId);
         auditLog.setAction(action);
-        auditLog.setResourceId(resourceId);
         auditLog.setResourceType(resourceType);
+        auditLog.setResourceId(resourceId);
+        auditLog.setIpAddress(getClientIpAddress());
+        auditLog.setUserAgent(getUserAgent());
         
-        // Convert details to JSON
         if (details != null) {
             try {
                 auditLog.setDetails(objectMapper.writeValueAsString(details));
             } catch (JsonProcessingException e) {
                 auditLog.setDetails("Error serializing details: " + e.getMessage());
             }
-        }
-        
-        // Get request information if available
-        HttpServletRequest request = getCurrentRequest();
-        if (request != null) {
-            auditLog.setIpAddress(request.getRemoteAddr());
-            auditLog.setUserAgent(request.getHeader("User-Agent"));
         }
         
         return auditLogRepository.save(auditLog);
@@ -74,7 +66,7 @@ public class AuditLogService {
      * @param pageable the pagination information
      * @return the page of audit logs
      */
-    public Page<AuditLog> getAuditLogsForUser(UUID userId, Pageable pageable) {
+    public Page<AuditLog> getAuditLogsForUser(Long userId, Pageable pageable) {
         return auditLogRepository.findByUserId(userId, pageable);
     }
     
@@ -86,7 +78,7 @@ public class AuditLogService {
      * @param pageable the pagination information
      * @return the page of audit logs
      */
-    public Page<AuditLog> getAuditLogsForResource(UUID resourceId, String resourceType, Pageable pageable) {
+    public Page<AuditLog> getAuditLogsForResource(Long resourceId, String resourceType, Pageable pageable) {
         return auditLogRepository.findByResourceIdAndResourceType(resourceId, resourceType, pageable);
     }
     
@@ -114,9 +106,50 @@ public class AuditLogService {
     }
     
     /**
+     * Get the client IP address from the current request.
+     *
+     * @return the client IP address
+     */
+    private String getClientIpAddress() {
+        HttpServletRequest request = getCurrentRequest();
+        if (request == null) {
+            return "unknown";
+        }
+        
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        
+        return ip;
+    }
+    
+    /**
+     * Get the user agent from the current request.
+     *
+     * @return the user agent
+     */
+    private String getUserAgent() {
+        HttpServletRequest request = getCurrentRequest();
+        return request != null ? request.getHeader("User-Agent") : "unknown";
+    }
+    
+    /**
      * Get the current HTTP request.
      *
-     * @return the current HTTP request, or null if not available
+     * @return the current request
      */
     private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

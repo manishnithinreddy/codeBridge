@@ -28,405 +28,363 @@ import java.util.concurrent.ScheduledFuture;
  */
 @Service
 public class TestSchedulerService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(TestSchedulerService.class);
-    
+
     private final ScheduledTestRepository scheduledTestRepository;
     private final ApiTestService apiTestService;
-    private final TestChainService testChainService;
-    private final LoadTestService loadTestService;
     private final TaskScheduler taskScheduler;
-    
-    // Map to store scheduled tasks
-    private final Map<UUID, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
-    
+    private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
+
     @Autowired
-    public TestSchedulerService(ScheduledTestRepository scheduledTestRepository,
-                               ApiTestService apiTestService,
-                               TestChainService testChainService,
-                               LoadTestService loadTestService,
-                               TaskScheduler taskScheduler) {
+    public TestSchedulerService(
+            ScheduledTestRepository scheduledTestRepository,
+            ApiTestService apiTestService,
+            TaskScheduler taskScheduler) {
         this.scheduledTestRepository = scheduledTestRepository;
         this.apiTestService = apiTestService;
-        this.testChainService = testChainService;
-        this.loadTestService = loadTestService;
         this.taskScheduler = taskScheduler;
     }
-    
+
     /**
-     * Creates a new scheduled test.
-     *
-     * @param request the scheduled test request
-     * @param userId the user ID
-     * @return the created scheduled test
-     */
-    @Transactional
-    public ScheduledTest createScheduledTest(ScheduledTestRequest request, UUID userId) {
-        // Validate schedule expression
-        if (request.getScheduleType() == ScheduleType.CRON && !isValidCronExpression(request.getCronExpression())) {
-            throw new IllegalArgumentException("Invalid cron expression: " + request.getCronExpression());
-        }
-        
-        // Create scheduled test
-        ScheduledTest scheduledTest = new ScheduledTest();
-        scheduledTest.setId(UUID.randomUUID());
-        scheduledTest.setName(request.getName());
-        scheduledTest.setDescription(request.getDescription());
-        scheduledTest.setUserId(userId);
-        scheduledTest.setTestId(request.getTestId());
-        scheduledTest.setChainId(request.getChainId());
-        scheduledTest.setLoadTestId(request.getLoadTestId());
-        scheduledTest.setEnvironmentId(request.getEnvironmentId());
-        scheduledTest.setScheduleType(request.getScheduleType());
-        scheduledTest.setCronExpression(request.getCronExpression());
-        scheduledTest.setFixedRateSeconds(request.getFixedRateSeconds());
-        scheduledTest.setOneTimeExecutionTime(request.getOneTimeExecutionTime());
-        scheduledTest.setWebhookUrl(request.getWebhookUrl());
-        scheduledTest.setActive(true);
-        scheduledTest.setStatus(ScheduledTestStatus.CREATED);
-        scheduledTest.setCreatedAt(LocalDateTime.now());
-        
-        ScheduledTest savedScheduledTest = scheduledTestRepository.save(scheduledTest);
-        
-        // Schedule the test
-        scheduleTest(savedScheduledTest);
-        
-        return savedScheduledTest;
-    }
-    
-    /**
-     * Gets all scheduled tests for a user.
-     *
-     * @param userId the user ID
-     * @return the list of scheduled tests
-     */
-    @Transactional(readOnly = true)
-    public List<ScheduledTest> getAllScheduledTests(UUID userId) {
-        return scheduledTestRepository.findByUserId(userId);
-    }
-    
-    /**
-     * Gets a scheduled test by ID.
-     *
-     * @param id the scheduled test ID
-     * @param userId the user ID
-     * @return the scheduled test
-     */
-    @Transactional(readOnly = true)
-    public ScheduledTest getScheduledTestById(UUID id, UUID userId) {
-        return scheduledTestRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("ScheduledTest", "id", id.toString()));
-    }
-    
-    /**
-     * Updates a scheduled test.
-     *
-     * @param id the scheduled test ID
-     * @param request the scheduled test request
-     * @param userId the user ID
-     * @return the updated scheduled test
-     */
-    @Transactional
-    public ScheduledTest updateScheduledTest(UUID id, ScheduledTestRequest request, UUID userId) {
-        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("ScheduledTest", "id", id.toString()));
-        
-        // Validate schedule expression
-        if (request.getScheduleType() == ScheduleType.CRON && !isValidCronExpression(request.getCronExpression())) {
-            throw new IllegalArgumentException("Invalid cron expression: " + request.getCronExpression());
-        }
-        
-        // Cancel existing schedule
-        cancelScheduledTask(id);
-        
-        // Update scheduled test
-        scheduledTest.setName(request.getName());
-        scheduledTest.setDescription(request.getDescription());
-        scheduledTest.setTestId(request.getTestId());
-        scheduledTest.setChainId(request.getChainId());
-        scheduledTest.setLoadTestId(request.getLoadTestId());
-        scheduledTest.setEnvironmentId(request.getEnvironmentId());
-        scheduledTest.setScheduleType(request.getScheduleType());
-        scheduledTest.setCronExpression(request.getCronExpression());
-        scheduledTest.setFixedRateSeconds(request.getFixedRateSeconds());
-        scheduledTest.setOneTimeExecutionTime(request.getOneTimeExecutionTime());
-        scheduledTest.setWebhookUrl(request.getWebhookUrl());
-        scheduledTest.setUpdatedAt(LocalDateTime.now());
-        
-        ScheduledTest updatedScheduledTest = scheduledTestRepository.save(scheduledTest);
-        
-        // Reschedule the test if active
-        if (updatedScheduledTest.isActive()) {
-            scheduleTest(updatedScheduledTest);
-        }
-        
-        return updatedScheduledTest;
-    }
-    
-    /**
-     * Activates or deactivates a scheduled test.
-     *
-     * @param id the scheduled test ID
-     * @param active whether the test should be active
-     * @param userId the user ID
-     * @return the updated scheduled test
-     */
-    @Transactional
-    public ScheduledTest setScheduledTestActive(UUID id, boolean active, UUID userId) {
-        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("ScheduledTest", "id", id.toString()));
-        
-        if (scheduledTest.isActive() == active) {
-            return scheduledTest; // No change needed
-        }
-        
-        scheduledTest.setActive(active);
-        scheduledTest.setUpdatedAt(LocalDateTime.now());
-        
-        if (active) {
-            // Activate: schedule the test
-            scheduleTest(scheduledTest);
-        } else {
-            // Deactivate: cancel the scheduled task
-            cancelScheduledTask(id);
-        }
-        
-        return scheduledTestRepository.save(scheduledTest);
-    }
-    
-    /**
-     * Deletes a scheduled test.
-     *
-     * @param id the scheduled test ID
-     * @param userId the user ID
-     */
-    @Transactional
-    public void deleteScheduledTest(UUID id, UUID userId) {
-        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("ScheduledTest", "id", id.toString()));
-        
-        // Cancel the scheduled task
-        cancelScheduledTask(id);
-        
-        // Delete the scheduled test
-        scheduledTestRepository.delete(scheduledTest);
-    }
-    
-    /**
-     * Executes a scheduled test immediately.
-     *
-     * @param id the scheduled test ID
-     * @param userId the user ID
-     * @return the updated scheduled test
-     */
-    @Transactional
-    public ScheduledTest executeScheduledTestNow(UUID id, UUID userId) {
-        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("ScheduledTest", "id", id.toString()));
-        
-        // Execute the test
-        executeScheduledTest(scheduledTest);
-        
-        return scheduledTest;
-    }
-    
-    /**
-     * Schedules a test based on its schedule type.
-     *
-     * @param scheduledTest the scheduled test
-     */
-    private void scheduleTest(ScheduledTest scheduledTest) {
-        // Cancel any existing scheduled task
-        cancelScheduledTask(scheduledTest.getId());
-        
-        // Schedule based on schedule type
-        ScheduledFuture<?> future = null;
-        
-        switch (scheduledTest.getScheduleType()) {
-            case CRON:
-                if (scheduledTest.getCronExpression() != null && !scheduledTest.getCronExpression().isEmpty()) {
-                    future = taskScheduler.schedule(
-                        () -> executeScheduledTest(scheduledTest),
-                        new CronTrigger(scheduledTest.getCronExpression())
-                    );
-                    logger.info("Scheduled test {} with cron expression: {}", scheduledTest.getId(), scheduledTest.getCronExpression());
-                }
-                break;
-                
-            case FIXED_RATE:
-                if (scheduledTest.getFixedRateSeconds() != null && scheduledTest.getFixedRateSeconds() > 0) {
-                    future = taskScheduler.scheduleAtFixedRate(
-                        () -> executeScheduledTest(scheduledTest),
-                        scheduledTest.getFixedRateSeconds() * 1000L
-                    );
-                    logger.info("Scheduled test {} with fixed rate: {} seconds", scheduledTest.getId(), scheduledTest.getFixedRateSeconds());
-                }
-                break;
-                
-            case ONE_TIME:
-                if (scheduledTest.getOneTimeExecutionTime() != null) {
-                    Date executionTime = Date.from(scheduledTest.getOneTimeExecutionTime().atZone(ZoneId.systemDefault()).toInstant());
-                    future = taskScheduler.schedule(
-                        () -> executeScheduledTest(scheduledTest),
-                        executionTime
-                    );
-                    logger.info("Scheduled test {} for one-time execution at: {}", scheduledTest.getId(), scheduledTest.getOneTimeExecutionTime());
-                }
-                break;
-                
-            default:
-                logger.warn("Unknown schedule type for test {}: {}", scheduledTest.getId(), scheduledTest.getScheduleType());
-        }
-        
-        // Store the scheduled future
-        if (future != null) {
-            scheduledTasks.put(scheduledTest.getId(), future);
-        }
-    }
-    
-    /**
-     * Cancels a scheduled task.
-     *
-     * @param id the scheduled test ID
-     */
-    private void cancelScheduledTask(UUID id) {
-        ScheduledFuture<?> future = scheduledTasks.remove(id);
-        if (future != null) {
-            future.cancel(false);
-            logger.info("Cancelled scheduled task for test {}", id);
-        }
-    }
-    
-    /**
-     * Executes a scheduled test.
-     *
-     * @param scheduledTest the scheduled test
-     */
-    private void executeScheduledTest(ScheduledTest scheduledTest) {
-        try {
-            logger.info("Executing scheduled test: {}", scheduledTest.getId());
-            
-            // Update status to running
-            scheduledTest.setStatus(ScheduledTestStatus.RUNNING);
-            scheduledTest.setLastExecutionStartTime(LocalDateTime.now());
-            scheduledTestRepository.save(scheduledTest);
-            
-            // Execute based on test type
-            if (scheduledTest.getTestId() != null) {
-                // Execute API test
-                apiTestService.executeTest(scheduledTest.getTestId(), scheduledTest.getUserId());
-            } else if (scheduledTest.getChainId() != null) {
-                // Execute test chain
-                testChainService.executeTestChain(scheduledTest.getChainId(), scheduledTest.getEnvironmentId(), scheduledTest.getUserId());
-            } else if (scheduledTest.getLoadTestId() != null) {
-                // Execute load test
-                loadTestService.executeLoadTest(scheduledTest.getLoadTestId(), scheduledTest.getUserId());
-            } else {
-                throw new IllegalStateException("No test, chain, or load test specified for scheduled test " + scheduledTest.getId());
-            }
-            
-            // Update status to completed
-            scheduledTest.setStatus(ScheduledTestStatus.COMPLETED);
-            scheduledTest.setLastExecutionEndTime(LocalDateTime.now());
-            scheduledTest.setLastExecutionSuccess(true);
-            scheduledTest.setExecutionCount(scheduledTest.getExecutionCount() + 1);
-            scheduledTestRepository.save(scheduledTest);
-            
-            // Send webhook notification if configured
-            if (scheduledTest.getWebhookUrl() != null && !scheduledTest.getWebhookUrl().isEmpty()) {
-                sendWebhookNotification(scheduledTest, true, null);
-            }
-            
-            logger.info("Scheduled test {} executed successfully", scheduledTest.getId());
-        } catch (Exception e) {
-            logger.error("Error executing scheduled test {}: {}", scheduledTest.getId(), e.getMessage(), e);
-            
-            // Update status to failed
-            scheduledTest.setStatus(ScheduledTestStatus.FAILED);
-            scheduledTest.setLastExecutionEndTime(LocalDateTime.now());
-            scheduledTest.setLastExecutionSuccess(false);
-            scheduledTest.setLastErrorMessage(e.getMessage());
-            scheduledTest.setExecutionCount(scheduledTest.getExecutionCount() + 1);
-            scheduledTestRepository.save(scheduledTest);
-            
-            // Send webhook notification if configured
-            if (scheduledTest.getWebhookUrl() != null && !scheduledTest.getWebhookUrl().isEmpty()) {
-                sendWebhookNotification(scheduledTest, false, e.getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Sends a webhook notification for a scheduled test execution.
-     *
-     * @param scheduledTest the scheduled test
-     * @param success whether the execution was successful
-     * @param errorMessage the error message if the execution failed
-     */
-    private void sendWebhookNotification(ScheduledTest scheduledTest, boolean success, String errorMessage) {
-        // This would be implemented with an HTTP client to send a POST request to the webhook URL
-        // For now, we'll just log the notification
-        logger.info("Webhook notification for scheduled test {}: success={}, error={}", 
-            scheduledTest.getId(), success, errorMessage);
-    }
-    
-    /**
-     * Checks if a cron expression is valid.
-     *
-     * @param cronExpression the cron expression
-     * @return true if the expression is valid, false otherwise
-     */
-    private boolean isValidCronExpression(String cronExpression) {
-        if (cronExpression == null || cronExpression.isEmpty()) {
-            return false;
-        }
-        
-        try {
-            CronExpression.parse(cronExpression);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Scheduled task to check for and execute one-time scheduled tests.
-     * Runs every minute.
-     */
-    @Scheduled(fixedRate = 60000)
-    public void checkOneTimeScheduledTests() {
-        logger.debug("Checking for one-time scheduled tests");
-        
-        LocalDateTime now = LocalDateTime.now();
-        List<ScheduledTest> oneTimeTests = scheduledTestRepository.findByScheduleTypeAndActiveTrue(ScheduleType.ONE_TIME);
-        
-        for (ScheduledTest test : oneTimeTests) {
-            if (test.getOneTimeExecutionTime() != null && 
-                test.getOneTimeExecutionTime().isBefore(now) && 
-                (test.getLastExecutionStartTime() == null || test.getStatus() == ScheduledTestStatus.FAILED)) {
-                
-                logger.info("Executing one-time scheduled test {}", test.getId());
-                executeScheduledTest(test);
-            }
-        }
-    }
-    
-    /**
-     * Initializes all active scheduled tests on application startup.
+     * Initialize scheduled tests on application startup.
      */
     @Scheduled(fixedDelay = 60000, initialDelay = 10000)
     public void initializeScheduledTests() {
-        // Only run once on startup
-        if (scheduledTasks.isEmpty()) {
-            logger.info("Initializing scheduled tests");
-            
-            List<ScheduledTest> activeTests = scheduledTestRepository.findByActiveTrue();
-            for (ScheduledTest test : activeTests) {
+        logger.info("Initializing scheduled tests");
+        List<ScheduledTest> activeTests = scheduledTestRepository.findByActiveTrue();
+        
+        for (ScheduledTest test : activeTests) {
+            if (!scheduledTasks.containsKey(test.getId())) {
                 scheduleTest(test);
             }
-            
-            logger.info("Initialized {} scheduled tests", activeTests.size());
         }
+    }
+
+    /**
+     * Get all scheduled tests for a user.
+     *
+     * @param userId the user ID
+     * @return list of scheduled test responses
+     */
+    public List<ScheduledTestResponse> getScheduledTests(Long userId) {
+        List<ScheduledTest> tests = scheduledTestRepository.findByUserId(userId);
+        return tests.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    /**
+     * Get a scheduled test by ID.
+     *
+     * @param id the scheduled test ID
+     * @param userId the user ID
+     * @return the scheduled test response
+     * @throws ResourceNotFoundException if the scheduled test is not found
+     */
+    public ScheduledTestResponse getScheduledTest(Long id, Long userId) {
+        ScheduledTest test = scheduledTestRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Scheduled test not found"));
+        return mapToResponse(test);
+    }
+
+    /**
+     * Create a new scheduled test.
+     *
+     * @param request the scheduled test request
+     * @param userId the user ID
+     * @return the created scheduled test response
+     */
+    @Transactional
+    public ScheduledTestResponse createScheduledTest(ScheduledTestRequest request, Long userId) {
+        validateScheduleRequest(request);
+        
+        ScheduledTest scheduledTest = new ScheduledTest();
+        scheduledTest.setTestId(request.getTestId());
+        scheduledTest.setEnvironmentId(request.getEnvironmentId());
+        scheduledTest.setName(request.getName());
+        scheduledTest.setDescription(request.getDescription());
+        scheduledTest.setScheduleType(request.getScheduleType());
+        scheduledTest.setCronExpression(request.getCronExpression());
+        scheduledTest.setIntervalMinutes(request.getIntervalMinutes());
+        scheduledTest.setUserId(userId);
+        scheduledTest.setActive(true);
+        scheduledTest.setLastRunStatus(ScheduledTestStatus.PENDING);
+        
+        ScheduledTest savedTest = scheduledTestRepository.save(scheduledTest);
+        scheduleTest(savedTest);
+        
+        return mapToResponse(savedTest);
+    }
+
+    /**
+     * Update a scheduled test.
+     *
+     * @param id the scheduled test ID
+     * @param request the scheduled test request
+     * @param userId the user ID
+     * @return the updated scheduled test response
+     * @throws ResourceNotFoundException if the scheduled test is not found
+     */
+    @Transactional
+    public ScheduledTestResponse updateScheduledTest(Long id, ScheduledTestRequest request, Long userId) {
+        validateScheduleRequest(request);
+        
+        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Scheduled test not found"));
+        
+        scheduledTest.setTestId(request.getTestId());
+        scheduledTest.setEnvironmentId(request.getEnvironmentId());
+        scheduledTest.setName(request.getName());
+        scheduledTest.setDescription(request.getDescription());
+        scheduledTest.setScheduleType(request.getScheduleType());
+        scheduledTest.setCronExpression(request.getCronExpression());
+        scheduledTest.setIntervalMinutes(request.getIntervalMinutes());
+        
+        // Cancel existing scheduled task
+        cancelScheduledTask(id);
+        
+        ScheduledTest updatedTest = scheduledTestRepository.save(scheduledTest);
+        
+        // Reschedule if active
+        if (updatedTest.getActive()) {
+            scheduleTest(updatedTest);
+        }
+        
+        return mapToResponse(updatedTest);
+    }
+
+    /**
+     * Activate or deactivate a scheduled test.
+     *
+     * @param id the scheduled test ID
+     * @param active whether to activate or deactivate
+     * @param userId the user ID
+     * @return the updated scheduled test response
+     * @throws ResourceNotFoundException if the scheduled test is not found
+     */
+    @Transactional
+    public ScheduledTestResponse setScheduledTestActive(Long id, boolean active, Long userId) {
+        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Scheduled test not found"));
+        
+        scheduledTest.setActive(active);
+        
+        // Cancel existing scheduled task
+        cancelScheduledTask(id);
+        
+        ScheduledTest updatedTest = scheduledTestRepository.save(scheduledTest);
+        
+        // Reschedule if activating
+        if (active) {
+            scheduleTest(updatedTest);
+        }
+        
+        return mapToResponse(updatedTest);
+    }
+
+    /**
+     * Delete a scheduled test.
+     *
+     * @param id the scheduled test ID
+     * @param userId the user ID
+     * @throws ResourceNotFoundException if the scheduled test is not found
+     */
+    @Transactional
+    public void deleteScheduledTest(Long id, Long userId) {
+        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Scheduled test not found"));
+        
+        // Cancel scheduled task
+        cancelScheduledTask(id);
+        
+        scheduledTestRepository.delete(scheduledTest);
+    }
+
+    /**
+     * Run a scheduled test immediately.
+     *
+     * @param id the scheduled test ID
+     * @param userId the user ID
+     * @return the updated scheduled test response
+     * @throws ResourceNotFoundException if the scheduled test is not found
+     */
+    @Transactional
+    public ScheduledTestResponse runScheduledTestNow(Long id, Long userId) {
+        ScheduledTest scheduledTest = scheduledTestRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Scheduled test not found"));
+        
+        executeScheduledTest(scheduledTest);
+        
+        return mapToResponse(scheduledTest);
+    }
+
+    /**
+     * Schedule a test based on its configuration.
+     *
+     * @param test the scheduled test
+     */
+    private void scheduleTest(ScheduledTest test) {
+        if (!test.getActive()) {
+            return;
+        }
+        
+        ScheduledFuture<?> future;
+        
+        if (test.getScheduleType() == ScheduleType.CRON) {
+            if (test.getCronExpression() == null || test.getCronExpression().isEmpty()) {
+                logger.error("Cannot schedule test with ID {} - missing cron expression", test.getId());
+                return;
+            }
+            
+            try {
+                CronTrigger trigger = new CronTrigger(test.getCronExpression());
+                future = taskScheduler.schedule(() -> executeScheduledTest(test), trigger);
+                logger.info("Scheduled test {} with cron expression: {}", test.getId(), test.getCronExpression());
+            } catch (IllegalArgumentException e) {
+                logger.error("Invalid cron expression for test {}: {}", test.getId(), test.getCronExpression(), e);
+                return;
+            }
+        } else if (test.getScheduleType() == ScheduleType.INTERVAL) {
+            if (test.getIntervalMinutes() == null || test.getIntervalMinutes() <= 0) {
+                logger.error("Cannot schedule test with ID {} - invalid interval", test.getId());
+                return;
+            }
+            
+            long intervalMs = test.getIntervalMinutes() * 60 * 1000L;
+            future = taskScheduler.scheduleAtFixedRate(() -> executeScheduledTest(test), intervalMs);
+            logger.info("Scheduled test {} with interval: {} minutes", test.getId(), test.getIntervalMinutes());
+        } else {
+            logger.error("Unknown schedule type for test {}: {}", test.getId(), test.getScheduleType());
+            return;
+        }
+        
+        scheduledTasks.put(test.getId(), future);
+    }
+
+    /**
+     * Cancel a scheduled task.
+     *
+     * @param testId the scheduled test ID
+     */
+    private void cancelScheduledTask(Long testId) {
+        ScheduledFuture<?> future = scheduledTasks.remove(testId);
+        if (future != null) {
+            future.cancel(false);
+            logger.info("Cancelled scheduled test {}", testId);
+        }
+    }
+
+    /**
+     * Execute a scheduled test.
+     *
+     * @param test the scheduled test
+     */
+    private void executeScheduledTest(ScheduledTest test) {
+        logger.info("Executing scheduled test: {}", test.getId());
+        
+        try {
+            // Update last run time
+            test.setLastRunAt(LocalDateTime.now());
+            test.setLastRunStatus(ScheduledTestStatus.RUNNING);
+            scheduledTestRepository.save(test);
+            
+            // Execute the test
+            apiTestService.executeTest(
+                    test.getTestId(),
+                    null, // Project ID will be determined from the test
+                    test.getUserId(),
+                    test.getEnvironmentId(),
+                    null // No additional variables
+            );
+            
+            // Update status to success
+            test.setLastRunStatus(ScheduledTestStatus.SUCCESS);
+            scheduledTestRepository.save(test);
+            
+            logger.info("Successfully executed scheduled test: {}", test.getId());
+        } catch (Exception e) {
+            logger.error("Error executing scheduled test {}: {}", test.getId(), e.getMessage(), e);
+            
+            // Update status to failure
+            test.setLastRunStatus(ScheduledTestStatus.FAILURE);
+            test.setLastRunError(e.getMessage());
+            scheduledTestRepository.save(test);
+        }
+    }
+
+    /**
+     * Validate a schedule request.
+     *
+     * @param request the schedule request
+     * @throws IllegalArgumentException if the request is invalid
+     */
+    private void validateScheduleRequest(ScheduledTestRequest request) {
+        if (request.getScheduleType() == ScheduleType.CRON) {
+            if (request.getCronExpression() == null || request.getCronExpression().isEmpty()) {
+                throw new IllegalArgumentException("Cron expression is required for CRON schedule type");
+            }
+            
+            try {
+                CronExpression.parse(request.getCronExpression());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid cron expression: " + e.getMessage());
+            }
+        } else if (request.getScheduleType() == ScheduleType.INTERVAL) {
+            if (request.getIntervalMinutes() == null || request.getIntervalMinutes() <= 0) {
+                throw new IllegalArgumentException("Interval minutes must be greater than 0");
+            }
+        } else {
+            throw new IllegalArgumentException("Unknown schedule type: " + request.getScheduleType());
+        }
+    }
+
+    /**
+     * Map a scheduled test entity to a response DTO.
+     *
+     * @param test the scheduled test entity
+     * @return the scheduled test response DTO
+     */
+    private ScheduledTestResponse mapToResponse(ScheduledTest test) {
+        ScheduledTestResponse response = new ScheduledTestResponse();
+        response.setId(test.getId());
+        response.setTestId(test.getTestId());
+        response.setEnvironmentId(test.getEnvironmentId());
+        response.setName(test.getName());
+        response.setDescription(test.getDescription());
+        response.setScheduleType(test.getScheduleType());
+        response.setCronExpression(test.getCronExpression());
+        response.setIntervalMinutes(test.getIntervalMinutes());
+        response.setActive(test.getActive());
+        response.setLastRunAt(test.getLastRunAt());
+        response.setLastRunStatus(test.getLastRunStatus());
+        response.setLastRunError(test.getLastRunError());
+        response.setCreatedAt(test.getCreatedAt());
+        response.setUpdatedAt(test.getUpdatedAt());
+        
+        // Calculate next run time if possible
+        if (test.getActive()) {
+            if (test.getScheduleType() == ScheduleType.CRON && test.getCronExpression() != null) {
+                try {
+                    CronExpression cronExpression = CronExpression.parse(test.getCronExpression());
+                    LocalDateTime now = LocalDateTime.now();
+                    Optional<LocalDateTime> nextRun = cronExpression.next(now);
+                    nextRun.ifPresent(response::setNextRunAt);
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Could not parse cron expression for test {}: {}", test.getId(), test.getCronExpression());
+                }
+            } else if (test.getScheduleType() == ScheduleType.INTERVAL && test.getIntervalMinutes() != null) {
+                LocalDateTime lastRun = test.getLastRunAt();
+                if (lastRun != null) {
+                    response.setNextRunAt(lastRun.plusMinutes(test.getIntervalMinutes()));
+                } else {
+                    // If never run, next run is now
+                    response.setNextRunAt(LocalDateTime.now());
+                }
+            }
+        }
+        
+        return response;
     }
 }
 
