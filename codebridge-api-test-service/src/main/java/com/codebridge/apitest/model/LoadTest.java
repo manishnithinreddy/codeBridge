@@ -3,9 +3,9 @@ package com.codebridge.apitest.model;
 import com.codebridge.apitest.model.enums.LoadPattern;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for load tests.
@@ -27,72 +27,34 @@ public class LoadTest {
     @Column(nullable = false)
     private Long userId;
 
-    @Column
+    @Column(nullable = false)
     private Long testId;
 
-    @Column
-    private Long chainId;
-
-    @Column
-    private Long environmentId;
+    @Column(nullable = false)
+    private Integer duration; // in seconds
 
     @Column(nullable = false)
     private Integer virtualUsers;
 
     @Column(nullable = false)
-    private Integer durationSeconds;
-
-    @Column
-    private Integer rampUpSeconds;
-
-    @Column
-    private Integer thinkTimeMs;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private LoadPattern loadPattern;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private LoadTestStatus status;
+    @Column
+    private Integer rampUpTime; // in seconds
 
     @Column
-    private Integer totalRequests;
+    private Integer rampDownTime; // in seconds
 
     @Column
-    private Integer successfulRequests;
+    private Integer requestsPerSecond;
 
     @Column
-    private Integer failedRequests;
-
-    @Column
-    private Double averageResponseTimeMs;
-
-    @Column
-    private Long minResponseTimeMs;
-
-    @Column
-    private Long maxResponseTimeMs;
-
-    @Column
-    private Long percentile95Ms;
-
-    @Column
-    private Long percentile99Ms;
-
-    @Column
-    private Double requestsPerSecond;
-
-    @Column
-    private Double errorRate;
+    private Long environmentId;
 
     @Column
     @Lob
-    private String resultSummary;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private String results; // JSON string with load test results
 
     @Column
     private LocalDateTime startedAt;
@@ -100,7 +62,28 @@ public class LoadTest {
     @Column
     private LocalDateTime completedAt;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private LoadTestStatus status;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    public enum LoadTestStatus {
+        PENDING,
+        RUNNING,
+        COMPLETED,
+        FAILED,
+        CANCELLED
+    }
+
     // Getters and Setters
+
     public Long getId() {
         return id;
     }
@@ -141,20 +124,12 @@ public class LoadTest {
         this.testId = testId;
     }
 
-    public Long getChainId() {
-        return chainId;
+    public Integer getDuration() {
+        return duration;
     }
 
-    public void setChainId(Long chainId) {
-        this.chainId = chainId;
-    }
-
-    public Long getEnvironmentId() {
-        return environmentId;
-    }
-
-    public void setEnvironmentId(Long environmentId) {
-        this.environmentId = environmentId;
+    public void setDuration(Integer duration) {
+        this.duration = duration;
     }
 
     public Integer getVirtualUsers() {
@@ -165,30 +140,6 @@ public class LoadTest {
         this.virtualUsers = virtualUsers;
     }
 
-    public Integer getDurationSeconds() {
-        return durationSeconds;
-    }
-
-    public void setDurationSeconds(Integer durationSeconds) {
-        this.durationSeconds = durationSeconds;
-    }
-
-    public Integer getRampUpSeconds() {
-        return rampUpSeconds;
-    }
-
-    public void setRampUpSeconds(Integer rampUpSeconds) {
-        this.rampUpSeconds = rampUpSeconds;
-    }
-
-    public Integer getThinkTimeMs() {
-        return thinkTimeMs;
-    }
-
-    public void setThinkTimeMs(Integer thinkTimeMs) {
-        this.thinkTimeMs = thinkTimeMs;
-    }
-
     public LoadPattern getLoadPattern() {
         return loadPattern;
     }
@@ -197,108 +148,44 @@ public class LoadTest {
         this.loadPattern = loadPattern;
     }
 
-    public LoadTestStatus getStatus() {
-        return status;
+    public Integer getRampUpTime() {
+        return rampUpTime;
     }
 
-    public void setStatus(LoadTestStatus status) {
-        this.status = status;
+    public void setRampUpTime(Integer rampUpTime) {
+        this.rampUpTime = rampUpTime;
     }
 
-    public Integer getTotalRequests() {
-        return totalRequests;
+    public Integer getRampDownTime() {
+        return rampDownTime;
     }
 
-    public void setTotalRequests(Integer totalRequests) {
-        this.totalRequests = totalRequests;
+    public void setRampDownTime(Integer rampDownTime) {
+        this.rampDownTime = rampDownTime;
     }
 
-    public Integer getSuccessfulRequests() {
-        return successfulRequests;
-    }
-
-    public void setSuccessfulRequests(Integer successfulRequests) {
-        this.successfulRequests = successfulRequests;
-    }
-
-    public Integer getFailedRequests() {
-        return failedRequests;
-    }
-
-    public void setFailedRequests(Integer failedRequests) {
-        this.failedRequests = failedRequests;
-    }
-
-    public Double getAverageResponseTimeMs() {
-        return averageResponseTimeMs;
-    }
-
-    public void setAverageResponseTimeMs(Double averageResponseTimeMs) {
-        this.averageResponseTimeMs = averageResponseTimeMs;
-    }
-
-    public Long getMinResponseTimeMs() {
-        return minResponseTimeMs;
-    }
-
-    public void setMinResponseTimeMs(Long minResponseTimeMs) {
-        this.minResponseTimeMs = minResponseTimeMs;
-    }
-
-    public Long getMaxResponseTimeMs() {
-        return maxResponseTimeMs;
-    }
-
-    public void setMaxResponseTimeMs(Long maxResponseTimeMs) {
-        this.maxResponseTimeMs = maxResponseTimeMs;
-    }
-
-    public Long getPercentile95Ms() {
-        return percentile95Ms;
-    }
-
-    public void setPercentile95Ms(Long percentile95Ms) {
-        this.percentile95Ms = percentile95Ms;
-    }
-
-    public Long getPercentile99Ms() {
-        return percentile99Ms;
-    }
-
-    public void setPercentile99Ms(Long percentile99Ms) {
-        this.percentile99Ms = percentile99Ms;
-    }
-
-    public Double getRequestsPerSecond() {
+    public Integer getRequestsPerSecond() {
         return requestsPerSecond;
     }
 
-    public void setRequestsPerSecond(Double requestsPerSecond) {
+    public void setRequestsPerSecond(Integer requestsPerSecond) {
         this.requestsPerSecond = requestsPerSecond;
     }
 
-    public Double getErrorRate() {
-        return errorRate;
+    public Long getEnvironmentId() {
+        return environmentId;
     }
 
-    public void setErrorRate(Double errorRate) {
-        this.errorRate = errorRate;
+    public void setEnvironmentId(Long environmentId) {
+        this.environmentId = environmentId;
     }
 
-    public String getResultSummary() {
-        return resultSummary;
+    public String getResults() {
+        return results;
     }
 
-    public void setResultSummary(String resultSummary) {
-        this.resultSummary = resultSummary;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setResults(String results) {
+        this.results = results;
     }
 
     public LocalDateTime getStartedAt() {
@@ -316,4 +203,29 @@ public class LoadTest {
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
     }
+
+    public LoadTestStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(LoadTestStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
+

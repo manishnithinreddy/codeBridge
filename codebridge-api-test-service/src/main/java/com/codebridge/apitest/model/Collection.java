@@ -9,7 +9,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Entity for collections of API tests.
@@ -28,41 +27,25 @@ public class Collection {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "description")
+    @Size(max = 500)
+    @Column(length = 500)
     private String description;
 
     @NotNull
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = true) // Nullable to allow standalone collections
+    @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Constructors
-    public Collection() {
-    }
-
-    public Collection(String name, Long userId) {
-        this.name = name;
-        this.userId = userId;
-    }
-
-    public Collection(String name, Long userId, Project project) {
-        this.name = name;
-        this.userId = userId;
-        this.project = project;
-    }
-
     // Getters and Setters
+
     public Long getId() {
         return id;
     }
@@ -85,14 +68,6 @@ public class Collection {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public Project getProject() {
@@ -119,7 +94,8 @@ public class Collection {
         this.updatedAt = updatedAt;
     }
 
-    // equals, hashCode, toString
+    // Equals and HashCode
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -132,17 +108,5 @@ public class Collection {
     public int hashCode() {
         return Objects.hash(id);
     }
-
-    @Override
-    public String toString() {
-        return "Collection{" +
-               "id=" + id +
-               ", name='" + name + '\'' +
-               ", description='" + description + '\'' +
-               ", userId=" + userId +
-               ", projectId=" + (project != null ? project.getId() : null) +
-               ", createdAt=" + createdAt +
-               ", updatedAt=" + updatedAt +
-               '}';
-    }
 }
+

@@ -8,9 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for test results.
@@ -20,17 +21,25 @@ import java.util.UUID;
 public class TestResult {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
-    private UUID testId;
+    private Long testId;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private TestStatus status;
 
     @Column
-    private Integer responseStatusCode;
+    private Integer statusCode;
+
+    @Column
+    private Long responseTimeMs;
+
+    @Column
+    @Lob
+    private String responseBody;
 
     @Column
     @Lob
@@ -38,35 +47,55 @@ public class TestResult {
 
     @Column
     @Lob
-    private String responseBody;
+    private String assertionResults;
 
     @Column
-    private String errorMessage;
+    @Lob
+    private String error;
 
     @Column(nullable = false)
-    private Long executionTimeMs;
+    private LocalDateTime executedAt;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column
+    private Long environmentId;
+
+    @Column
+    private Long scheduledTestId;
+
+    @Column
+    private Long collectionId;
+
+    @Column
+    private Long executedBy;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (executedAt == null) {
+            executedAt = LocalDateTime.now();
+        }
     }
 
-    public UUID getId() {
+    public enum TestStatus {
+        SUCCESS,
+        FAILURE,
+        ERROR
+    }
+
+    // Getters and Setters
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getTestId() {
+    public Long getTestId() {
         return testId;
     }
 
-    public void setTestId(UUID testId) {
+    public void setTestId(Long testId) {
         this.testId = testId;
     }
 
@@ -78,20 +107,20 @@ public class TestResult {
         this.status = status;
     }
 
-    public Integer getResponseStatusCode() {
-        return responseStatusCode;
+    public Integer getStatusCode() {
+        return statusCode;
     }
 
-    public void setResponseStatusCode(Integer responseStatusCode) {
-        this.responseStatusCode = responseStatusCode;
+    public void setStatusCode(Integer statusCode) {
+        this.statusCode = statusCode;
     }
 
-    public String getResponseHeaders() {
-        return responseHeaders;
+    public Long getResponseTimeMs() {
+        return responseTimeMs;
     }
 
-    public void setResponseHeaders(String responseHeaders) {
-        this.responseHeaders = responseHeaders;
+    public void setResponseTimeMs(Long responseTimeMs) {
+        this.responseTimeMs = responseTimeMs;
     }
 
     public String getResponseBody() {
@@ -102,28 +131,68 @@ public class TestResult {
         this.responseBody = responseBody;
     }
 
-    public String getErrorMessage() {
-        return errorMessage;
+    public String getResponseHeaders() {
+        return responseHeaders;
     }
 
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
+    public void setResponseHeaders(String responseHeaders) {
+        this.responseHeaders = responseHeaders;
     }
 
-    public Long getExecutionTimeMs() {
-        return executionTimeMs;
+    public String getAssertionResults() {
+        return assertionResults;
     }
 
-    public void setExecutionTimeMs(Long executionTimeMs) {
-        this.executionTimeMs = executionTimeMs;
+    public void setAssertionResults(String assertionResults) {
+        this.assertionResults = assertionResults;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public String getError() {
+        return error;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setError(String error) {
+        this.error = error;
+    }
+
+    public LocalDateTime getExecutedAt() {
+        return executedAt;
+    }
+
+    public void setExecutedAt(LocalDateTime executedAt) {
+        this.executedAt = executedAt;
+    }
+
+    public Long getEnvironmentId() {
+        return environmentId;
+    }
+
+    public void setEnvironmentId(Long environmentId) {
+        this.environmentId = environmentId;
+    }
+
+    public Long getScheduledTestId() {
+        return scheduledTestId;
+    }
+
+    public void setScheduledTestId(Long scheduledTestId) {
+        this.scheduledTestId = scheduledTestId;
+    }
+
+    public Long getCollectionId() {
+        return collectionId;
+    }
+
+    public void setCollectionId(Long collectionId) {
+        this.collectionId = collectionId;
+    }
+
+    public Long getExecutedBy() {
+        return executedBy;
+    }
+
+    public void setExecutedBy(Long executedBy) {
+        this.executedBy = executedBy;
     }
 }
 

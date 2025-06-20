@@ -7,9 +7,10 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for environment configurations.
@@ -20,7 +21,8 @@ import java.util.UUID;
 public class Environment {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -29,19 +31,19 @@ public class Environment {
     private String description;
 
     @Column(nullable = false)
-    private UUID userId;
+    private Long projectId;
 
-    @Column
-    private UUID teamId;
+    @Column(nullable = false)
+    private Boolean isDefault;
 
     @Column
     @Lob
-    private String variables;
+    private String variables; // JSON string with environment variables
 
     @Column(nullable = false)
-    private boolean isDefault;
+    private Long createdBy;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -51,6 +53,9 @@ public class Environment {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (isDefault == null) {
+            isDefault = false;
+        }
     }
 
     @PreUpdate
@@ -58,11 +63,13 @@ public class Environment {
         updatedAt = LocalDateTime.now();
     }
 
-    public UUID getId() {
+    // Getters and Setters
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -82,20 +89,20 @@ public class Environment {
         this.description = description;
     }
 
-    public UUID getUserId() {
-        return userId;
+    public Long getProjectId() {
+        return projectId;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 
-    public UUID getTeamId() {
-        return teamId;
+    public Boolean getIsDefault() {
+        return isDefault;
     }
 
-    public void setTeamId(UUID teamId) {
-        this.teamId = teamId;
+    public void setIsDefault(Boolean isDefault) {
+        this.isDefault = isDefault;
     }
 
     public String getVariables() {
@@ -106,12 +113,12 @@ public class Environment {
         this.variables = variables;
     }
 
-    public boolean isDefault() {
-        return isDefault;
+    public Long getCreatedBy() {
+        return createdBy;
     }
 
-    public void setDefault(boolean isDefault) {
-        this.isDefault = isDefault;
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 
     public LocalDateTime getCreatedAt() {

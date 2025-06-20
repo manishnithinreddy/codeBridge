@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for audit logs.
@@ -15,49 +14,50 @@ import java.util.UUID;
 public class AuditLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
-    private UUID userId;
+    private Long userId;
 
     @Column(nullable = false)
     private String action; // e.g., "TEST_EXECUTION", "TOKEN_CREATION", "SNAPSHOT_APPROVAL"
 
     @Column
-    private UUID resourceId; // ID of the resource being acted upon (test, token, etc.)
+    private Long resourceId; // ID of the resource being acted upon (test, token, etc.)
 
     @Column(nullable = false)
-    private String resourceType; // e.g., "ApiTest", "ProjectToken", "TestSnapshot"
+    private String resourceType; // e.g., "API_TEST", "PROJECT_TOKEN", "TEST_SNAPSHOT"
 
     @Column
     @Lob
-    private String details; // JSON details of the action
-
-    @Column
-    private String ipAddress;
-
-    @Column
-    private String userAgent;
+    private String details; // JSON string with additional details
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @Column(name = "user_agent")
+    private String userAgent;
+
     // Getters and Setters
-    public UUID getId() {
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
@@ -69,11 +69,11 @@ public class AuditLog {
         this.action = action;
     }
 
-    public UUID getResourceId() {
+    public Long getResourceId() {
         return resourceId;
     }
 
-    public void setResourceId(UUID resourceId) {
+    public void setResourceId(Long resourceId) {
         this.resourceId = resourceId;
     }
 
@@ -93,6 +93,14 @@ public class AuditLog {
         this.details = details;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public String getIpAddress() {
         return ipAddress;
     }
@@ -107,14 +115,6 @@ public class AuditLog {
 
     public void setUserAgent(String userAgent) {
         this.userAgent = userAgent;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }
 

@@ -7,9 +7,13 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for mapping tests to collections.
@@ -20,16 +24,18 @@ import java.util.UUID;
 public class CollectionTest {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collection_id", nullable = false)
+    private Collection collection;
+
+    @Column(name = "test_id", nullable = false)
+    private Long testId;
 
     @Column(nullable = false)
-    private UUID collectionId;
-
-    @Column(nullable = false)
-    private UUID testId;
-
-    @Column(name = "test_order", nullable = false)
-    private int testOrder;
+    private Integer order;
 
     @Column
     @Lob
@@ -37,12 +43,16 @@ public class CollectionTest {
 
     @Column
     @Lob
-    private String postRequestScript;
+    private String postResponseScript;
+
+    @Column
+    @Lob
+    private String environmentVariables;
 
     @Column(nullable = false)
-    private boolean enabled;
+    private Boolean enabled;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -52,6 +62,12 @@ public class CollectionTest {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (enabled == null) {
+            enabled = true;
+        }
+        if (order == null) {
+            order = 0;
+        }
     }
 
     @PreUpdate
@@ -59,46 +75,38 @@ public class CollectionTest {
         updatedAt = LocalDateTime.now();
     }
 
-    public UUID getId() {
+    // Getters and Setters
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getCollectionId() {
-        return collectionId;
+    public Collection getCollection() {
+        return collection;
     }
 
-    public void setCollectionId(UUID collectionId) {
-        this.collectionId = collectionId;
+    public void setCollection(Collection collection) {
+        this.collection = collection;
     }
 
-    public UUID getTestId() {
+    public Long getTestId() {
         return testId;
     }
 
-    public void setTestId(UUID testId) {
+    public void setTestId(Long testId) {
         this.testId = testId;
     }
 
-    public int getTestOrder() {
-        return testOrder;
+    public Integer getOrder() {
+        return order;
     }
 
-    public void setTestOrder(int testOrder) {
-        this.testOrder = testOrder;
-    }
-
-    // For backward compatibility
-    public int getOrder() {
-        return testOrder;
-    }
-
-    // For backward compatibility
-    public void setOrder(int order) {
-        this.testOrder = order;
+    public void setOrder(Integer order) {
+        this.order = order;
     }
 
     public String getPreRequestScript() {
@@ -109,19 +117,27 @@ public class CollectionTest {
         this.preRequestScript = preRequestScript;
     }
 
-    public String getPostRequestScript() {
-        return postRequestScript;
+    public String getPostResponseScript() {
+        return postResponseScript;
     }
 
-    public void setPostRequestScript(String postRequestScript) {
-        this.postRequestScript = postRequestScript;
+    public void setPostResponseScript(String postResponseScript) {
+        this.postResponseScript = postResponseScript;
     }
 
-    public boolean isEnabled() {
+    public String getEnvironmentVariables() {
+        return environmentVariables;
+    }
+
+    public void setEnvironmentVariables(String environmentVariables) {
+        this.environmentVariables = environmentVariables;
+    }
+
+    public Boolean getEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
 

@@ -9,7 +9,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.Objects;
 
 /**
@@ -21,12 +20,13 @@ import java.util.Objects;
 public class ProjectToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotNull
-    @Column(nullable = false)
-    private UUID projectId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @NotBlank
     @Size(max = 100)
@@ -34,82 +34,58 @@ public class ProjectToken {
     private String name;
 
     @NotBlank
+    @Size(max = 255)
     @Column(nullable = false)
-    private String tokenType; // "Bearer", "Basic", "ApiKey", "OAuth2"
+    @Convert(converter = EncryptedStringConverter.class)
+    private String token;
 
-    @NotBlank
-    @Column(nullable = false)
-    @Convert(converter = EncryptedStringConverter.class) // Encrypt token values in database
-    private String tokenValue;
+    @Size(max = 500)
+    @Column(length = 500)
+    private String description;
 
-    @Column
-    private String headerName; // e.g., "Authorization" for Bearer tokens, or custom header name for API keys
+    @Column(name = "token_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TokenType tokenType;
 
-    @Column
-    private String parameterName; // For tokens passed as query parameters or form fields
-
-    @Column
-    private String tokenLocation; // "header", "query", "cookie", "body"
-
-    @Column
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    @Column
-    private String refreshUrl;
-
-    @Column
-    @Lob
-    private String refreshData; // JSON data for refresh requests
-
-    @Column(nullable = false)
-    private boolean active;
-
-    @Column(nullable = false)
-    private boolean autoRefresh;
+    @NotNull
+    @Column(name = "created_by", nullable = false)
+    private Long createdBy;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
-    private UUID createdBy;
-
-    // Constructors
-    public ProjectToken() {
-    }
-
-    public ProjectToken(UUID projectId, String name, String tokenType, String tokenValue, 
-                        String headerName, boolean active, UUID createdBy) {
-        this.projectId = projectId;
-        this.name = name;
-        this.tokenType = tokenType;
-        this.tokenValue = tokenValue;
-        this.headerName = headerName;
-        this.tokenLocation = "header"; // Default to header
-        this.active = active;
-        this.autoRefresh = false;
-        this.createdBy = createdBy;
+    public enum TokenType {
+        API_KEY,
+        OAUTH_TOKEN,
+        BEARER_TOKEN,
+        BASIC_AUTH,
+        CUSTOM
     }
 
     // Getters and Setters
-    public UUID getId() {
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getProjectId() {
-        return projectId;
+    public Project getProject() {
+        return project;
     }
 
-    public void setProjectId(UUID projectId) {
-        this.projectId = projectId;
+    public void setProject(Project project) {
+        this.project = project;
     }
 
     public String getName() {
@@ -120,44 +96,28 @@ public class ProjectToken {
         this.name = name;
     }
 
-    public String getTokenType() {
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public TokenType getTokenType() {
         return tokenType;
     }
 
-    public void setTokenType(String tokenType) {
+    public void setTokenType(TokenType tokenType) {
         this.tokenType = tokenType;
-    }
-
-    public String getTokenValue() {
-        return tokenValue;
-    }
-
-    public void setTokenValue(String tokenValue) {
-        this.tokenValue = tokenValue;
-    }
-
-    public String getHeaderName() {
-        return headerName;
-    }
-
-    public void setHeaderName(String headerName) {
-        this.headerName = headerName;
-    }
-
-    public String getParameterName() {
-        return parameterName;
-    }
-
-    public void setParameterName(String parameterName) {
-        this.parameterName = parameterName;
-    }
-
-    public String getTokenLocation() {
-        return tokenLocation;
-    }
-
-    public void setTokenLocation(String tokenLocation) {
-        this.tokenLocation = tokenLocation;
     }
 
     public LocalDateTime getExpiresAt() {
@@ -168,36 +128,12 @@ public class ProjectToken {
         this.expiresAt = expiresAt;
     }
 
-    public String getRefreshUrl() {
-        return refreshUrl;
+    public Long getCreatedBy() {
+        return createdBy;
     }
 
-    public void setRefreshUrl(String refreshUrl) {
-        this.refreshUrl = refreshUrl;
-    }
-
-    public String getRefreshData() {
-        return refreshData;
-    }
-
-    public void setRefreshData(String refreshData) {
-        this.refreshData = refreshData;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    public boolean isAutoRefresh() {
-        return autoRefresh;
-    }
-
-    public void setAutoRefresh(boolean autoRefresh) {
-        this.autoRefresh = autoRefresh;
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -216,15 +152,8 @@ public class ProjectToken {
         this.updatedAt = updatedAt;
     }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+    // Equals and HashCode
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    // equals, hashCode, toString
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -237,21 +166,5 @@ public class ProjectToken {
     public int hashCode() {
         return Objects.hash(id);
     }
-
-    @Override
-    public String toString() {
-        return "ProjectToken{" +
-                "id=" + id +
-                ", projectId=" + projectId +
-                ", name='" + name + '\'' +
-                ", tokenType='" + tokenType + '\'' +
-                ", headerName='" + headerName + '\'' +
-                ", tokenLocation='" + tokenLocation + '\'' +
-                ", active=" + active +
-                ", autoRefresh=" + autoRefresh +
-                ", expiresAt=" + expiresAt +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
-    }
 }
+

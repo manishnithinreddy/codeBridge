@@ -3,9 +3,9 @@ package com.codebridge.apitest.model;
 import com.codebridge.apitest.model.enums.ScheduleType;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for scheduled tests.
@@ -15,8 +15,8 @@ import java.util.UUID;
 public class ScheduledTest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -25,19 +25,7 @@ public class ScheduledTest {
     private String description;
 
     @Column(nullable = false)
-    private UUID userId;
-
-    @Column
-    private UUID testId;
-
-    @Column
-    private UUID chainId;
-
-    @Column
-    private UUID loadTestId;
-
-    @Column
-    private UUID environmentId;
+    private Long userId;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -47,50 +35,48 @@ public class ScheduledTest {
     private String cronExpression;
 
     @Column
-    private Integer fixedRateSeconds;
-
-    @Column
-    private LocalDateTime oneTimeExecutionTime;
-
-    @Column
-    private String webhookUrl;
+    private Integer intervalMinutes;
 
     @Column(nullable = false)
-    private boolean active;
+    private Boolean enabled;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private ScheduledTestStatus status;
+    @Column(name = "test_id")
+    private Long testId;
 
-    @Column
-    private LocalDateTime lastExecutionStartTime;
+    @Column(name = "collection_id")
+    private Long collectionId;
 
-    @Column
-    private LocalDateTime lastExecutionEndTime;
+    @Column(name = "environment_id")
+    private Long environmentId;
 
-    @Column
-    private Boolean lastExecutionSuccess;
+    @Column(name = "last_run_at")
+    private LocalDateTime lastRunAt;
 
-    @Column
-    @Lob
-    private String lastErrorMessage;
-
-    @Column
-    private Integer executionCount = 0;
+    @Column(name = "next_run_at")
+    private LocalDateTime nextRunAt;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        if (enabled == null) {
+            enabled = true;
+        }
+    }
+
     // Getters and Setters
-    public UUID getId() {
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -110,44 +96,12 @@ public class ScheduledTest {
         this.description = description;
     }
 
-    public UUID getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
-    }
-
-    public UUID getTestId() {
-        return testId;
-    }
-
-    public void setTestId(UUID testId) {
-        this.testId = testId;
-    }
-
-    public UUID getChainId() {
-        return chainId;
-    }
-
-    public void setChainId(UUID chainId) {
-        this.chainId = chainId;
-    }
-
-    public UUID getLoadTestId() {
-        return loadTestId;
-    }
-
-    public void setLoadTestId(UUID loadTestId) {
-        this.loadTestId = loadTestId;
-    }
-
-    public UUID getEnvironmentId() {
-        return environmentId;
-    }
-
-    public void setEnvironmentId(UUID environmentId) {
-        this.environmentId = environmentId;
     }
 
     public ScheduleType getScheduleType() {
@@ -166,84 +120,60 @@ public class ScheduledTest {
         this.cronExpression = cronExpression;
     }
 
-    public Integer getFixedRateSeconds() {
-        return fixedRateSeconds;
+    public Integer getIntervalMinutes() {
+        return intervalMinutes;
     }
 
-    public void setFixedRateSeconds(Integer fixedRateSeconds) {
-        this.fixedRateSeconds = fixedRateSeconds;
+    public void setIntervalMinutes(Integer intervalMinutes) {
+        this.intervalMinutes = intervalMinutes;
     }
 
-    public LocalDateTime getOneTimeExecutionTime() {
-        return oneTimeExecutionTime;
+    public Boolean getEnabled() {
+        return enabled;
     }
 
-    public void setOneTimeExecutionTime(LocalDateTime oneTimeExecutionTime) {
-        this.oneTimeExecutionTime = oneTimeExecutionTime;
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
     }
 
-    public String getWebhookUrl() {
-        return webhookUrl;
+    public Long getTestId() {
+        return testId;
     }
 
-    public void setWebhookUrl(String webhookUrl) {
-        this.webhookUrl = webhookUrl;
+    public void setTestId(Long testId) {
+        this.testId = testId;
     }
 
-    public boolean isActive() {
-        return active;
+    public Long getCollectionId() {
+        return collectionId;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setCollectionId(Long collectionId) {
+        this.collectionId = collectionId;
     }
 
-    public ScheduledTestStatus getStatus() {
-        return status;
+    public Long getEnvironmentId() {
+        return environmentId;
     }
 
-    public void setStatus(ScheduledTestStatus status) {
-        this.status = status;
+    public void setEnvironmentId(Long environmentId) {
+        this.environmentId = environmentId;
     }
 
-    public LocalDateTime getLastExecutionStartTime() {
-        return lastExecutionStartTime;
+    public LocalDateTime getLastRunAt() {
+        return lastRunAt;
     }
 
-    public void setLastExecutionStartTime(LocalDateTime lastExecutionStartTime) {
-        this.lastExecutionStartTime = lastExecutionStartTime;
+    public void setLastRunAt(LocalDateTime lastRunAt) {
+        this.lastRunAt = lastRunAt;
     }
 
-    public LocalDateTime getLastExecutionEndTime() {
-        return lastExecutionEndTime;
+    public LocalDateTime getNextRunAt() {
+        return nextRunAt;
     }
 
-    public void setLastExecutionEndTime(LocalDateTime lastExecutionEndTime) {
-        this.lastExecutionEndTime = lastExecutionEndTime;
-    }
-
-    public Boolean getLastExecutionSuccess() {
-        return lastExecutionSuccess;
-    }
-
-    public void setLastExecutionSuccess(Boolean lastExecutionSuccess) {
-        this.lastExecutionSuccess = lastExecutionSuccess;
-    }
-
-    public String getLastErrorMessage() {
-        return lastErrorMessage;
-    }
-
-    public void setLastErrorMessage(String lastErrorMessage) {
-        this.lastErrorMessage = lastErrorMessage;
-    }
-
-    public Integer getExecutionCount() {
-        return executionCount;
-    }
-
-    public void setExecutionCount(Integer executionCount) {
-        this.executionCount = executionCount;
+    public void setNextRunAt(LocalDateTime nextRunAt) {
+        this.nextRunAt = nextRunAt;
     }
 
     public LocalDateTime getCreatedAt() {
