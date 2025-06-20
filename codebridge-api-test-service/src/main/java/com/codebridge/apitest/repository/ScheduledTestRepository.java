@@ -7,13 +7,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repository for scheduled tests.
  */
 @Repository
-public interface ScheduledTestRepository extends JpaRepository<ScheduledTest, UUID> {
+public interface ScheduledTestRepository extends JpaRepository<ScheduledTest, Long> {
     
     /**
      * Find all scheduled tests for a user.
@@ -21,7 +20,7 @@ public interface ScheduledTestRepository extends JpaRepository<ScheduledTest, UU
      * @param userId the user ID
      * @return the list of scheduled tests
      */
-    List<ScheduledTest> findByUserId(UUID userId);
+    List<ScheduledTest> findByUserId(Long userId);
     
     /**
      * Find a scheduled test by ID and user ID.
@@ -30,7 +29,7 @@ public interface ScheduledTestRepository extends JpaRepository<ScheduledTest, UU
      * @param userId the user ID
      * @return the scheduled test
      */
-    Optional<ScheduledTest> findByIdAndUserId(UUID id, UUID userId);
+    Optional<ScheduledTest> findByIdAndUserId(Long id, Long userId);
     
     /**
      * Find all active scheduled tests.

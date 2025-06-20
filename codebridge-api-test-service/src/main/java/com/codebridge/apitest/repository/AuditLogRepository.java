@@ -7,14 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Repository for audit logs.
  */
 @Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
+public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     
     /**
      * Find all audit logs for a user.
@@ -23,7 +21,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
      * @param pageable the pagination information
      * @return the page of audit logs
      */
-    Page<AuditLog> findByUserId(UUID userId, Pageable pageable);
+    Page<AuditLog> findByUserId(Long userId, Pageable pageable);
     
     /**
      * Find all audit logs for a resource.
@@ -33,7 +31,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
      * @param pageable the pagination information
      * @return the page of audit logs
      */
-    Page<AuditLog> findByResourceIdAndResourceType(UUID resourceId, String resourceType, Pageable pageable);
+    Page<AuditLog> findByResourceIdAndResourceType(Long resourceId, String resourceType, Pageable pageable);
     
     /**
      * Find all audit logs for a specific action.

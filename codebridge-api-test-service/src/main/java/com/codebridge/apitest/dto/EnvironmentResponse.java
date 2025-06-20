@@ -2,26 +2,27 @@ package com.codebridge.apitest.dto;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Response DTO for environment operations.
  */
 public class EnvironmentResponse {
 
-    private UUID id;
+    private Long id;
     private String name;
     private String description;
+    private String baseUrl;
     private Map<String, String> variables;
-    private boolean isDefault;
+    private Map<String, String> headers;
+    private Boolean isDefault;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -41,6 +42,14 @@ public class EnvironmentResponse {
         this.description = description;
     }
 
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
     public Map<String, String> getVariables() {
         return variables;
     }
@@ -49,11 +58,19 @@ public class EnvironmentResponse {
         this.variables = variables;
     }
 
-    public boolean isDefault() {
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
+    public Boolean getIsDefault() {
         return isDefault;
     }
 
-    public void setDefault(boolean isDefault) {
+    public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
     }
 

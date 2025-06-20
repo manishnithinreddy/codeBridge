@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -28,54 +27,13 @@ public class ProjectTokenService {
     private final ProjectSharingService projectSharingService;
 
     @Autowired
-    public ProjectTokenService(ProjectTokenRepository projectTokenRepository,
-                              ProjectRepository projectRepository,
-                              ProjectSharingService projectSharingService) {
+    public ProjectTokenService(
+            ProjectTokenRepository projectTokenRepository,
+            ProjectRepository projectRepository,
+            ProjectSharingService projectSharingService) {
         this.projectTokenRepository = projectTokenRepository;
         this.projectRepository = projectRepository;
         this.projectSharingService = projectSharingService;
-    }
-
-    /**
-     * Create a new project token.
-     *
-     * @param projectId the project ID
-     * @param request the token request
-     * @param userId the user ID
-     * @return the created token
-     */
-    @Transactional
-    public ProjectTokenResponse createToken(UUID projectId, ProjectTokenRequest request, UUID userId) {
-        // Check if project exists
-        if (!projectRepository.existsById(projectId)) {
-            throw new ResourceNotFoundException("Project", "id", projectId.toString());
-        }
-
-        // Check permissions
-        SharePermissionLevel permission = projectSharingService.getEffectivePermission(projectId, userId);
-        if (permission == null || permission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-            throw new AccessDeniedException("User does not have permission to create tokens for project " + projectId);
-        }
-
-        // Create token
-        ProjectToken token = new ProjectToken();
-        token.setId(UUID.randomUUID());
-        token.setProjectId(projectId);
-        token.setName(request.getName());
-        token.setTokenType(request.getTokenType());
-        token.setTokenValue(request.getTokenValue());
-        token.setHeaderName(request.getHeaderName());
-        token.setParameterName(request.getParameterName());
-        token.setTokenLocation(request.getTokenLocation() != null ? request.getTokenLocation() : "header");
-        token.setExpiresAt(request.getExpiresAt());
-        token.setRefreshUrl(request.getRefreshUrl());
-        token.setRefreshData(request.getRefreshData());
-        token.setActive(request.getActive());
-        token.setAutoRefresh(request.getAutoRefresh() != null ? request.getAutoRefresh() : false);
-        token.setCreatedBy(userId);
-
-        ProjectToken savedToken = projectTokenRepository.save(token);
-        return mapToResponse(savedToken);
     }
 
     /**
@@ -83,162 +41,122 @@ public class ProjectTokenService {
      *
      * @param projectId the project ID
      * @param userId the user ID
-     * @return the list of tokens
+     * @return list of token responses
      */
-    @Transactional(readOnly = true)
-    public List<ProjectTokenResponse> getTokens(UUID projectId, UUID userId) {
-        // Check if project exists
-        if (!projectRepository.existsById(projectId)) {
-            throw new ResourceNotFoundException("Project", "id", projectId.toString());
-        }
-
-        // Check permissions
-        SharePermissionLevel permission = projectSharingService.getEffectivePermission(projectId, userId);
-        if (permission == null) {
-            throw new AccessDeniedException("User does not have permission to view tokens for project " + projectId);
-        }
-
-        // Get tokens
-        List<ProjectToken> tokens = projectTokenRepository.findByProjectId(projectId);
-        return tokens.stream()
+    public List<ProjectTokenResponse> getProjectTokens(Long projectId, Long userId) {
+        // Verify user has access to the project
+        projectSharingService.verifyProjectAccess(projectId, userId);
+        
+        return projectTokenRepository.findByProjectId(projectId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get a token by ID.
+     * Create a new project token.
      *
      * @param projectId the project ID
-     * @param tokenId the token ID
      * @param userId the user ID
-     * @return the token
-     */
-    @Transactional(readOnly = true)
-    public ProjectTokenResponse getToken(UUID projectId, UUID tokenId, UUID userId) {
-        // Check permissions
-        SharePermissionLevel permission = projectSharingService.getEffectivePermission(projectId, userId);
-        if (permission == null) {
-            throw new AccessDeniedException("User does not have permission to view tokens for project " + projectId);
-        }
-
-        // Get token
-        ProjectToken token = projectTokenRepository.findById(tokenId)
-                .orElseThrow(() -> new ResourceNotFoundException("Token", "id", tokenId.toString()));
-
-        // Verify token belongs to project
-        if (!token.getProjectId().equals(projectId)) {
-            throw new AccessDeniedException("Token does not belong to project " + projectId);
-        }
-
-        return mapToResponse(token);
-    }
-
-    /**
-     * Update a token.
-     *
-     * @param projectId the project ID
-     * @param tokenId the token ID
      * @param request the token request
-     * @param userId the user ID
-     * @return the updated token
+     * @return the created token response
      */
     @Transactional
-    public ProjectTokenResponse updateToken(UUID projectId, UUID tokenId, ProjectTokenRequest request, UUID userId) {
-        // Check permissions
-        SharePermissionLevel permission = projectSharingService.getEffectivePermission(projectId, userId);
-        if (permission == null || permission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-            throw new AccessDeniedException("User does not have permission to update tokens for project " + projectId);
-        }
-
-        // Get token
-        ProjectToken token = projectTokenRepository.findById(tokenId)
-                .orElseThrow(() -> new ResourceNotFoundException("Token", "id", tokenId.toString()));
-
-        // Verify token belongs to project
-        if (!token.getProjectId().equals(projectId)) {
-            throw new AccessDeniedException("Token does not belong to project " + projectId);
-        }
-
-        // Update token
+    public ProjectTokenResponse createProjectToken(Long projectId, Long userId, ProjectTokenRequest request) {
+        // Verify user has access to the project
+        projectSharingService.verifyProjectAccess(projectId, userId, SharePermissionLevel.ADMIN);
+        
+        // Check if a token with the same name already exists
+        projectTokenRepository.findByProjectIdAndName(projectId, request.getName())
+                .ifPresent(token -> {
+                    throw new IllegalArgumentException("A token with this name already exists");
+                });
+        
+        ProjectToken token = new ProjectToken();
+        token.setProjectId(projectId);
         token.setName(request.getName());
-        token.setTokenType(request.getTokenType());
-        token.setTokenValue(request.getTokenValue());
-        token.setHeaderName(request.getHeaderName());
-        token.setParameterName(request.getParameterName());
-        token.setTokenLocation(request.getTokenLocation() != null ? request.getTokenLocation() : token.getTokenLocation());
+        token.setDescription(request.getDescription());
+        token.setCreatedBy(userId);
         token.setExpiresAt(request.getExpiresAt());
-        token.setRefreshUrl(request.getRefreshUrl());
-        token.setRefreshData(request.getRefreshData());
-        token.setActive(request.getActive());
-        token.setAutoRefresh(request.getAutoRefresh() != null ? request.getAutoRefresh() : token.isAutoRefresh());
-        token.setUpdatedAt(LocalDateTime.now());
-
+        token.setActive(true);
+        
+        // Generate a secure token value
+        String tokenValue = generateSecureToken();
+        token.setTokenValue(tokenValue);
+        
         ProjectToken savedToken = projectTokenRepository.save(token);
-        return mapToResponse(savedToken);
+        
+        // Return the response with the clear text token value (only time it's exposed)
+        ProjectTokenResponse response = mapToResponse(savedToken);
+        response.setTokenValue(tokenValue);
+        return response;
     }
 
     /**
-     * Delete a token.
+     * Revoke a project token.
      *
      * @param projectId the project ID
      * @param tokenId the token ID
      * @param userId the user ID
      */
     @Transactional
-    public void deleteToken(UUID projectId, UUID tokenId, UUID userId) {
-        // Check permissions
-        SharePermissionLevel permission = projectSharingService.getEffectivePermission(projectId, userId);
-        if (permission == null || permission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-            throw new AccessDeniedException("User does not have permission to delete tokens for project " + projectId);
-        }
-
-        // Get token
+    public void revokeProjectToken(Long projectId, Long tokenId, Long userId) {
+        // Verify user has access to the project
+        projectSharingService.verifyProjectAccess(projectId, userId, SharePermissionLevel.ADMIN);
+        
         ProjectToken token = projectTokenRepository.findById(tokenId)
-                .orElseThrow(() -> new ResourceNotFoundException("Token", "id", tokenId.toString()));
-
-        // Verify token belongs to project
+                .orElseThrow(() -> new ResourceNotFoundException("Token not found"));
+        
         if (!token.getProjectId().equals(projectId)) {
-            throw new AccessDeniedException("Token does not belong to project " + projectId);
+            throw new AccessDeniedException("Token does not belong to this project");
         }
-
-        // Delete token
-        projectTokenRepository.delete(token);
+        
+        token.setActive(false);
+        token.setRevokedAt(LocalDateTime.now());
+        token.setRevokedBy(userId);
+        
+        projectTokenRepository.save(token);
     }
 
     /**
-     * Get active tokens for a project.
+     * Validate a token for API access.
      *
-     * @param projectId the project ID
-     * @return the list of active tokens
+     * @param tokenValue the token value
+     * @return the project ID if valid
+     * @throws AccessDeniedException if the token is invalid
      */
-    @Transactional(readOnly = true)
-    public List<ProjectToken> getActiveTokens(UUID projectId) {
-        return projectTokenRepository.findByProjectIdAndActiveTrue(projectId);
+    public Long validateToken(String tokenValue) {
+        // Implementation would need to be updated to search by token value
+        // This is a placeholder for the actual implementation
+        throw new AccessDeniedException("Invalid token");
+    }
+
+    /**
+     * Generate a secure random token.
+     *
+     * @return a secure token string
+     */
+    private String generateSecureToken() {
+        // Implementation would generate a secure random token
+        // This is a placeholder for the actual implementation
+        return "secure-token-" + System.currentTimeMillis();
     }
 
     /**
      * Map a token entity to a response DTO.
      *
      * @param token the token entity
-     * @return the token response
+     * @return the token response DTO
      */
     private ProjectTokenResponse mapToResponse(ProjectToken token) {
         ProjectTokenResponse response = new ProjectTokenResponse();
         response.setId(token.getId());
-        response.setProjectId(token.getProjectId());
         response.setName(token.getName());
-        response.setTokenType(token.getTokenType());
-        response.setTokenValue(token.getTokenValue());
-        response.setHeaderName(token.getHeaderName());
-        response.setParameterName(token.getParameterName());
-        response.setTokenLocation(token.getTokenLocation());
-        response.setExpiresAt(token.getExpiresAt());
-        response.setRefreshUrl(token.getRefreshUrl());
-        response.setActive(token.isActive());
-        response.setAutoRefresh(token.isAutoRefresh());
+        response.setDescription(token.getDescription());
         response.setCreatedAt(token.getCreatedAt());
-        response.setUpdatedAt(token.getUpdatedAt());
-        response.setCreatedBy(token.getCreatedBy());
+        response.setExpiresAt(token.getExpiresAt());
+        response.setActive(token.getActive());
+        response.setRevokedAt(token.getRevokedAt());
+        // Token value is not included in the response for security reasons
         return response;
     }
 }

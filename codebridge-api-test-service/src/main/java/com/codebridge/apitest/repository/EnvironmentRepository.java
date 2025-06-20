@@ -6,46 +6,37 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repository for Environment entities.
  */
 @Repository
-public interface EnvironmentRepository extends JpaRepository<Environment, UUID> {
+public interface EnvironmentRepository extends JpaRepository<Environment, Long> {
 
     /**
-     * Find environments by user ID.
+     * Find environments by project ID.
      *
-     * @param userId the user ID
+     * @param projectId the project ID
      * @return list of environments
      */
-    List<Environment> findByUserId(UUID userId);
+    List<Environment> findByProjectId(Long projectId);
 
     /**
-     * Find environments by team ID.
-     *
-     * @param teamId the team ID
-     * @return list of environments
-     */
-    List<Environment> findByTeamId(UUID teamId);
-
-    /**
-     * Find environment by ID and user ID.
+     * Find environment by ID and project ID.
      *
      * @param id the environment ID
-     * @param userId the user ID
+     * @param projectId the project ID
      * @return optional environment
      */
-    Optional<Environment> findByIdAndUserId(UUID id, UUID userId);
+    Optional<Environment> findByIdAndProjectId(Long id, Long projectId);
 
     /**
-     * Find default environment by user ID.
+     * Find default environment by project ID.
      *
-     * @param userId the user ID
+     * @param projectId the project ID
      * @param isDefault true for default environment
      * @return optional environment
      */
-    Optional<Environment> findByUserIdAndIsDefault(UUID userId, boolean isDefault);
+    Optional<Environment> findByProjectIdAndIsDefault(Long projectId, boolean isDefault);
 }
 

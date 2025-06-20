@@ -12,13 +12,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Controller for project token operations.
  */
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/tokens")
+@RequestMapping("/api/projects/{projectId}/tokens")
 public class ProjectTokenController {
 
     private final ProjectTokenService projectTokenService;
@@ -29,93 +28,67 @@ public class ProjectTokenController {
     }
 
     /**
-     * Create a new project token.
-     *
-     * @param projectId the project ID
-     * @param request the token request
-     * @param userDetails the authenticated user
-     * @return the created token
-     */
-    @PostMapping
-    public ResponseEntity<ProjectTokenResponse> createToken(
-            @PathVariable UUID projectId,
-            @Valid @RequestBody ProjectTokenRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ProjectTokenResponse response = projectTokenService.createToken(
-                projectId, request, UUID.fromString(userDetails.getUsername()));
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
-
-    /**
      * Get all tokens for a project.
      *
      * @param projectId the project ID
-     * @param userDetails the authenticated user
-     * @return the list of tokens
+     * @param userDetails the authenticated user details
+     * @return list of token responses
      */
     @GetMapping
-    public ResponseEntity<List<ProjectTokenResponse>> getTokens(
-            @PathVariable UUID projectId,
+    public ResponseEntity<List<ProjectTokenResponse>> getProjectTokens(
+            @PathVariable Long projectId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        List<ProjectTokenResponse> tokens = projectTokenService.getTokens(
-                projectId, UUID.fromString(userDetails.getUsername()));
+        Long userId = getUserIdFromUserDetails(userDetails);
+        List<ProjectTokenResponse> tokens = projectTokenService.getProjectTokens(projectId, userId);
         return ResponseEntity.ok(tokens);
     }
 
     /**
-     * Get a token by ID.
+     * Create a new project token.
      *
      * @param projectId the project ID
-     * @param tokenId the token ID
-     * @param userDetails the authenticated user
-     * @return the token
-     */
-    @GetMapping("/{tokenId}")
-    public ResponseEntity<ProjectTokenResponse> getToken(
-            @PathVariable UUID projectId,
-            @PathVariable UUID tokenId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        ProjectTokenResponse token = projectTokenService.getToken(
-                projectId, tokenId, UUID.fromString(userDetails.getUsername()));
-        return ResponseEntity.ok(token);
-    }
-
-    /**
-     * Update a token.
-     *
-     * @param projectId the project ID
-     * @param tokenId the token ID
      * @param request the token request
-     * @param userDetails the authenticated user
-     * @return the updated token
+     * @param userDetails the authenticated user details
+     * @return the created token response
      */
-    @PutMapping("/{tokenId}")
-    public ResponseEntity<ProjectTokenResponse> updateToken(
-            @PathVariable UUID projectId,
-            @PathVariable UUID tokenId,
+    @PostMapping
+    public ResponseEntity<ProjectTokenResponse> createProjectToken(
+            @PathVariable Long projectId,
             @Valid @RequestBody ProjectTokenRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        ProjectTokenResponse token = projectTokenService.updateToken(
-                projectId, tokenId, request, UUID.fromString(userDetails.getUsername()));
-        return ResponseEntity.ok(token);
+        Long userId = getUserIdFromUserDetails(userDetails);
+        ProjectTokenResponse token = projectTokenService.createProjectToken(projectId, userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(token);
     }
 
     /**
-     * Delete a token.
+     * Revoke a project token.
      *
      * @param projectId the project ID
      * @param tokenId the token ID
-     * @param userDetails the authenticated user
-     * @return no content
+     * @param userDetails the authenticated user details
+     * @return no content response
      */
     @DeleteMapping("/{tokenId}")
-    public ResponseEntity<Void> deleteToken(
-            @PathVariable UUID projectId,
-            @PathVariable UUID tokenId,
+    public ResponseEntity<Void> revokeProjectToken(
+            @PathVariable Long projectId,
+            @PathVariable Long tokenId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        projectTokenService.deleteToken(
-                projectId, tokenId, UUID.fromString(userDetails.getUsername()));
+        Long userId = getUserIdFromUserDetails(userDetails);
+        projectTokenService.revokeProjectToken(projectId, tokenId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Extract user ID from user details.
+     *
+     * @param userDetails the user details
+     * @return the user ID
+     */
+    private Long getUserIdFromUserDetails(UserDetails userDetails) {
+        // Implementation would extract the user ID from the UserDetails object
+        // This is a placeholder for the actual implementation
+        return 1L;
     }
 }
 

@@ -5,7 +5,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity for test chains.
@@ -17,8 +16,8 @@ import java.util.UUID;
 public class TestChain {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -27,32 +26,30 @@ public class TestChain {
     private String description;
 
     @Column(nullable = false)
-    private UUID projectId;
+    private Long projectId;
 
     @Column(nullable = false)
-    private UUID createdBy;
+    private Boolean active = true;
 
     @Column
     @Lob
-    private String testSequence; // JSON array of test IDs and variable mappings
-
-    @Column
-    private boolean active;
+    private String configuration;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     // Getters and Setters
-    public UUID getId() {
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -72,36 +69,28 @@ public class TestChain {
         this.description = description;
     }
 
-    public UUID getProjectId() {
+    public Long getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(UUID projectId) {
+    public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public String getTestSequence() {
-        return testSequence;
-    }
-
-    public void setTestSequence(String testSequence) {
-        this.testSequence = testSequence;
-    }
-
-    public boolean isActive() {
+    public Boolean getActive() {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getConfiguration() {
+        return configuration;
+    }
+
+    public void setConfiguration(String configuration) {
+        this.configuration = configuration;
     }
 
     public LocalDateTime getCreatedAt() {

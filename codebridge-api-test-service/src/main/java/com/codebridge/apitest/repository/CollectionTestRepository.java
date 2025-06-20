@@ -6,13 +6,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repository for CollectionTest entities.
  */
 @Repository
-public interface CollectionTestRepository extends JpaRepository<CollectionTest, UUID> {
+public interface CollectionTestRepository extends JpaRepository<CollectionTest, Long> {
 
     /**
      * Find collection tests by collection ID.
@@ -20,7 +19,7 @@ public interface CollectionTestRepository extends JpaRepository<CollectionTest, 
      * @param collectionId the collection ID
      * @return list of collection tests
      */
-    List<CollectionTest> findByCollectionIdOrderByTestOrder(UUID collectionId);
+    List<CollectionTest> findByCollectionIdOrderByOrder(Long collectionId);
 
     /**
      * Find collection test by collection ID and test ID.
@@ -29,14 +28,14 @@ public interface CollectionTestRepository extends JpaRepository<CollectionTest, 
      * @param testId the test ID
      * @return optional collection test
      */
-    Optional<CollectionTest> findByCollectionIdAndTestId(UUID collectionId, UUID testId);
+    Optional<CollectionTest> findByCollectionIdAndTestId(Long collectionId, Long testId);
 
     /**
      * Delete collection tests by collection ID.
      *
      * @param collectionId the collection ID
      */
-    void deleteByCollectionId(UUID collectionId);
+    void deleteByCollectionId(Long collectionId);
 
     /**
      * Delete collection test by collection ID and test ID.
@@ -44,6 +43,6 @@ public interface CollectionTestRepository extends JpaRepository<CollectionTest, 
      * @param collectionId the collection ID
      * @param testId the test ID
      */
-    void deleteByCollectionIdAndTestId(UUID collectionId, UUID testId);
+    void deleteByCollectionIdAndTestId(Long collectionId, Long testId);
 }
 

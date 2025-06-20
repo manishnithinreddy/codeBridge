@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -32,67 +31,77 @@ public class EnvironmentService {
     }
 
     /**
+     * Get all environments for a project.
+     *
+     * @param projectId the project ID
+     * @return list of environment responses
+     */
+    public List<EnvironmentResponse> getEnvironments(Long projectId) {
+        return environmentRepository.findByProjectId(projectId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get an environment by ID.
+     *
+     * @param id the environment ID
+     * @param projectId the project ID
+     * @return the environment response
+     * @throws ResourceNotFoundException if the environment is not found
+     */
+    public EnvironmentResponse getEnvironment(Long id, Long projectId) {
+        Environment environment = environmentRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Environment not found"));
+        return mapToResponse(environment);
+    }
+
+    /**
      * Create a new environment.
      *
      * @param request the environment request
-     * @param userId the user ID
-     * @return the created environment
+     * @param projectId the project ID
+     * @return the created environment response
      */
     @Transactional
-    public EnvironmentResponse createEnvironment(EnvironmentRequest request, UUID userId) {
+    public EnvironmentResponse createEnvironment(EnvironmentRequest request, Long projectId) {
         Environment environment = new Environment();
-        environment.setId(UUID.randomUUID());
         environment.setName(request.getName());
         environment.setDescription(request.getDescription());
-        environment.setUserId(userId);
+        environment.setProjectId(projectId);
+        environment.setBaseUrl(request.getBaseUrl());
         
         try {
             if (request.getVariables() != null) {
                 environment.setVariables(objectMapper.writeValueAsString(request.getVariables()));
             }
+            if (request.getHeaders() != null) {
+                environment.setHeaders(objectMapper.writeValueAsString(request.getHeaders()));
+            }
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing variables JSON", e);
+            throw new RuntimeException("Error processing JSON", e);
         }
         
-        environment.setDefault(request.isDefault());
-        
-        // If this is set as default, unset any existing default
-        if (request.isDefault()) {
-            environmentRepository.findByUserIdAndIsDefault(userId, true)
-                    .ifPresent(existingDefault -> {
-                        existingDefault.setDefault(false);
-                        environmentRepository.save(existingDefault);
-                    });
+        // Check if this is the first environment for the project
+        List<Environment> existingEnvironments = environmentRepository.findByProjectId(projectId);
+        if (existingEnvironments.isEmpty()) {
+            environment.setIsDefault(true);
+        } else {
+            environment.setIsDefault(request.getIsDefault() != null && request.getIsDefault());
+            
+            // If this is set as default, unset any existing default
+            if (environment.getIsDefault()) {
+                existingEnvironments.stream()
+                        .filter(Environment::getIsDefault)
+                        .forEach(e -> {
+                            e.setIsDefault(false);
+                            environmentRepository.save(e);
+                        });
+            }
         }
         
         Environment savedEnvironment = environmentRepository.save(environment);
-        return mapToEnvironmentResponse(savedEnvironment);
-    }
-
-    /**
-     * Get all environments for a user.
-     *
-     * @param userId the user ID
-     * @return list of environments
-     */
-    public List<EnvironmentResponse> getAllEnvironments(UUID userId) {
-        List<Environment> environments = environmentRepository.findByUserId(userId);
-        return environments.stream()
-                .map(this::mapToEnvironmentResponse)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get environment by ID.
-     *
-     * @param id the environment ID
-     * @param userId the user ID
-     * @return the environment
-     */
-    public EnvironmentResponse getEnvironmentById(UUID id, UUID userId) {
-        Environment environment = environmentRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", id));
-        return mapToEnvironmentResponse(environment);
+        return mapToResponse(savedEnvironment);
     }
 
     /**
@@ -100,71 +109,66 @@ public class EnvironmentService {
      *
      * @param id the environment ID
      * @param request the environment request
-     * @param userId the user ID
-     * @return the updated environment
+     * @param projectId the project ID
+     * @return the updated environment response
+     * @throws ResourceNotFoundException if the environment is not found
      */
     @Transactional
-    public EnvironmentResponse updateEnvironment(UUID id, EnvironmentRequest request, UUID userId) {
-        Environment environment = environmentRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", id));
+    public EnvironmentResponse updateEnvironment(Long id, EnvironmentRequest request, Long projectId) {
+        Environment environment = environmentRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Environment not found"));
         
         environment.setName(request.getName());
         environment.setDescription(request.getDescription());
+        environment.setBaseUrl(request.getBaseUrl());
         
         try {
             if (request.getVariables() != null) {
                 environment.setVariables(objectMapper.writeValueAsString(request.getVariables()));
             }
+            if (request.getHeaders() != null) {
+                environment.setHeaders(objectMapper.writeValueAsString(request.getHeaders()));
+            }
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing variables JSON", e);
+            throw new RuntimeException("Error processing JSON", e);
         }
         
-        // Handle default status change
-        if (request.isDefault() && !environment.isDefault()) {
-            environmentRepository.findByUserIdAndIsDefault(userId, true)
-                    .ifPresent(existingDefault -> {
-                        existingDefault.setDefault(false);
-                        environmentRepository.save(existingDefault);
+        // Handle default status
+        if (request.getIsDefault() != null && request.getIsDefault() && !environment.getIsDefault()) {
+            // Unset any existing default
+            environmentRepository.findByProjectIdAndIsDefault(projectId, true)
+                    .ifPresent(e -> {
+                        e.setIsDefault(false);
+                        environmentRepository.save(e);
                     });
-            environment.setDefault(true);
-        } else if (!request.isDefault() && environment.isDefault()) {
-            // Don't allow removing default status without setting another default
-            Optional<Environment> otherEnvironment = environmentRepository.findByUserId(userId).stream()
-                    .filter(e -> !e.getId().equals(id))
-                    .findFirst();
-            
-            if (otherEnvironment.isPresent()) {
-                Environment newDefault = otherEnvironment.get();
-                newDefault.setDefault(true);
-                environmentRepository.save(newDefault);
-                environment.setDefault(false);
-            }
+            environment.setIsDefault(true);
         }
         
         Environment updatedEnvironment = environmentRepository.save(environment);
-        return mapToEnvironmentResponse(updatedEnvironment);
+        return mapToResponse(updatedEnvironment);
     }
 
     /**
      * Delete an environment.
      *
      * @param id the environment ID
-     * @param userId the user ID
+     * @param projectId the project ID
+     * @throws ResourceNotFoundException if the environment is not found
      */
     @Transactional
-    public void deleteEnvironment(UUID id, UUID userId) {
-        Environment environment = environmentRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", id));
+    public void deleteEnvironment(Long id, Long projectId) {
+        Environment environment = environmentRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Environment not found"));
         
-        // If this is the default environment, set another one as default
-        if (environment.isDefault()) {
-            Optional<Environment> otherEnvironment = environmentRepository.findByUserId(userId).stream()
+        // If this is the default environment and there are others, set another as default
+        if (environment.getIsDefault()) {
+            List<Environment> otherEnvironments = environmentRepository.findByProjectId(projectId).stream()
                     .filter(e -> !e.getId().equals(id))
-                    .findFirst();
+                    .collect(Collectors.toList());
             
-            if (otherEnvironment.isPresent()) {
-                Environment newDefault = otherEnvironment.get();
-                newDefault.setDefault(true);
+            if (!otherEnvironments.isEmpty()) {
+                Environment newDefault = otherEnvironments.get(0);
+                newDefault.setIsDefault(true);
                 environmentRepository.save(newDefault);
             }
         }
@@ -173,56 +177,71 @@ public class EnvironmentService {
     }
 
     /**
-     * Get the default environment for a user.
+     * Get the default environment for a project.
      *
-     * @param userId the user ID
-     * @return the default environment
+     * @param projectId the project ID
+     * @return the default environment response
+     * @throws ResourceNotFoundException if no default environment is found
      */
-    public EnvironmentResponse getDefaultEnvironment(UUID userId) {
-        Environment environment = environmentRepository.findByUserIdAndIsDefault(userId, true)
-                .orElseGet(() -> {
-                    // If no default environment exists, create one
-                    Environment newDefault = new Environment();
-                    newDefault.setId(UUID.randomUUID());
-                    newDefault.setName("Default Environment");
-                    newDefault.setDescription("Default environment created automatically");
-                    newDefault.setUserId(userId);
-                    newDefault.setDefault(true);
-                    try {
-                        newDefault.setVariables(objectMapper.writeValueAsString(Map.of()));
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException("Error processing variables JSON", e);
-                    }
-                    return environmentRepository.save(newDefault);
-                });
-        
-        return mapToEnvironmentResponse(environment);
+    public EnvironmentResponse getDefaultEnvironment(Long projectId) {
+        Environment environment = environmentRepository.findByProjectIdAndIsDefault(projectId, true)
+                .orElseThrow(() -> new ResourceNotFoundException("No default environment found"));
+        return mapToResponse(environment);
     }
 
     /**
-     * Maps an Environment entity to an EnvironmentResponse DTO.
+     * Set an environment as the default for a project.
+     *
+     * @param id the environment ID
+     * @param projectId the project ID
+     * @return the updated environment response
+     * @throws ResourceNotFoundException if the environment is not found
+     */
+    @Transactional
+    public EnvironmentResponse setDefaultEnvironment(Long id, Long projectId) {
+        Environment environment = environmentRepository.findByIdAndProjectId(id, projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Environment not found"));
+        
+        // Unset any existing default
+        environmentRepository.findByProjectIdAndIsDefault(projectId, true)
+                .ifPresent(e -> {
+                    if (!e.getId().equals(id)) {
+                        e.setIsDefault(false);
+                        environmentRepository.save(e);
+                    }
+                });
+        
+        environment.setIsDefault(true);
+        Environment updatedEnvironment = environmentRepository.save(environment);
+        return mapToResponse(updatedEnvironment);
+    }
+
+    /**
+     * Map an environment entity to a response DTO.
      *
      * @param environment the environment entity
      * @return the environment response DTO
      */
-    private EnvironmentResponse mapToEnvironmentResponse(Environment environment) {
+    private EnvironmentResponse mapToResponse(Environment environment) {
         EnvironmentResponse response = new EnvironmentResponse();
         response.setId(environment.getId());
         response.setName(environment.getName());
         response.setDescription(environment.getDescription());
+        response.setBaseUrl(environment.getBaseUrl());
+        response.setIsDefault(environment.getIsDefault());
         
-        if (environment.getVariables() != null) {
-            try {
+        try {
+            if (environment.getVariables() != null) {
                 response.setVariables(objectMapper.readValue(environment.getVariables(), 
                         new TypeReference<Map<String, String>>() {}));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error processing variables JSON", e);
             }
+            if (environment.getHeaders() != null) {
+                response.setHeaders(objectMapper.readValue(environment.getHeaders(), 
+                        new TypeReference<Map<String, String>>() {}));
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error processing JSON", e);
         }
-        
-        response.setDefault(environment.isDefault());
-        response.setCreatedAt(environment.getCreatedAt());
-        response.setUpdatedAt(environment.getUpdatedAt());
         
         return response;
     }
