@@ -15,7 +15,7 @@
     <description>Handles natural language to SQL and DB interactions via AI</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <!-- Add other specific properties if needed -->
     </properties>
 
