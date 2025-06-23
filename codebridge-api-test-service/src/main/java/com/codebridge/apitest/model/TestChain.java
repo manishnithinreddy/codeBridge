@@ -34,6 +34,14 @@ public class TestChain {
     @Column
     @Lob
     private String configuration;
+    
+    @Column
+    @Lob
+    private String steps;
+    
+    @Column
+    @Lob
+    private String variables;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -91,6 +99,22 @@ public class TestChain {
 
     public void setConfiguration(String configuration) {
         this.configuration = configuration;
+    }
+    
+    public String getSteps() {
+        return steps;
+    }
+
+    public void setSteps(String steps) {
+        this.steps = steps;
+    }
+    
+    public String getVariables() {
+        return variables;
+    }
+
+    public void setVariables(String variables) {
+        this.variables = variables;
     }
 
     public LocalDateTime getCreatedAt() {
