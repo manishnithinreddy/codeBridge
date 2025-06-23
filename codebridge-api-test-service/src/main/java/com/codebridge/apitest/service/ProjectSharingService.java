@@ -127,6 +127,68 @@ public class ProjectSharingService {
     public void deleteAllGrantsForProject(Long projectId) {
         shareGrantRepository.deleteByProjectId(projectId);
     }
+    
+    /**
+     * Grant project access to a user.
+     *
+     * @param projectId the project ID
+     * @param request the share grant request
+     * @param granterUserId the user ID granting access
+     * @return the created share grant response
+     */
+    @Transactional
+    public ShareGrantResponse grantProjectAccess(Long projectId, ShareGrantRequest request, Long granterUserId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can create shares
+        if (!project.getUserId().equals(granterUserId)) {
+            throw new AccessDeniedException("Only the project owner can create shares");
+        }
+
+        // Check if share already exists
+        shareGrantRepository.findByProjectIdAndUserId(projectId, request.getUserId())
+                .ifPresent(grant -> {
+                    throw new IllegalArgumentException("Share already exists for this user");
+                });
+
+        // Create share grant
+        ShareGrant grant = new ShareGrant();
+        grant.setProjectId(projectId);
+        grant.setUserId(request.getUserId());
+        grant.setPermissionLevel(request.getPermissionLevel());
+        grant.setCreatedBy(granterUserId);
+
+        ShareGrant savedGrant = shareGrantRepository.save(grant);
+        return mapToShareGrantResponse(savedGrant);
+    }
+    
+    /**
+     * Revoke project access from a user.
+     *
+     * @param projectId the project ID
+     * @param granteeUserId the user ID to revoke access from
+     * @param revokerUserId the user ID revoking access
+     */
+    @Transactional
+    public void revokeProjectAccess(Long projectId, Long granteeUserId, Long revokerUserId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can revoke shares
+        if (!project.getUserId().equals(revokerUserId)) {
+            throw new AccessDeniedException("Only the project owner can revoke shares");
+        }
+
+        // Find the share grant
+        ShareGrant grant = shareGrantRepository.findByProjectIdAndUserId(projectId, granteeUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("ShareGrant", "userId", granteeUserId.toString()));
+
+        // Delete the share grant
+        shareGrantRepository.delete(grant);
+    }
 
     /**
      * Check if a granted permission is sufficient for a required permission.
