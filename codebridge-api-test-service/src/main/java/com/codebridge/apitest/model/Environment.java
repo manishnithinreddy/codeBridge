@@ -39,6 +39,9 @@ public class Environment {
     private Boolean isDefault;
 
     @Column
+    private String baseUrl;
+
+    @Column
     @Lob
     private String variables; // JSON string with environment variables
 
@@ -125,6 +128,14 @@ public class Environment {
 
     public void setHeaders(String headers) {
         this.headers = headers;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
     }
 
     public Long getCreatedBy() {
