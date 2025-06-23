@@ -2,6 +2,7 @@ package com.codebridge.apitest.controller;
 
 import com.codebridge.apitest.dto.ScheduledTestRequest;
 import com.codebridge.apitest.dto.ScheduledTestResponse;
+import com.codebridge.apitest.dto.TestResultResponse;
 import com.codebridge.apitest.service.TestSchedulerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,48 +18,18 @@ import java.util.List;
  * Controller for scheduled test operations.
  */
 @RestController
-@RequestMapping("/api/scheduled-tests")
+@RequestMapping("/api/v1/scheduled-tests")
 public class ScheduledTestController {
-    
+
     private final TestSchedulerService testSchedulerService;
-    
+
     @Autowired
     public ScheduledTestController(TestSchedulerService testSchedulerService) {
         this.testSchedulerService = testSchedulerService;
     }
-    
+
     /**
-     * Get all scheduled tests for the authenticated user.
-     *
-     * @param userDetails the authenticated user details
-     * @return list of scheduled test responses
-     */
-    @GetMapping
-    public ResponseEntity<List<ScheduledTestResponse>> getScheduledTests(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdFromUserDetails(userDetails);
-        List<ScheduledTestResponse> tests = testSchedulerService.getScheduledTests(userId);
-        return ResponseEntity.ok(tests);
-    }
-    
-    /**
-     * Get a scheduled test by ID.
-     *
-     * @param id the scheduled test ID
-     * @param userDetails the authenticated user details
-     * @return the scheduled test response
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<ScheduledTestResponse> getScheduledTest(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdFromUserDetails(userDetails);
-        ScheduledTestResponse test = testSchedulerService.getScheduledTest(id, userId);
-        return ResponseEntity.ok(test);
-    }
-    
-    /**
-     * Create a new scheduled test.
+     * Create a scheduled test.
      *
      * @param request the scheduled test request
      * @param userDetails the authenticated user details
@@ -69,10 +40,40 @@ public class ScheduledTestController {
             @Valid @RequestBody ScheduledTestRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserIdFromUserDetails(userDetails);
-        ScheduledTestResponse test = testSchedulerService.createScheduledTest(request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(test);
+        ScheduledTestResponse response = testSchedulerService.createScheduledTest(request, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    
+
+    /**
+     * Get a scheduled test by ID.
+     *
+     * @param id the scheduled test ID
+     * @param userDetails the authenticated user details
+     * @return the scheduled test response
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ScheduledTestResponse> getScheduledTestById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = getUserIdFromUserDetails(userDetails);
+        ScheduledTestResponse response = testSchedulerService.getScheduledTestById(id, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all scheduled tests for the authenticated user.
+     *
+     * @param userDetails the authenticated user details
+     * @return the list of scheduled test responses
+     */
+    @GetMapping
+    public ResponseEntity<List<ScheduledTestResponse>> getAllScheduledTests(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = getUserIdFromUserDetails(userDetails);
+        List<ScheduledTestResponse> responses = testSchedulerService.getAllScheduledTestsForUser(userId);
+        return ResponseEntity.ok(responses);
+    }
+
     /**
      * Update a scheduled test.
      *
@@ -87,28 +88,10 @@ public class ScheduledTestController {
             @Valid @RequestBody ScheduledTestRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserIdFromUserDetails(userDetails);
-        ScheduledTestResponse test = testSchedulerService.updateScheduledTest(id, request, userId);
-        return ResponseEntity.ok(test);
+        ScheduledTestResponse response = testSchedulerService.updateScheduledTest(id, request, userId);
+        return ResponseEntity.ok(response);
     }
-    
-    /**
-     * Activate or deactivate a scheduled test.
-     *
-     * @param id the scheduled test ID
-     * @param active whether to activate or deactivate
-     * @param userDetails the authenticated user details
-     * @return the updated scheduled test response
-     */
-    @PatchMapping("/{id}/active")
-    public ResponseEntity<ScheduledTestResponse> setScheduledTestActive(
-            @PathVariable Long id,
-            @RequestParam boolean active,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdFromUserDetails(userDetails);
-        ScheduledTestResponse test = testSchedulerService.setScheduledTestActive(id, active, userId);
-        return ResponseEntity.ok(test);
-    }
-    
+
     /**
      * Delete a scheduled test.
      *
@@ -124,21 +107,37 @@ public class ScheduledTestController {
         testSchedulerService.deleteScheduledTest(id, userId);
         return ResponseEntity.noContent().build();
     }
-    
+
     /**
-     * Run a scheduled test immediately.
+     * Execute a scheduled test manually.
+     *
+     * @param id the scheduled test ID
+     * @param userDetails the authenticated user details
+     * @return the test result response
+     */
+    @PostMapping("/{id}/execute")
+    public ResponseEntity<TestResultResponse> executeScheduledTest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = getUserIdFromUserDetails(userDetails);
+        TestResultResponse result = testSchedulerService.executeScheduledTest(id, userId);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Run a scheduled test now.
      *
      * @param id the scheduled test ID
      * @param userDetails the authenticated user details
      * @return the updated scheduled test response
      */
     @PostMapping("/{id}/run")
-    public ResponseEntity<ScheduledTestResponse> runScheduledTestNow(
+    public ResponseEntity<TestResultResponse> runScheduledTestNow(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserIdFromUserDetails(userDetails);
-        ScheduledTestResponse test = testSchedulerService.runScheduledTestNow(id, userId);
-        return ResponseEntity.ok(test);
+        TestResultResponse result = testSchedulerService.executeScheduledTest(id, userId);
+        return ResponseEntity.ok(result);
     }
     
     /**
@@ -148,8 +147,8 @@ public class ScheduledTestController {
      * @return the user ID
      */
     private Long getUserIdFromUserDetails(UserDetails userDetails) {
-        // Implementation would extract the user ID from the UserDetails object
-        // This is a placeholder for the actual implementation
+        // In a real application, this would extract the user ID from the UserDetails
+        // For now, we'll just return a placeholder value
         return 1L;
     }
 }
