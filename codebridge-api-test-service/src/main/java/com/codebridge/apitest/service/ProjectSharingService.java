@@ -119,6 +119,29 @@ public class ProjectSharingService {
     }
     
     /**
+     * List all users who have access to a project.
+     *
+     * @param projectId the project ID
+     * @param userId the user ID requesting the list
+     * @return the list of share grants
+     */
+    public List<ShareGrantResponse> listUsersForProject(Long projectId, Long userId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can view shares
+        if (!project.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Only the project owner can view shares");
+        }
+
+        List<ShareGrant> grants = shareGrantRepository.findByProjectId(projectId);
+        return grants.stream()
+                .map(this::mapToShareGrantResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Delete all share grants for a project.
      *
      * @param projectId the project ID
