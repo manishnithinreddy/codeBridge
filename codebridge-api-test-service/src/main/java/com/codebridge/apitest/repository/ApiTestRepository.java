@@ -83,6 +83,15 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
     Optional<ApiTest> findByIdWithDetails(@Param("id") Long id);
 
     /**
+     * Finds an API test by ID and project ID.
+     *
+     * @param id The API test ID
+     * @param projectId The project ID
+     * @return The API test
+     */
+    Optional<ApiTest> findByIdAndProjectId(Long id, Long projectId);
+
+    /**
      * Counts API tests by project ID.
      *
      * @param projectId The project ID

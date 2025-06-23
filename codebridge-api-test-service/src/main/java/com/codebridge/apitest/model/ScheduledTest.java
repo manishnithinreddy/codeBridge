@@ -54,6 +54,9 @@ public class ScheduledTest {
 
     @Column(name = "next_run_at")
     private LocalDateTime nextRunAt;
+    
+    @Column(name = "execution_count")
+    private Integer executionCount = 0;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -67,6 +70,9 @@ public class ScheduledTest {
     protected void onCreate() {
         if (enabled == null) {
             enabled = true;
+        }
+        if (executionCount == null) {
+            executionCount = 0;
         }
     }
 
@@ -174,6 +180,22 @@ public class ScheduledTest {
 
     public void setNextRunAt(LocalDateTime nextRunAt) {
         this.nextRunAt = nextRunAt;
+    }
+    
+    public Integer getExecutionCount() {
+        return executionCount != null ? executionCount : 0;
+    }
+    
+    public void setExecutionCount(Integer executionCount) {
+        this.executionCount = executionCount;
+    }
+    
+    public void incrementExecutionCount() {
+        if (this.executionCount == null) {
+            this.executionCount = 1;
+        } else {
+            this.executionCount++;
+        }
     }
 
     public LocalDateTime getCreatedAt() {
