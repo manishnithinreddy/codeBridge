@@ -2,23 +2,21 @@ package com.codebridge.apitest.service;
 
 import com.codebridge.apitest.model.Collection;
 import com.codebridge.apitest.model.Project;
-import com.codebridge.apitest.model.enums.SharePermissionLevel;
 import com.codebridge.apitest.dto.CollectionRequest;
 import com.codebridge.apitest.dto.CollectionResponse;
-import com.codebridge.apitest.dto.ProjectResponse;
 import com.codebridge.apitest.exception.AccessDeniedException;
+import com.codebridge.apitest.exception.DuplicateResourceException;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
+import com.codebridge.apitest.model.enums.SharePermissionLevel;
 import com.codebridge.apitest.repository.CollectionRepository;
 import com.codebridge.apitest.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.stream.Collectors;
 
 @Service
 public class CollectionService {
@@ -27,170 +25,176 @@ public class CollectionService {
     private final ProjectRepository projectRepository;
     private final ProjectSharingService projectSharingService;
 
-    public CollectionService(CollectionRepository collectionRepository,
-                             ProjectRepository projectRepository,
-                             ProjectSharingService projectSharingService) {
+    public CollectionService(CollectionRepository collectionRepository, 
+                            ProjectRepository projectRepository,
+                            ProjectSharingService projectSharingService) {
         this.collectionRepository = collectionRepository;
         this.projectRepository = projectRepository;
         this.projectSharingService = projectSharingService;
     }
 
-    /**
-     * Creates a new collection.
-     *
-     * @param collectionRequest the collection request
-     * @param platformUserId the user ID
-     * @return the created collection response
-     */
     @Transactional
-    public CollectionResponse createCollection(CollectionRequest collectionRequest, Long platformUserId) {
-        Long projectId = collectionRequest.getProjectId();
-        SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
-
-        if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-            throw new AccessDeniedException("User does not have permission to add collections to project " + projectId);
+    public CollectionResponse createCollection(CollectionRequest request, Long userId) {
+        // Validate project if provided
+        Project project = null;
+        if (request.getProjectId() != null) {
+            project = projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.getProjectId()));
+            
+            // Check if user has edit access to the project
+            SharePermissionLevel permission = projectSharingService.getEffectivePermission(project.getId(), userId);
+            if (permission == null || permission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
+                throw new AccessDeniedException("You don't have permission to create collections in this project");
+            }
+            
+            // Check for duplicate name within project
+            if (collectionRepository.existsByNameAndProjectId(request.getName(), project.getId())) {
+                throw new DuplicateResourceException("Collection with name '" + request.getName() + "' already exists in this project");
+            }
+        } else {
+            // Check for duplicate name for user's personal collections
+            if (collectionRepository.existsByNameAndUserIdAndProjectIsNull(request.getName(), userId)) {
+                throw new DuplicateResourceException("Collection with name '" + request.getName() + "' already exists in your personal collections");
+            }
         }
 
-        Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
-
         Collection collection = new Collection();
-        collection.setName(collectionRequest.getName());
-        collection.setUserId(platformUserId);
+        collection.setName(request.getName());
+        collection.setDescription(request.getDescription());
+        collection.setUserId(userId);
         collection.setProject(project);
-
+        
         Collection savedCollection = collectionRepository.save(collection);
         return mapToCollectionResponse(savedCollection);
     }
 
     @Transactional(readOnly = true)
-    public CollectionResponse getCollectionByIdForUser(Long collectionId, Long platformUserId) {
+    public CollectionResponse getCollectionById(Long collectionId, Long userId) {
         Collection collection = collectionRepository.findById(collectionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
-
-        Long projectId = collection.getProject().getId();
-        SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
-        if (effectivePermission == null) {
-            throw new ResourceNotFoundException("Collection", "projectAccess", "denied_for_project_" + projectId.toString());
-        }
-
+            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId));
+        
+        // Check access
+        verifyCollectionAccess(collection, userId);
+        
         return mapToCollectionResponse(collection);
     }
 
     @Transactional(readOnly = true)
-    public List<CollectionResponse> getAllCollectionsForUser(Long platformUserId) {
+    public List<CollectionResponse> getAllCollections(Long userId) {
         Set<CollectionResponse> resultSet = new HashSet<>();
-
-        collectionRepository.findByUserId(platformUserId).stream()
+        
+        // Add user's personal collections
+        collectionRepository.findByUserId(userId).stream()
             .filter(c -> c.getProject() == null)
             .map(this::mapToCollectionResponse)
             .forEach(resultSet::add);
 
-        projectRepository.findByPlatformUserId(platformUserId).forEach(project ->
+        projectRepository.findByUserId(userId).forEach(project ->
             collectionRepository.findByProjectId(project.getId()).stream()
                 .map(this::mapToCollectionResponse)
                 .forEach(resultSet::add)
         );
-
-        List<ProjectResponse> sharedProjects = projectSharingService.listSharedProjectsForUser(platformUserId);
-        for (ProjectResponse sharedProject : sharedProjects) {
-            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(sharedProject.getId(), platformUserId);
-            if (effectivePermission != null) {
-                collectionRepository.findByProjectId(sharedProject.getId()).stream()
-                    .map(this::mapToCollectionResponse)
-                    .forEach(resultSet::add);
-            }
-        }
-
-        List<CollectionResponse> finalResult = new ArrayList<>(resultSet);
-        finalResult.sort(Comparator.comparing(CollectionResponse::getName, String.CASE_INSENSITIVE_ORDER));
-        return finalResult;
-    }
-
-    @Transactional(readOnly = true)
-    public List<CollectionResponse> getAllCollectionsForProject(Long projectId, Long platformUserId) {
-        SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
-        if (effectivePermission == null) {
-            throw new AccessDeniedException("User does not have permission to view collections in project " + projectId);
-        }
-        projectRepository.findById(projectId)
-             .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
-
-        return collectionRepository.findByProjectId(projectId).stream()
+        
+        // Add collections from projects shared with the user
+        projectSharingService.listSharedProjectsForUser(userId).forEach(projectResponse -> {
+            collectionRepository.findByProjectId(projectResponse.getId()).stream()
                 .map(this::mapToCollectionResponse)
-                .collect(Collectors.toList());
+                .forEach(resultSet::add);
+        });
+        
+        return resultSet.stream()
+            .sorted((c1, c2) -> c1.getName().compareToIgnoreCase(c2.getName()))
+            .collect(Collectors.toList());
     }
-
 
     @Transactional
-    public CollectionResponse updateCollection(Long collectionId, CollectionRequest collectionRequest, Long platformUserId) {
+    public CollectionResponse updateCollection(Long collectionId, CollectionRequest request, Long userId) {
         Collection collection = collectionRepository.findById(collectionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
-
-        if (collection.getProject() != null) {
-            Long projectId = collection.getProject().getId();
-            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
-            if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-                throw new AccessDeniedException("User does not have permission to update collections in project " + projectId);
-            }
-            if (collectionRequest.getProjectId() != null && !collectionRequest.getProjectId().equals(projectId)) {
-                 throw new IllegalArgumentException("Moving collections between projects is not supported via this method.");
-            }
-
-        } else { // Standalone collection
-            if (!collection.getUserId().equals(platformUserId)) {
-                throw new AccessDeniedException("User does not have permission to update this standalone collection.");
-            }
-            if (collectionRequest.getProjectId() != null) {
-                 SharePermissionLevel projectAccess = projectSharingService.getEffectivePermission(collectionRequest.getProjectId(), platformUserId);
-                 if (projectAccess == null || projectAccess.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-                     throw new AccessDeniedException("User does not have permission to move this collection to project " + collectionRequest.getProjectId());
-                 }
-                 Project project = projectRepository.findById(collectionRequest.getProjectId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", collectionRequest.getProjectId().toString()));
-                 collection.setProject(project);
+            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId));
+        
+        // Check access
+        verifyCollectionAccess(collection, userId, SharePermissionLevel.CAN_EDIT);
+        
+        // Check for duplicate name
+        if (!collection.getName().equals(request.getName())) {
+            if (collection.getProject() != null) {
+                if (collectionRepository.existsByNameAndProjectIdAndIdNot(
+                        request.getName(), collection.getProject().getId(), collectionId)) {
+                    throw new DuplicateResourceException("Collection with name '" + request.getName() + 
+                            "' already exists in this project");
+                }
+            } else {
+                if (collectionRepository.existsByNameAndUserIdAndProjectIsNullAndIdNot(
+                        request.getName(), userId, collectionId)) {
+                    throw new DuplicateResourceException("Collection with name '" + request.getName() + 
+                            "' already exists in your personal collections");
+                }
             }
         }
-        collection.setName(collectionRequest.getName());
-
+        
+        collection.setName(request.getName());
+        collection.setDescription(request.getDescription());
+        
         Collection updatedCollection = collectionRepository.save(collection);
         return mapToCollectionResponse(updatedCollection);
     }
 
     @Transactional
-    public void deleteCollection(Long collectionId, Long platformUserId) {
+    public void deleteCollection(Long collectionId, Long userId) {
         Collection collection = collectionRepository.findById(collectionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId.toString()));
-
-        if (collection.getProject() != null) {
-            Long projectId = collection.getProject().getId();
-            SharePermissionLevel effectivePermission = projectSharingService.getEffectivePermission(projectId, platformUserId);
-            if (effectivePermission == null || effectivePermission.ordinal() < SharePermissionLevel.CAN_EDIT.ordinal()) {
-                throw new AccessDeniedException("User does not have permission to delete collections in project " + projectId);
-            }
-        } else { // Standalone collection
-            if (!collection.getUserId().equals(platformUserId)) {
-                throw new AccessDeniedException("User does not have permission to delete this standalone collection.");
-            }
-        }
+            .orElseThrow(() -> new ResourceNotFoundException("Collection", "id", collectionId));
+        
+        // Check access
+        verifyCollectionAccess(collection, userId, SharePermissionLevel.CAN_EDIT);
+        
         collectionRepository.delete(collection);
     }
-
-    private CollectionResponse mapToCollectionResponse(Collection collection) {
-        if (collection == null) {
-            return null;
+    
+    /**
+     * Verify if a user has access to a collection with the specified permission level.
+     */
+    private void verifyCollectionAccess(Collection collection, Long userId, SharePermissionLevel requiredPermission) {
+        // User is the owner of the collection
+        if (collection.getUserId().equals(userId)) {
+            return;
         }
+        
+        // Collection belongs to a project
+        if (collection.getProject() != null) {
+            SharePermissionLevel permission = projectSharingService.getEffectivePermission(
+                    collection.getProject().getId(), userId);
+            
+            if (permission == null || permission.ordinal() < requiredPermission.ordinal()) {
+                throw new AccessDeniedException("You don't have sufficient permissions for this collection");
+            }
+        } else {
+            // Personal collection of another user
+            throw new AccessDeniedException("You don't have access to this collection");
+        }
+    }
+    
+    /**
+     * Verify if a user has any access to a collection.
+     */
+    private void verifyCollectionAccess(Collection collection, Long userId) {
+        verifyCollectionAccess(collection, userId, SharePermissionLevel.CAN_VIEW);
+    }
+    
+    private CollectionResponse mapToCollectionResponse(Collection collection) {
         CollectionResponse response = new CollectionResponse();
         response.setId(collection.getId());
         response.setName(collection.getName());
-        // response.setDescription(collection.getDescription());
-        response.setCreatedAt(collection.getCreatedAt());
-        response.setUpdatedAt(collection.getUpdatedAt());
-
+        response.setDescription(collection.getDescription());
+        response.setUserId(collection.getUserId());
+        
         if (collection.getProject() != null) {
             response.setProjectId(collection.getProject().getId());
             response.setProjectName(collection.getProject().getName());
         }
+        
+        response.setCreatedAt(collection.getCreatedAt());
+        response.setUpdatedAt(collection.getUpdatedAt());
         return response;
     }
 }
+
