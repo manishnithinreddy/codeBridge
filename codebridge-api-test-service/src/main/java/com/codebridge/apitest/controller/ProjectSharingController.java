@@ -35,7 +35,7 @@ public class ProjectSharingController {
                                                                @Valid @RequestBody ShareGrantRequest shareGrantRequest,
                                                                Authentication authentication) {
         Long granterUserId = getPlatformUserId(authentication);
-        ShareGrantResponse response = projectSharingService.grantProjectAccess(projectId, shareGrantRequest, granterUserId);
+        ShareGrantResponse response = projectSharingService.createShare(projectId, shareGrantRequest, granterUserId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -44,7 +44,7 @@ public class ProjectSharingController {
                                                     @PathVariable Long granteeUserId,
                                                     Authentication authentication) {
         Long revokerUserId = getPlatformUserId(authentication);
-        projectSharingService.revokeProjectAccess(projectId, granteeUserId, revokerUserId);
+        projectSharingService.revokeShare(projectId, granteeUserId, revokerUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -52,7 +52,7 @@ public class ProjectSharingController {
     public ResponseEntity<List<ShareGrantResponse>> listSharedUsers(@PathVariable Long projectId,
                                                                   Authentication authentication) {
         Long platformUserId = getPlatformUserId(authentication); // User trying to list shares
-        List<ShareGrantResponse> shares = projectSharingService.listUsersForProject(projectId, platformUserId);
+        List<ShareGrantResponse> shares = projectSharingService.listSharesForProject(projectId, platformUserId);
         return ResponseEntity.ok(shares);
     }
 }
