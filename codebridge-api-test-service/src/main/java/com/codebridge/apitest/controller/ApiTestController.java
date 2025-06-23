@@ -8,9 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +17,7 @@ import java.util.Map;
  * Controller for API test operations.
  */
 @RestController
-@RequestMapping("/api/projects/{projectId}/tests")
+@RequestMapping("/api/v1/projects/{projectId}/tests")
 public class ApiTestController {
 
     private final ApiTestService apiTestService;
@@ -37,8 +34,8 @@ public class ApiTestController {
      * @return list of API test responses
      */
     @GetMapping
-    public ResponseEntity<List<ApiTestResponse>> getApiTests(@PathVariable Long projectId) {
-        List<ApiTestResponse> tests = apiTestService.getApiTests(projectId);
+    public ResponseEntity<List<ApiTestResponse>> getAllTests(@PathVariable Long projectId) {
+        List<ApiTestResponse> tests = apiTestService.getAllTests(projectId);
         return ResponseEntity.ok(tests);
     }
 
@@ -50,10 +47,10 @@ public class ApiTestController {
      * @return the API test response
      */
     @GetMapping("/{testId}")
-    public ResponseEntity<ApiTestResponse> getApiTest(
+    public ResponseEntity<ApiTestResponse> getTestById(
             @PathVariable Long projectId,
             @PathVariable Long testId) {
-        ApiTestResponse test = apiTestService.getApiTest(testId, projectId);
+        ApiTestResponse test = apiTestService.getTestById(testId, projectId);
         return ResponseEntity.ok(test);
     }
 
@@ -65,10 +62,10 @@ public class ApiTestController {
      * @return the created API test response
      */
     @PostMapping
-    public ResponseEntity<ApiTestResponse> createApiTest(
+    public ResponseEntity<ApiTestResponse> createTest(
             @PathVariable Long projectId,
             @Valid @RequestBody ApiTestRequest request) {
-        ApiTestResponse test = apiTestService.createApiTest(request, projectId);
+        ApiTestResponse test = apiTestService.createTest(request, projectId);
         return ResponseEntity.status(HttpStatus.CREATED).body(test);
     }
 
@@ -85,7 +82,7 @@ public class ApiTestController {
             @PathVariable Long projectId,
             @PathVariable Long testId,
             @Valid @RequestBody ApiTestRequest request) {
-        ApiTestResponse test = apiTestService.updateApiTest(testId, request, projectId);
+        ApiTestResponse test = apiTestService.updateTest(testId, request, projectId);
         return ResponseEntity.ok(test);
     }
 
@@ -97,10 +94,10 @@ public class ApiTestController {
      * @return no content response
      */
     @DeleteMapping("/{testId}")
-    public ResponseEntity<Void> deleteApiTest(
+    public ResponseEntity<Void> deleteTest(
             @PathVariable Long projectId,
             @PathVariable Long testId) {
-        apiTestService.deleteApiTest(testId, projectId);
+        apiTestService.deleteTest(testId, projectId);
         return ResponseEntity.noContent().build();
     }
 
@@ -109,33 +106,20 @@ public class ApiTestController {
      *
      * @param projectId the project ID
      * @param testId the test ID
+     * @param userId the user ID
      * @param environmentId the environment ID
-     * @param variables additional variables
-     * @param userDetails the authenticated user details
+     * @param variables additional variables for the test
      * @return the test result response
      */
     @PostMapping("/{testId}/execute")
     public ResponseEntity<TestResultResponse> executeTest(
             @PathVariable Long projectId,
             @PathVariable Long testId,
+            @RequestParam Long userId,
             @RequestParam(required = false) Long environmentId,
-            @RequestBody(required = false) Map<String, String> variables,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Long userId = getUserIdFromUserDetails(userDetails);
+            @RequestBody(required = false) Map<String, String> variables) {
         TestResultResponse result = apiTestService.executeTest(testId, projectId, userId, environmentId, variables);
         return ResponseEntity.ok(result);
-    }
-
-    /**
-     * Extract user ID from user details.
-     *
-     * @param userDetails the user details
-     * @return the user ID
-     */
-    private Long getUserIdFromUserDetails(UserDetails userDetails) {
-        // Implementation would extract the user ID from the UserDetails object
-        // This is a placeholder for the actual implementation
-        return 1L;
     }
 }
 
