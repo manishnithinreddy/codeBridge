@@ -39,6 +39,13 @@ public interface ScheduledTestRepository extends JpaRepository<ScheduledTest, Lo
     List<ScheduledTest> findByActiveTrue();
     
     /**
+     * Find all enabled scheduled tests.
+     *
+     * @return the list of enabled scheduled tests
+     */
+    List<ScheduledTest> findByEnabledTrue();
+    
+    /**
      * Find all active scheduled tests with a specific schedule type.
      *
      * @param scheduleType the schedule type
