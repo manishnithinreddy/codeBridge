@@ -19,11 +19,14 @@ public class ScheduledTestResponse {
     private Long environmentId;
     private String scheduleType;
     private String cronExpression;
+    private Integer intervalMinutes;
     private Integer fixedRateSeconds;
     private LocalDateTime oneTimeExecutionTime;
     private String webhookUrl;
     private boolean active;
     private String status;
+    private LocalDateTime lastRunAt;
+    private LocalDateTime nextRunAt;
     private LocalDateTime lastExecutionStartTime;
     private LocalDateTime lastExecutionEndTime;
     private Boolean lastExecutionSuccess;
@@ -53,10 +56,13 @@ public class ScheduledTestResponse {
         }
         
         response.setCronExpression(scheduledTest.getCronExpression());
+        response.setIntervalMinutes(scheduledTest.getIntervalMinutes());
         response.setFixedRateSeconds(scheduledTest.getFixedRateSeconds());
         response.setOneTimeExecutionTime(scheduledTest.getOneTimeExecutionTime());
         response.setWebhookUrl(scheduledTest.getWebhookUrl());
         response.setActive(scheduledTest.isActive());
+        response.setLastRunAt(scheduledTest.getLastRunAt());
+        response.setNextRunAt(scheduledTest.getNextRunAt());
         
         if (scheduledTest.getStatus() != null) {
             response.setStatus(scheduledTest.getStatus().name());
@@ -145,6 +151,14 @@ public class ScheduledTestResponse {
         this.cronExpression = cronExpression;
     }
 
+    public Integer getIntervalMinutes() {
+        return intervalMinutes;
+    }
+
+    public void setIntervalMinutes(Integer intervalMinutes) {
+        this.intervalMinutes = intervalMinutes;
+    }
+
     public Integer getFixedRateSeconds() {
         return fixedRateSeconds;
     }
@@ -159,6 +173,22 @@ public class ScheduledTestResponse {
 
     public void setOneTimeExecutionTime(LocalDateTime oneTimeExecutionTime) {
         this.oneTimeExecutionTime = oneTimeExecutionTime;
+    }
+
+    public LocalDateTime getLastRunAt() {
+        return lastRunAt;
+    }
+
+    public void setLastRunAt(LocalDateTime lastRunAt) {
+        this.lastRunAt = lastRunAt;
+    }
+
+    public LocalDateTime getNextRunAt() {
+        return nextRunAt;
+    }
+
+    public void setNextRunAt(LocalDateTime nextRunAt) {
+        this.nextRunAt = nextRunAt;
     }
 
     public String getWebhookUrl() {
