@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -121,18 +122,15 @@ public class TestSnapshotService {
      * Compare a test result with the approved snapshot.
      *
      * @param testId the test ID
-     * @param resultId the result ID
-     * @return the comparison result
+     * @param result the test result
+     * @return the comparison result as a map
      */
-    public SnapshotComparisonResponse compareWithSnapshot(Long testId, Long resultId) {
-        TestResult result = resultRepository.findById(resultId)
-                .orElseThrow(() -> new ResourceNotFoundException("TestResult", "id", resultId.toString()));
-
-        SnapshotComparisonResponse comparison = new SnapshotComparisonResponse();
-        comparison.setTestId(testId);
-        comparison.setResultId(resultId);
-        comparison.setHasApprovedSnapshot(false);
-        comparison.setMatches(false);
+    public Map<String, Object> compareWithSnapshot(Long testId, TestResult result) {
+        Map<String, Object> comparison = new HashMap<>();
+        comparison.put("testId", testId);
+        comparison.put("resultId", result.getId());
+        comparison.put("hasApprovedSnapshot", false);
+        comparison.put("matches", false);
 
         // Get the approved snapshot
         Optional<TestSnapshot> approvedSnapshotOpt = snapshotRepository.findByTestIdAndApprovedTrue(testId);
@@ -141,24 +139,24 @@ public class TestSnapshotService {
         }
         
         TestSnapshot approvedSnapshot = approvedSnapshotOpt.get();
-        comparison.setHasApprovedSnapshot(true);
-        comparison.setSnapshotId(approvedSnapshot.getId());
-        comparison.setSnapshotName(approvedSnapshot.getName());
+        comparison.put("hasApprovedSnapshot", true);
+        comparison.put("snapshotId", approvedSnapshot.getId());
+        comparison.put("snapshotName", approvedSnapshot.getName());
 
         // Compare response body
         boolean bodyMatches = compareJson(result.getResponseBody(), approvedSnapshot.getResponseBody());
-        comparison.setBodyMatches(bodyMatches);
+        comparison.put("bodyMatches", bodyMatches);
 
         // Compare response headers
         boolean headersMatch = compareJson(result.getResponseHeaders(), approvedSnapshot.getResponseHeaders());
-        comparison.setHeadersMatch(headersMatch);
+        comparison.put("headersMatch", headersMatch);
 
         // Compare status code
         boolean statusMatches = result.getResponseStatus().equals(approvedSnapshot.getResponseStatus());
-        comparison.setStatusMatches(statusMatches);
+        comparison.put("statusMatches", statusMatches);
 
         boolean matches = bodyMatches && headersMatch && statusMatches;
-        comparison.setMatches(matches);
+        comparison.put("matches", matches);
 
         return comparison;
     }
