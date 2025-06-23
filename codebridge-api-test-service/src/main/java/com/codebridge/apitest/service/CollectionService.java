@@ -4,6 +4,7 @@ import com.codebridge.apitest.model.Collection;
 import com.codebridge.apitest.model.Project;
 import com.codebridge.apitest.dto.CollectionRequest;
 import com.codebridge.apitest.dto.CollectionResponse;
+import com.codebridge.apitest.dto.ProjectResponse;
 import com.codebridge.apitest.exception.AccessDeniedException;
 import com.codebridge.apitest.exception.DuplicateResourceException;
 import com.codebridge.apitest.exception.ResourceNotFoundException;
@@ -80,6 +81,11 @@ public class CollectionService {
     }
 
     @Transactional(readOnly = true)
+    public CollectionResponse getCollectionByIdForUser(Long collectionId, Long userId) {
+        return getCollectionById(collectionId, userId);
+    }
+
+    @Transactional(readOnly = true)
     public List<CollectionResponse> getAllCollections(Long userId) {
         Set<CollectionResponse> resultSet = new HashSet<>();
         
@@ -103,6 +109,26 @@ public class CollectionService {
         });
         
         return resultSet.stream()
+            .sorted((c1, c2) -> c1.getName().compareToIgnoreCase(c2.getName()))
+            .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CollectionResponse> getAllCollectionsForProject(Long projectId, Long userId) {
+        // Check if user has access to the project
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+        
+        // Check if user has at least view access to the project
+        if (!project.getUserId().equals(userId)) {
+            SharePermissionLevel permission = projectSharingService.getEffectivePermission(projectId, userId);
+            if (permission == null || permission.ordinal() < SharePermissionLevel.CAN_VIEW.ordinal()) {
+                throw new AccessDeniedException("You don't have permission to view collections in this project");
+            }
+        }
+        
+        return collectionRepository.findByProjectId(projectId).stream()
+            .map(this::mapToCollectionResponse)
             .sorted((c1, c2) -> c1.getName().compareToIgnoreCase(c2.getName()))
             .collect(Collectors.toList());
     }
