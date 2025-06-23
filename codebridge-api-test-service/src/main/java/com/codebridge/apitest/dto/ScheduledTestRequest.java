@@ -4,6 +4,8 @@ import com.codebridge.apitest.model.enums.ScheduleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
+
 /**
  * Request DTO for scheduled test operations.
  */
@@ -28,6 +30,14 @@ public class ScheduledTestRequest {
     private String cronExpression;
     
     private Integer intervalMinutes;
+    
+    private Integer fixedRateSeconds;
+    
+    private LocalDateTime oneTimeExecutionTime;
+    
+    private String webhookUrl;
+    
+    private boolean enabled = true;
 
     public String getName() {
         return name;
@@ -99,6 +109,38 @@ public class ScheduledTestRequest {
 
     public void setIntervalMinutes(Integer intervalMinutes) {
         this.intervalMinutes = intervalMinutes;
+    }
+
+    public Integer getFixedRateSeconds() {
+        return fixedRateSeconds;
+    }
+
+    public void setFixedRateSeconds(Integer fixedRateSeconds) {
+        this.fixedRateSeconds = fixedRateSeconds;
+    }
+
+    public LocalDateTime getOneTimeExecutionTime() {
+        return oneTimeExecutionTime;
+    }
+
+    public void setOneTimeExecutionTime(LocalDateTime oneTimeExecutionTime) {
+        this.oneTimeExecutionTime = oneTimeExecutionTime;
+    }
+
+    public String getWebhookUrl() {
+        return webhookUrl;
+    }
+
+    public void setWebhookUrl(String webhookUrl) {
+        this.webhookUrl = webhookUrl;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }
 
