@@ -15,6 +15,10 @@ public class EnvironmentRequest {
     private String description;
 
     private Map<String, String> variables;
+    
+    private Map<String, String> headers;
+    
+    private String baseUrl;
 
     private boolean isDefault;
 
@@ -41,6 +45,22 @@ public class EnvironmentRequest {
     public void setVariables(Map<String, String> variables) {
         this.variables = variables;
     }
+    
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+    
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+    
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+    
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
     public boolean isDefault() {
         return isDefault;
@@ -48,6 +68,15 @@ public class EnvironmentRequest {
 
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
+    }
+    
+    // For backward compatibility
+    public Boolean getIsDefault() {
+        return isDefault;
+    }
+    
+    public void setIsDefault(Boolean isDefault) {
+        this.isDefault = isDefault != null && isDefault;
     }
 }
 
