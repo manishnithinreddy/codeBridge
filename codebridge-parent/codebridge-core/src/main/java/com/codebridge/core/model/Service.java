@@ -27,14 +27,15 @@ import java.util.Set;
 public class Service extends BaseEntity {
 
     public enum ServiceType {
-        GIT_PROVIDER,
+        GIT,
         CI_CD,
         ISSUE_TRACKER,
         DOCUMENTATION,
         MONITORING,
-        MESSAGING,
-        STORAGE,
+        ANALYTICS,
         DATABASE,
+        STORAGE,
+        MESSAGING,
         CUSTOM
     }
 
@@ -43,6 +44,10 @@ public class Service extends BaseEntity {
 
     @Column(length = 1000)
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_type", nullable = false)
+    private ServiceType serviceType;
 
     @Column(name = "base_url")
     private String baseUrl;
@@ -53,24 +58,8 @@ public class Service extends BaseEntity {
     @Column(name = "icon_url")
     private String iconUrl;
 
-    @Column(name = "documentation_url")
-    private String documentationUrl;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ServiceType type;
-
-    @Column(nullable = false)
-    private boolean enabled;
-
-    @Column(name = "requires_authentication", nullable = false)
-    private boolean requiresAuthentication;
-
-    @Column(name = "auth_type")
-    private String authType;
-
-    @Column(name = "config_schema", columnDefinition = "TEXT")
-    private String configSchema;
+    @Column(name = "is_enabled", nullable = false)
+    private boolean isEnabled;
 
     @OneToMany(mappedBy = "service", fetch = FetchType.LAZY)
     private Set<TeamService> teamServices = new HashSet<>();

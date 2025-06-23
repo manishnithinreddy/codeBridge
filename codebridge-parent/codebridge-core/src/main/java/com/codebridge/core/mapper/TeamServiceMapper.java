@@ -12,7 +12,7 @@ import java.util.Set;
 
 @Mapper(
     componentModel = "spring",
-    uses = {ServiceMapper.class},
+    uses = {TeamMapper.class, ServiceMapper.class},
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface TeamServiceMapper {
@@ -28,6 +28,9 @@ public interface TeamServiceMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "team", ignore = true)
     @Mapping(target = "service", ignore = true)
     TeamService toEntity(TeamServiceDto teamServiceDto);
@@ -35,6 +38,9 @@ public interface TeamServiceMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "team", ignore = true)
     @Mapping(target = "service", ignore = true)
     void updateEntity(TeamServiceDto teamServiceDto, @MappingTarget TeamService teamService);

@@ -6,6 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +14,10 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "user_team_roles")
+@Table(
+    name = "user_team_roles",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "team_id", "role_id"})
+)
 @Getter
 @Setter
 @NoArgsConstructor

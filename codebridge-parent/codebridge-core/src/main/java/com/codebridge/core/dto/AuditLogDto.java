@@ -1,6 +1,8 @@
 package com.codebridge.core.dto;
 
 import com.codebridge.core.model.AuditLog.ActionType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,31 +19,26 @@ public class AuditLogDto {
     
     private UUID id;
     
+    @NotNull(message = "Timestamp is required")
+    private LocalDateTime timestamp;
+    
     private UUID userId;
     
-    private String username;
+    private String ipAddress;
     
-    private UUID teamId;
+    private String userAgent;
     
-    private String teamName;
-    
+    @NotNull(message = "Action type is required")
     private ActionType actionType;
     
     private String entityType;
     
     private String entityId;
     
-    private String actionDetails;
+    private String details;
     
-    private String ipAddress;
-    
-    private String userAgent;
-    
+    @NotBlank(message = "Status is required")
     private String status;
-    
-    private Integer statusCode;
-    
-    private String errorMessage;
     
     private LocalDateTime createdAt;
     

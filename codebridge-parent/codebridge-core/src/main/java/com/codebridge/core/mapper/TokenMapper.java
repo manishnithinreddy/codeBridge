@@ -11,12 +11,12 @@ import java.util.List;
 
 @Mapper(
     componentModel = "spring",
+    uses = {UserMapper.class},
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface TokenMapper {
     
     @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "teamId", source = "team.id")
     TokenDto toDto(Token token);
     
     List<TokenDto> toDtoList(List<Token> tokens);
@@ -24,15 +24,19 @@ public interface TokenMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "team", ignore = true)
     Token toEntity(TokenDto tokenDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "team", ignore = true)
     void updateEntity(TokenDto tokenDto, @MappingTarget Token token);
 }
 

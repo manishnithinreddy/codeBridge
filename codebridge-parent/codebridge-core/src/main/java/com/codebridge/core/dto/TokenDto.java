@@ -20,31 +20,24 @@ public class TokenDto {
     private UUID id;
     
     @NotBlank(message = "Token value is required")
-    private String value;
+    private String token;
     
     @NotNull(message = "Token type is required")
-    private TokenType type;
-    
-    private UUID userId;
-    
-    private UUID teamId;
+    private TokenType tokenType;
     
     @NotNull(message = "Expiration date is required")
     private LocalDateTime expiresAt;
     
     private boolean revoked;
     
-    private LocalDateTime revokedAt;
+    private LocalDateTime lastUsedAt;
     
-    private String revokedBy;
-    
-    private String revocationReason;
-    
-    private String ipAddress;
+    private String lastUsedIp;
     
     private String userAgent;
     
-    private String scope;
+    @NotNull(message = "User ID is required")
+    private UUID userId;
     
     private LocalDateTime createdAt;
     

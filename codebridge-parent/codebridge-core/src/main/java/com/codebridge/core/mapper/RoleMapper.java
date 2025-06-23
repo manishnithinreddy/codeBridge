@@ -23,15 +23,21 @@ public interface RoleMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "permissions", ignore = true)
-    @Mapping(target = "teamRoles", ignore = true)
+    @Mapping(target = "userTeamRoles", ignore = true)
     Role toEntity(RoleDto roleDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "permissions", ignore = true)
-    @Mapping(target = "teamRoles", ignore = true)
+    @Mapping(target = "userTeamRoles", ignore = true)
     void updateEntity(RoleDto roleDto, @MappingTarget Role role);
 }
 

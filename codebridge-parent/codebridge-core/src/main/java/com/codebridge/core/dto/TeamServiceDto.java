@@ -23,16 +23,6 @@ public class TeamServiceDto {
     @NotNull(message = "Service ID is required")
     private UUID serviceId;
     
-    private String displayName;
-    
-    private Integer displayOrder;
-    
-    private boolean enabled;
-    
-    private String configJson;
-    
-    private String credentialsJson;
-    
     private LocalDateTime createdAt;
     
     private String createdBy;

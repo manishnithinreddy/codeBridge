@@ -29,48 +29,35 @@ public class Token extends BaseEntity {
     public enum TokenType {
         ACCESS,
         REFRESH,
-        API,
+        API_KEY,
         RESET_PASSWORD,
-        VERIFICATION
+        VERIFY_EMAIL
     }
 
     @Column(nullable = false, unique = true)
-    private String value;
+    private String token;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TokenType type;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private Team team;
+    @Column(name = "token_type", nullable = false)
+    private TokenType tokenType;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(nullable = false)
+    @Column(name = "revoked", nullable = false)
     private boolean revoked;
 
-    @Column(name = "revoked_at")
-    private LocalDateTime revokedAt;
+    @Column(name = "last_used_at")
+    private LocalDateTime lastUsedAt;
 
-    @Column(name = "revoked_by")
-    private String revokedBy;
-
-    @Column(name = "revocation_reason")
-    private String revocationReason;
-
-    @Column(name = "ip_address")
-    private String ipAddress;
+    @Column(name = "last_used_ip")
+    private String lastUsedIp;
 
     @Column(name = "user_agent")
     private String userAgent;
 
-    @Column(name = "scope")
-    private String scope;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }
 

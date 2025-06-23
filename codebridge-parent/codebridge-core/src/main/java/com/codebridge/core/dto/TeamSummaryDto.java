@@ -16,8 +16,9 @@ public class TeamSummaryDto {
     private UUID id;
     private String name;
     private String description;
-    private UUID ownerId;
-    private UUID parentTeamId;
-    private boolean active;
+    private String iconUrl;
+    private boolean isDefault;
+    private boolean isPersonal;
+    private String ownerUserId;
 }
 
