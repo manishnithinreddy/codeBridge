@@ -1,7 +1,6 @@
 package com.codebridge.apitest.dto;
 
 import com.codebridge.apitest.model.HttpMethod;
-import com.codebridge.apitest.model.TestStatus;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -26,6 +25,10 @@ public class TestResultResponse {
     private Boolean passed;
     private LocalDateTime createdAt;
     private Map<String, Object> snapshotComparison;
+    private String status;
+    private Long executionTimeMs;
+
+    // Getters and Setters
 
     public Long getId() {
         return id;
@@ -123,6 +126,10 @@ public class TestResultResponse {
         this.responseTime = responseTime;
     }
 
+    public Boolean isPassed() {
+        return passed != null && passed;
+    }
+
     public Boolean getPassed() {
         return passed;
     }
@@ -146,9 +153,27 @@ public class TestResultResponse {
     public void setSnapshotComparison(Map<String, Object> snapshotComparison) {
         this.snapshotComparison = snapshotComparison;
     }
+    
+    public String getStatus() {
+        if (passed != null && passed) {
+            return "SUCCESS";
+        } else {
+            return "FAILED";
+        }
+    }
 
-    public TestStatus getStatus() {
-        return passed != null && passed ? TestStatus.PASSED : TestStatus.FAILED;
+    public void setStatus(String status) {
+        this.status = status;
+        this.passed = "SUCCESS".equals(status);
+    }
+
+    public Long getExecutionTimeMs() {
+        return responseTime;
+    }
+
+    public void setExecutionTimeMs(Long executionTimeMs) {
+        this.executionTimeMs = executionTimeMs;
+        this.responseTime = executionTimeMs;
     }
 }
 

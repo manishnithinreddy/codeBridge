@@ -8,7 +8,6 @@ import com.codebridge.apitest.exception.TestExecutionException;
 import com.codebridge.apitest.model.ApiTest;
 import com.codebridge.apitest.model.LoadTest;
 import com.codebridge.apitest.model.LoadTestStatus;
-import com.codebridge.apitest.model.TestChain;
 import com.codebridge.apitest.model.enums.LoadPattern;
 import com.codebridge.apitest.repository.ApiTestRepository;
 import com.codebridge.apitest.repository.LoadTestRepository;
@@ -41,7 +40,6 @@ public class LoadTestService {
     private final TestChainRepository testChainRepository;
     private final ApiTestService apiTestService;
     private final TestChainService testChainService;
-    private final PerformanceMetricsService metricsService;
     private final ExecutorService executorService;
     
     @Autowired
@@ -49,14 +47,12 @@ public class LoadTestService {
                           ApiTestRepository apiTestRepository,
                           TestChainRepository testChainRepository,
                           ApiTestService apiTestService,
-                          TestChainService testChainService,
-                          PerformanceMetricsService metricsService) {
+                          TestChainService testChainService) {
         this.loadTestRepository = loadTestRepository;
         this.apiTestRepository = apiTestRepository;
         this.testChainRepository = testChainRepository;
         this.apiTestService = apiTestService;
         this.testChainService = testChainService;
-        this.metricsService = metricsService;
         
         // Create a thread pool for concurrent test execution
         this.executorService = Executors.newFixedThreadPool(50);
@@ -88,11 +84,10 @@ public class LoadTestService {
         loadTest.setDescription(request.getDescription());
         loadTest.setUserId(userId);
         loadTest.setTestId(request.getTestId());
-        loadTest.setChainId(request.getChainId());
         loadTest.setEnvironmentId(request.getEnvironmentId());
         loadTest.setVirtualUsers(request.getVirtualUsers());
-        loadTest.setDurationSeconds(request.getDurationSeconds());
-        loadTest.setRampUpSeconds(request.getRampUpSeconds());
+        loadTest.setDuration(request.getDurationSeconds());
+        loadTest.setRampUpTime(request.getRampUpSeconds());
         loadTest.setThinkTimeMs(request.getThinkTimeMs());
         
         if (request.getLoadPattern() != null) {
@@ -101,7 +96,7 @@ public class LoadTestService {
             loadTest.setLoadPattern(LoadPattern.CONSTANT); // Default to constant load
         }
         
-        loadTest.setStatus(LoadTestStatus.CREATED);
+        loadTest.setStatus(LoadTestStatus.PENDING);
         loadTest.setCreatedAt(LocalDateTime.now());
         
         return loadTestRepository.save(loadTest);
@@ -135,6 +130,7 @@ public class LoadTestService {
      * @param id the load test ID
      * @param userId the user ID
      */
+    @Async
     public void executeLoadTest(Long id, Long userId) {
         LoadTest loadTest = loadTestRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new ResourceNotFoundException("LoadTest", "id", id.toString()));
@@ -151,17 +147,7 @@ public class LoadTestService {
             // Update load test with results
             loadTest.setStatus(LoadTestStatus.COMPLETED);
             loadTest.setCompletedAt(LocalDateTime.now());
-            loadTest.setTotalRequests(result.getTotalRequests());
-            loadTest.setSuccessfulRequests(result.getSuccessfulRequests());
-            loadTest.setFailedRequests(result.getFailedRequests());
-            loadTest.setAverageResponseTimeMs(result.getAverageResponseTimeMs());
-            loadTest.setMinResponseTimeMs(result.getMinResponseTimeMs());
-            loadTest.setMaxResponseTimeMs(result.getMaxResponseTimeMs());
-            loadTest.setPercentile95Ms(result.getPercentile95Ms());
-            loadTest.setPercentile99Ms(result.getPercentile99Ms());
-            loadTest.setRequestsPerSecond(result.getRequestsPerSecond());
-            loadTest.setErrorRate(result.getErrorRate());
-            loadTest.setResultSummary(result.getSummary());
+            loadTest.setResults(result.getSummary());
             
             loadTestRepository.save(loadTest);
             
@@ -170,7 +156,7 @@ public class LoadTestService {
             // Update status to failed
             loadTest.setStatus(LoadTestStatus.FAILED);
             loadTest.setCompletedAt(LocalDateTime.now());
-            loadTest.setResultSummary("Failed: " + e.getMessage());
+            loadTest.setResults("Failed: " + e.getMessage());
             loadTestRepository.save(loadTest);
             
             logger.error("Load test {} failed: {}", id, e.getMessage(), e);
@@ -186,8 +172,8 @@ public class LoadTestService {
      */
     private LoadTestResult executeLoadTestInternal(LoadTest loadTest, Long userId) {
         int virtualUsers = loadTest.getVirtualUsers();
-        int durationSeconds = loadTest.getDurationSeconds();
-        int rampUpSeconds = loadTest.getRampUpSeconds() != null ? loadTest.getRampUpSeconds() : 0;
+        int durationSeconds = loadTest.getDuration();
+        int rampUpSeconds = loadTest.getRampUpTime() != null ? loadTest.getRampUpTime() : 0;
         int thinkTimeMs = loadTest.getThinkTimeMs() != null ? loadTest.getThinkTimeMs() : 0;
         LoadPattern loadPattern = loadTest.getLoadPattern();
         
@@ -228,18 +214,13 @@ public class LoadTestService {
                     while (System.currentTimeMillis() < userEndTimeMs) {
                         try {
                             // Execute test or chain
-                            List<TestResultResponse> results;
+                            TestResultResponse result;
                             if (loadTest.getTestId() != null) {
-                                TestResultResponse result = apiTestService.executeTest(loadTest.getTestId(), userId);
-                                results = List.of(result);
-                            } else if (loadTest.getChainId() != null) {
-                                results = testChainService.executeTestChain(loadTest.getChainId(), loadTest.getEnvironmentId(), userId);
+                                result = apiTestService.executeTest(loadTest.getTestId(), null, userId, loadTest.getEnvironmentId(), null);
+                                allResults.add(result);
                             } else {
-                                throw new IllegalStateException("Neither testId nor chainId is set");
+                                throw new IllegalStateException("TestId is not set");
                             }
-                            
-                            // Add results to the list
-                            allResults.addAll(results);
                             
                             // Think time between requests
                             if (thinkTimeMs > 0) {
@@ -342,14 +323,14 @@ public class LoadTestService {
         List<Long> responseTimes = new ArrayList<>(totalRequests);
         
         for (TestResultResponse result : results) {
-            if (result.getStatus().equals("SUCCESS")) {
+            if (result.isPassed()) {
                 successfulRequests.incrementAndGet();
             } else {
                 failedRequests.incrementAndGet();
             }
             
-            if (result.getExecutionTimeMs() != null) {
-                responseTimes.add(result.getExecutionTimeMs());
+            if (result.getResponseTime() != null) {
+                responseTimes.add(result.getResponseTime());
             }
         }
         
@@ -441,7 +422,7 @@ public class LoadTestService {
         
         loadTest.setStatus(LoadTestStatus.CANCELLED);
         loadTest.setCompletedAt(LocalDateTime.now());
-        loadTest.setResultSummary("Cancelled by user");
+        loadTest.setResults("Cancelled by user");
         
         return loadTestRepository.save(loadTest);
     }
@@ -463,3 +444,4 @@ public class LoadTestService {
         loadTestRepository.delete(loadTest);
     }
 }
+

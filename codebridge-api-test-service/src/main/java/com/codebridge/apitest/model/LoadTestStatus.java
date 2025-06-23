@@ -5,6 +5,7 @@ package com.codebridge.apitest.model;
  */
 public enum LoadTestStatus {
     CREATED,
+    PENDING,
     RUNNING,
     COMPLETED,
     FAILED,

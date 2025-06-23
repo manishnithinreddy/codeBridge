@@ -74,14 +74,6 @@ public class LoadTest {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public enum LoadTestStatus {
-        PENDING,
-        RUNNING,
-        COMPLETED,
-        FAILED,
-        CANCELLED
-    }
-
     // Getters and Setters
 
     public Long getId() {
@@ -226,6 +218,32 @@ public class LoadTest {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    // Additional methods for compatibility
+    
+    public Integer getThinkTimeMs() {
+        return 0; // Default value
+    }
+    
+    public void setThinkTimeMs(Integer thinkTimeMs) {
+        // No-op for compatibility
+    }
+    
+    public Integer getDurationSeconds() {
+        return duration;
+    }
+    
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.duration = durationSeconds;
+    }
+    
+    public Integer getRampUpSeconds() {
+        return rampUpTime;
+    }
+    
+    public void setRampUpSeconds(Integer rampUpSeconds) {
+        this.rampUpTime = rampUpSeconds;
     }
 }
 
