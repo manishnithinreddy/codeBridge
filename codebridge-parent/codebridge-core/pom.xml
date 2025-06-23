@@ -19,6 +19,7 @@
         <dependency>
             <groupId>com.codebridge</groupId>
             <artifactId>codebridge-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Spring Boot -->
@@ -52,10 +53,21 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Spring Cloud -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
         <!-- Database -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
         </dependency>
 
         <!-- MapStruct -->
@@ -68,6 +80,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
 
         <!-- Testing -->
