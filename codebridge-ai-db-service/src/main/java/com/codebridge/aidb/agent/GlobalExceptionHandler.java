@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException as SpringAccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -50,8 +50,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(SpringAccessDeniedException.class)
-    public ResponseEntity<ErrorDetails> handleSpringAccessDeniedException(SpringAccessDeniedException ex, WebRequest request) {
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorDetails> handleSpringAccessDeniedException(AccessDeniedException ex, WebRequest request) {
         logger.warn("Access Denied (Spring Security): {}", ex.getMessage());
         ErrorDetails errorDetails = new ErrorDetails(new Date(), "Access Denied: You do not have permission to access this resource.", request.getDescription(false));
         return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
@@ -102,3 +102,4 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
