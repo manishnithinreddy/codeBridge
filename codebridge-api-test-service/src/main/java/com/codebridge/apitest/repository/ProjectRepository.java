@@ -10,10 +10,10 @@ import java.util.Optional;
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    Optional<Project> findByIdAndPlatformUserId(Long id, Long platformUserId);
+    Optional<Project> findByIdAndUserId(Long id, Long userId);
 
-    List<Project> findByPlatformUserId(Long platformUserId);
+    List<Project> findByUserId(Long userId);
 
-    boolean existsByNameAndPlatformUserId(String name, Long platformUserId);
+    boolean existsByNameAndUserId(String name, Long userId);
 }
 
