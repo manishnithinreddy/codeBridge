@@ -117,6 +117,16 @@ public class ProjectSharingService {
                 .map(this::mapToProjectResponse)
                 .collect(Collectors.toList());
     }
+    
+    /**
+     * Delete all share grants for a project.
+     *
+     * @param projectId the project ID
+     */
+    @Transactional
+    public void deleteAllGrantsForProject(Long projectId) {
+        shareGrantRepository.deleteByProjectId(projectId);
+    }
 
     /**
      * Check if a granted permission is sufficient for a required permission.
