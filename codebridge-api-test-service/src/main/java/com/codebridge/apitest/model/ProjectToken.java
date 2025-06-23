@@ -50,6 +50,9 @@ public class ProjectToken {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name = "revoked_at")
+    private LocalDateTime revokedAt;
+
     @NotNull
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
@@ -126,6 +129,14 @@ public class ProjectToken {
 
     public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public LocalDateTime getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void setRevokedAt(LocalDateTime revokedAt) {
+        this.revokedAt = revokedAt;
     }
 
     public Long getCreatedBy() {
