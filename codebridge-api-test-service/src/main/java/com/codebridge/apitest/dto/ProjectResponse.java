@@ -1,13 +1,12 @@
 package com.codebridge.apitest.dto;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class ProjectResponse {
-    private UUID id;
+    private Long id;
     private String name;
     private String description;
-    private UUID platformUserId;
+    private Long userId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -15,21 +14,21 @@ public class ProjectResponse {
     public ProjectResponse() {
     }
 
-    public ProjectResponse(UUID id, String name, String description, UUID platformUserId, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public ProjectResponse(Long id, String name, String description, Long userId, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.platformUserId = platformUserId;
+        this.userId = userId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
     // Getters and Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -49,12 +48,12 @@ public class ProjectResponse {
         this.description = description;
     }
 
-    public UUID getPlatformUserId() {
-        return platformUserId;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setPlatformUserId(UUID platformUserId) {
-        this.platformUserId = platformUserId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -73,3 +72,4 @@ public class ProjectResponse {
         this.updatedAt = updatedAt;
     }
 }
+
