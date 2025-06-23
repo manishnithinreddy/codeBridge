@@ -12,7 +12,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +37,7 @@ public class LoadTestController {
      */
     @PostMapping
     public ResponseEntity<LoadTestResponse> createLoadTest(@Valid @RequestBody LoadTestRequest request, Authentication authentication) {
-        UUID userId = getUserId(authentication);
+        Long userId = getUserId(authentication);
         LoadTest loadTest = loadTestService.createLoadTest(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(LoadTestResponse.fromEntity(loadTest));
     }
@@ -51,7 +50,7 @@ public class LoadTestController {
      */
     @GetMapping
     public ResponseEntity<List<LoadTestResponse>> getAllLoadTests(Authentication authentication) {
-        UUID userId = getUserId(authentication);
+        Long userId = getUserId(authentication);
         List<LoadTest> loadTests = loadTestService.getAllLoadTests(userId);
         List<LoadTestResponse> responses = loadTests.stream()
             .map(LoadTestResponse::fromEntity)
@@ -67,8 +66,8 @@ public class LoadTestController {
      * @return the load test
      */
     @GetMapping("/{id}")
-    public ResponseEntity<LoadTestResponse> getLoadTestById(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = getUserId(authentication);
+    public ResponseEntity<LoadTestResponse> getLoadTestById(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserId(authentication);
         LoadTest loadTest = loadTestService.getLoadTestById(id, userId);
         return ResponseEntity.ok(LoadTestResponse.fromEntity(loadTest));
     }
@@ -81,8 +80,8 @@ public class LoadTestController {
      * @return a response indicating that the load test execution has started
      */
     @PostMapping("/{id}/execute")
-    public ResponseEntity<LoadTestResponse> executeLoadTest(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = getUserId(authentication);
+    public ResponseEntity<LoadTestResponse> executeLoadTest(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserId(authentication);
         LoadTest loadTest = loadTestService.getLoadTestById(id, userId);
         loadTestService.executeLoadTest(id, userId);
         return ResponseEntity.accepted().body(LoadTestResponse.fromEntity(loadTest));
@@ -96,8 +95,8 @@ public class LoadTestController {
      * @return the cancelled load test
      */
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<LoadTestResponse> cancelLoadTest(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = getUserId(authentication);
+    public ResponseEntity<LoadTestResponse> cancelLoadTest(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserId(authentication);
         LoadTest loadTest = loadTestService.cancelLoadTest(id, userId);
         return ResponseEntity.ok(LoadTestResponse.fromEntity(loadTest));
     }
@@ -110,8 +109,8 @@ public class LoadTestController {
      * @return a response with no content
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLoadTest(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = getUserId(authentication);
+    public ResponseEntity<Void> deleteLoadTest(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserId(authentication);
         loadTestService.deleteLoadTest(id, userId);
         return ResponseEntity.noContent().build();
     }
@@ -122,8 +121,8 @@ public class LoadTestController {
      * @param authentication the authentication object
      * @return the user ID
      */
-    private UUID getUserId(Authentication authentication) {
-        return UUID.fromString(authentication.getName());
+    private Long getUserId(Authentication authentication) {
+        return Long.parseLong(authentication.getName());
     }
 }
 

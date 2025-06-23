@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repository for test snapshots.
@@ -15,12 +14,12 @@ import java.util.UUID;
 public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, Long> {
     
     /**
-     * Find all snapshots for a test.
+     * Find all snapshots for a test ordered by creation date.
      *
      * @param testId the test ID
      * @return the list of snapshots
      */
-    List<TestSnapshot> findByTestId(Long testId);
+    List<TestSnapshot> findByTestIdOrderByCreatedAtDesc(Long testId);
     
     /**
      * Find a snapshot by test ID and name.
@@ -32,11 +31,19 @@ public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, Long
     Optional<TestSnapshot> findByTestIdAndName(Long testId, String name);
     
     /**
-     * Find the latest approved snapshot for a test.
+     * Find all approved snapshots for a test.
      *
      * @param testId the test ID
-     * @return the latest approved snapshot if found
+     * @return the list of approved snapshots
      */
-    Optional<TestSnapshot> findFirstByTestIdAndApprovedTrueOrderByCreatedAtDesc(Long testId);
+    List<TestSnapshot> findByTestIdAndApprovedTrue(Long testId);
+    
+    /**
+     * Find the approved snapshot for a test.
+     *
+     * @param testId the test ID
+     * @return the approved snapshot if found
+     */
+    Optional<TestSnapshot> findByTestIdAndApprovedTrue(Long testId);
 }
 

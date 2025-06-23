@@ -5,22 +5,20 @@ import com.codebridge.apitest.model.LoadTestStatus;
 import com.codebridge.apitest.model.enums.LoadPattern;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Response DTO for load test operations.
  */
 public class LoadTestResponse {
-    private UUID id;
+    private Long id;
     private String name;
     private String description;
-    private UUID testId;
-    private UUID chainId;
-    private UUID environmentId;
+    private Long testId;
+    private Long environmentId;
     private Integer virtualUsers;
-    private Integer durationSeconds;
-    private Integer rampUpSeconds;
-    private Integer thinkTimeMs;
+    private Integer duration;
+    private Integer rampUpTime;
+    private Integer rampDownTime;
     private String loadPattern;
     private String status;
     private Integer totalRequests;
@@ -31,7 +29,7 @@ public class LoadTestResponse {
     private Long maxResponseTimeMs;
     private Long percentile95Ms;
     private Long percentile99Ms;
-    private Double requestsPerSecond;
+    private Integer requestsPerSecond;
     private Double errorRate;
     private String resultSummary;
     private LocalDateTime createdAt;
@@ -50,12 +48,12 @@ public class LoadTestResponse {
         response.setName(loadTest.getName());
         response.setDescription(loadTest.getDescription());
         response.setTestId(loadTest.getTestId());
-        response.setChainId(loadTest.getChainId());
         response.setEnvironmentId(loadTest.getEnvironmentId());
         response.setVirtualUsers(loadTest.getVirtualUsers());
-        response.setDurationSeconds(loadTest.getDurationSeconds());
-        response.setRampUpSeconds(loadTest.getRampUpSeconds());
-        response.setThinkTimeMs(loadTest.getThinkTimeMs());
+        response.setDuration(loadTest.getDuration());
+        response.setRampUpTime(loadTest.getRampUpTime());
+        response.setRampDownTime(loadTest.getRampDownTime());
+        response.setRequestsPerSecond(loadTest.getRequestsPerSecond());
         
         if (loadTest.getLoadPattern() != null) {
             response.setLoadPattern(loadTest.getLoadPattern().name());
@@ -65,17 +63,9 @@ public class LoadTestResponse {
             response.setStatus(loadTest.getStatus().name());
         }
         
-        response.setTotalRequests(loadTest.getTotalRequests());
-        response.setSuccessfulRequests(loadTest.getSuccessfulRequests());
-        response.setFailedRequests(loadTest.getFailedRequests());
-        response.setAverageResponseTimeMs(loadTest.getAverageResponseTimeMs());
-        response.setMinResponseTimeMs(loadTest.getMinResponseTimeMs());
-        response.setMaxResponseTimeMs(loadTest.getMaxResponseTimeMs());
-        response.setPercentile95Ms(loadTest.getPercentile95Ms());
-        response.setPercentile99Ms(loadTest.getPercentile99Ms());
-        response.setRequestsPerSecond(loadTest.getRequestsPerSecond());
-        response.setErrorRate(loadTest.getErrorRate());
-        response.setResultSummary(loadTest.getResultSummary());
+        // Additional fields would be populated from the results JSON
+        // This would require parsing the results JSON string
+        
         response.setCreatedAt(loadTest.getCreatedAt());
         response.setStartedAt(loadTest.getStartedAt());
         response.setCompletedAt(loadTest.getCompletedAt());
@@ -83,11 +73,13 @@ public class LoadTestResponse {
         return response;
     }
 
-    public UUID getId() {
+    // Getters and Setters
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -107,27 +99,19 @@ public class LoadTestResponse {
         this.description = description;
     }
 
-    public UUID getTestId() {
+    public Long getTestId() {
         return testId;
     }
 
-    public void setTestId(UUID testId) {
+    public void setTestId(Long testId) {
         this.testId = testId;
     }
 
-    public UUID getChainId() {
-        return chainId;
-    }
-
-    public void setChainId(UUID chainId) {
-        this.chainId = chainId;
-    }
-
-    public UUID getEnvironmentId() {
+    public Long getEnvironmentId() {
         return environmentId;
     }
 
-    public void setEnvironmentId(UUID environmentId) {
+    public void setEnvironmentId(Long environmentId) {
         this.environmentId = environmentId;
     }
 
@@ -139,28 +123,28 @@ public class LoadTestResponse {
         this.virtualUsers = virtualUsers;
     }
 
-    public Integer getDurationSeconds() {
-        return durationSeconds;
+    public Integer getDuration() {
+        return duration;
     }
 
-    public void setDurationSeconds(Integer durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setDuration(Integer duration) {
+        this.duration = duration;
     }
 
-    public Integer getRampUpSeconds() {
-        return rampUpSeconds;
+    public Integer getRampUpTime() {
+        return rampUpTime;
     }
 
-    public void setRampUpSeconds(Integer rampUpSeconds) {
-        this.rampUpSeconds = rampUpSeconds;
+    public void setRampUpTime(Integer rampUpTime) {
+        this.rampUpTime = rampUpTime;
     }
 
-    public Integer getThinkTimeMs() {
-        return thinkTimeMs;
+    public Integer getRampDownTime() {
+        return rampDownTime;
     }
 
-    public void setThinkTimeMs(Integer thinkTimeMs) {
-        this.thinkTimeMs = thinkTimeMs;
+    public void setRampDownTime(Integer rampDownTime) {
+        this.rampDownTime = rampDownTime;
     }
 
     public String getLoadPattern() {
@@ -243,11 +227,11 @@ public class LoadTestResponse {
         this.percentile99Ms = percentile99Ms;
     }
 
-    public Double getRequestsPerSecond() {
+    public Integer getRequestsPerSecond() {
         return requestsPerSecond;
     }
 
-    public void setRequestsPerSecond(Double requestsPerSecond) {
+    public void setRequestsPerSecond(Integer requestsPerSecond) {
         this.requestsPerSecond = requestsPerSecond;
     }
 

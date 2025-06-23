@@ -1,44 +1,38 @@
 package com.codebridge.apitest.dto;
 
+import com.codebridge.apitest.model.HttpMethod;
+import com.codebridge.apitest.model.ProtocolType;
+
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Response DTO for API test operations.
- * Supports HTTP, WebSocket, gRPC, and GraphQL requests.
  */
 public class ApiTestResponse {
 
-    private UUID id;
+    private Long id;
     private String name;
     private String description;
-    private String url;
-    private String method;
-    private String protocolType;
-    private UUID environmentId;
-    private EnvironmentResponse environment;
-    private Map<String, String> headers;
+    private Long projectId;
+    private HttpMethod method;
+    private ProtocolType protocol;
+    private String endpoint;
+    private Map<String, String> requestHeaders;
+    private Map<String, String> requestParams;
     private String requestBody;
-    private String graphqlQuery;
-    private String graphqlVariables;
-    private String grpcRequest;
-    private String grpcServiceDefinition;
-    private Integer expectedStatusCode;
-    private String expectedResponseBody;
-    private String preRequestScript;
-    private String postRequestScript;
-    private String validationScript;
-    private Integer timeoutMs;
-    private boolean active;
+    private List<Map<String, Object>> assertions;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public UUID getId() {
+    // Getters and Setters
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -58,52 +52,52 @@ public class ApiTestResponse {
         this.description = description;
     }
 
-    public String getUrl() {
-        return url;
+    public Long getProjectId() {
+        return projectId;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 
-    public String getMethod() {
+    public HttpMethod getMethod() {
         return method;
     }
 
-    public void setMethod(String method) {
+    public void setMethod(HttpMethod method) {
         this.method = method;
     }
 
-    public String getProtocolType() {
-        return protocolType;
+    public ProtocolType getProtocol() {
+        return protocol;
     }
 
-    public void setProtocolType(String protocolType) {
-        this.protocolType = protocolType;
+    public void setProtocol(ProtocolType protocol) {
+        this.protocol = protocol;
     }
 
-    public UUID getEnvironmentId() {
-        return environmentId;
+    public String getEndpoint() {
+        return endpoint;
     }
 
-    public void setEnvironmentId(UUID environmentId) {
-        this.environmentId = environmentId;
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
-    public EnvironmentResponse getEnvironment() {
-        return environment;
+    public Map<String, String> getRequestHeaders() {
+        return requestHeaders;
     }
 
-    public void setEnvironment(EnvironmentResponse environment) {
-        this.environment = environment;
+    public void setRequestHeaders(Map<String, String> requestHeaders) {
+        this.requestHeaders = requestHeaders;
     }
 
-    public Map<String, String> getHeaders() {
-        return headers;
+    public Map<String, String> getRequestParams() {
+        return requestParams;
     }
 
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
+    public void setRequestParams(Map<String, String> requestParams) {
+        this.requestParams = requestParams;
     }
 
     public String getRequestBody() {
@@ -114,92 +108,12 @@ public class ApiTestResponse {
         this.requestBody = requestBody;
     }
 
-    public String getGraphqlQuery() {
-        return graphqlQuery;
+    public List<Map<String, Object>> getAssertions() {
+        return assertions;
     }
 
-    public void setGraphqlQuery(String graphqlQuery) {
-        this.graphqlQuery = graphqlQuery;
-    }
-
-    public String getGraphqlVariables() {
-        return graphqlVariables;
-    }
-
-    public void setGraphqlVariables(String graphqlVariables) {
-        this.graphqlVariables = graphqlVariables;
-    }
-
-    public String getGrpcRequest() {
-        return grpcRequest;
-    }
-
-    public void setGrpcRequest(String grpcRequest) {
-        this.grpcRequest = grpcRequest;
-    }
-
-    public String getGrpcServiceDefinition() {
-        return grpcServiceDefinition;
-    }
-
-    public void setGrpcServiceDefinition(String grpcServiceDefinition) {
-        this.grpcServiceDefinition = grpcServiceDefinition;
-    }
-
-    public Integer getExpectedStatusCode() {
-        return expectedStatusCode;
-    }
-
-    public void setExpectedStatusCode(Integer expectedStatusCode) {
-        this.expectedStatusCode = expectedStatusCode;
-    }
-
-    public String getExpectedResponseBody() {
-        return expectedResponseBody;
-    }
-
-    public void setExpectedResponseBody(String expectedResponseBody) {
-        this.expectedResponseBody = expectedResponseBody;
-    }
-
-    public String getPreRequestScript() {
-        return preRequestScript;
-    }
-
-    public void setPreRequestScript(String preRequestScript) {
-        this.preRequestScript = preRequestScript;
-    }
-
-    public String getPostRequestScript() {
-        return postRequestScript;
-    }
-
-    public void setPostRequestScript(String postRequestScript) {
-        this.postRequestScript = postRequestScript;
-    }
-
-    public String getValidationScript() {
-        return validationScript;
-    }
-
-    public void setValidationScript(String validationScript) {
-        this.validationScript = validationScript;
-    }
-
-    public Integer getTimeoutMs() {
-        return timeoutMs;
-    }
-
-    public void setTimeoutMs(Integer timeoutMs) {
-        this.timeoutMs = timeoutMs;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setAssertions(List<Map<String, Object>> assertions) {
+        this.assertions = assertions;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -218,3 +132,4 @@ public class ApiTestResponse {
         this.updatedAt = updatedAt;
     }
 }
+

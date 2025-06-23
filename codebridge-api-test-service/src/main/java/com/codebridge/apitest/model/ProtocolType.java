@@ -5,6 +5,7 @@ package com.codebridge.apitest.model;
  */
 public enum ProtocolType {
     HTTP,
+    HTTPS,
     WEBSOCKET,
     GRPC,
     GRAPHQL
