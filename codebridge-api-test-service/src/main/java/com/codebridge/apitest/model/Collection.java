@@ -31,9 +31,11 @@ public class Collection {
     @Column(length = 500)
     private String description;
 
-    @NotNull
+    @Column(name = "user_id")
+    private Long userId;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
+    @JoinColumn(name = "project_id")
     private Project project;
 
     @CreationTimestamp
@@ -70,22 +72,20 @@ public class Collection {
         this.description = description;
     }
 
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
     public Project getProject() {
         return project;
     }
 
     public void setProject(Project project) {
         this.project = project;
-    }
-    
-    /**
-     * Get the user ID associated with this collection.
-     * This is a convenience method that delegates to the project.
-     *
-     * @return the user ID of the project owner
-     */
-    public Long getUserId() {
-        return project != null ? project.getUserId() : null;
     }
 
     public LocalDateTime getCreatedAt() {
