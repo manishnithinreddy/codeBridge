@@ -68,6 +68,10 @@ public class ProjectToken {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    // For backward compatibility with code that expects active field
+    @Transient
+    private Boolean active;
+
     public enum TokenType {
         API_KEY,
         OAUTH_TOKEN,
@@ -182,6 +186,48 @@ public class ProjectToken {
     public Boolean getActive() {
         LocalDateTime now = LocalDateTime.now();
         return revokedAt == null && (expiresAt == null || expiresAt.isAfter(now));
+    }
+
+    /**
+     * Set the active status of the token.
+     * If setting to false, this will set the revokedAt timestamp to now.
+     * If setting to true, this will clear the revokedAt timestamp.
+     *
+     * @param active the active status to set
+     */
+    public void setActive(Boolean active) {
+        if (active != null) {
+            if (!active) {
+                this.revokedAt = LocalDateTime.now();
+            } else {
+                this.revokedAt = null;
+            }
+        }
+        this.active = active;
+    }
+
+    /**
+     * Get the project ID.
+     *
+     * @return the project ID
+     */
+    public Long getProjectId() {
+        return project != null ? project.getId() : null;
+    }
+
+    /**
+     * Set the project ID by setting the project.
+     *
+     * @param projectId the project ID to set
+     */
+    public void setProjectId(Long projectId) {
+        if (projectId != null) {
+            Project newProject = new Project();
+            newProject.setId(projectId);
+            this.project = newProject;
+        } else {
+            this.project = null;
+        }
     }
 
     // Equals and HashCode
