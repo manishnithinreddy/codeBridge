@@ -8,8 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -27,15 +25,13 @@ public class TeamDto {
     @Size(max = 1000, message = "Description must be less than 1000 characters")
     private String description;
     
-    private UUID ownerId;
+    private String iconUrl;
     
-    private UUID parentTeamId;
+    private boolean isDefault;
     
-    private boolean active;
+    private boolean isPersonal;
     
-    private Set<TeamSummaryDto> childTeams = new HashSet<>();
-    
-    private Set<TeamServiceDto> teamServices = new HashSet<>();
+    private String ownerUserId;
     
     private LocalDateTime createdAt;
     

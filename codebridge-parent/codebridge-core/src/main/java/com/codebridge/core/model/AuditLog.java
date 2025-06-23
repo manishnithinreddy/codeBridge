@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "audit_logs")
 @Getter
@@ -31,26 +33,28 @@ public class AuditLog extends BaseEntity {
         DELETE,
         LOGIN,
         LOGOUT,
-        REGISTER,
+        FAILED_LOGIN,
         PASSWORD_RESET,
-        TOKEN_ISSUE,
-        TOKEN_REVOKE,
-        PERMISSION_GRANT,
-        PERMISSION_REVOKE,
-        TEAM_JOIN,
-        TEAM_LEAVE,
-        SERVICE_CONNECT,
-        SERVICE_DISCONNECT,
-        CUSTOM
+        EMAIL_VERIFICATION,
+        PERMISSION_CHANGE,
+        ROLE_CHANGE,
+        TEAM_CHANGE,
+        SERVICE_CHANGE,
+        SYSTEM
     }
+
+    @Column(name = "timestamp", nullable = false)
+    private LocalDateTime timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private Team team;
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @Column(name = "user_agent")
+    private String userAgent;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "action_type", nullable = false)
@@ -62,22 +66,10 @@ public class AuditLog extends BaseEntity {
     @Column(name = "entity_id")
     private String entityId;
 
-    @Column(name = "action_details", columnDefinition = "TEXT")
-    private String actionDetails;
+    @Column(name = "details", columnDefinition = "TEXT")
+    private String details;
 
-    @Column(name = "ip_address")
-    private String ipAddress;
-
-    @Column(name = "user_agent")
-    private String userAgent;
-
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private String status;
-
-    @Column(name = "status_code")
-    private Integer statusCode;
-
-    @Column(name = "error_message")
-    private String errorMessage;
 }
 

@@ -4,9 +4,6 @@ import com.codebridge.common.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -15,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,7 +28,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(name = "first_name")
@@ -39,30 +37,28 @@ public class User extends BaseEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column
-    private String password;
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 
-    @Column(name = "keycloak_id")
-    private String keycloakId;
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     @Column(nullable = false)
     private boolean enabled;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "user_teams",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "team_id")
-    )
-    private Set<Team> teams = new HashSet<>();
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
+    @Column(name = "external_id")
+    private String externalId;
+
+    @Column(name = "auth_provider")
+    private String authProvider;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<UserTeamRole> teamRoles = new HashSet<>();
+    private Set<UserTeamRole> userTeamRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private Set<Token> tokens = new HashSet<>();
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<AuditLog> auditLogs = new HashSet<>();
 }
 

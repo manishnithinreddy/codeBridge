@@ -14,20 +14,16 @@ import java.util.Set;
 
 @Mapper(
     componentModel = "spring",
-    uses = {UserMapper.class, TeamServiceMapper.class},
+    uses = {UserTeamRoleMapper.class, TeamServiceMapper.class},
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface TeamMapper {
     
-    @Mapping(target = "parentTeamId", source = "parentTeam.id")
-    @Mapping(target = "childTeams", qualifiedByName = "toTeamSummaryDto")
     TeamDto toDto(Team team);
     
     List<TeamDto> toDtoList(List<Team> teams);
     
     @Named("toTeamSummaryDto")
-    @Mapping(target = "parentTeamId", source = "parentTeam.id")
-    @Mapping(target = "ownerId", source = "owner.id")
     TeamSummaryDto toSummaryDto(Team team);
     
     @Named("toTeamSummaryDto")
@@ -36,31 +32,23 @@ public interface TeamMapper {
     List<TeamSummaryDto> toSummaryDtoList(List<Team> teams);
     
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "parentTeam", ignore = true)
-    @Mapping(target = "childTeams", ignore = true)
-    @Mapping(target = "members", ignore = true)
-    @Mapping(target = "teamServices", ignore = true)
-    @Mapping(target = "teamRoles", ignore = true)
-    @Mapping(target = "tokens", ignore = true)
-    @Mapping(target = "auditLogs", ignore = true)
-    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "userTeamRoles", ignore = true)
+    @Mapping(target = "teamServices", ignore = true)
     Team toEntity(TeamDto teamDto);
     
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "parentTeam", ignore = true)
-    @Mapping(target = "childTeams", ignore = true)
-    @Mapping(target = "members", ignore = true)
-    @Mapping(target = "teamServices", ignore = true)
-    @Mapping(target = "teamRoles", ignore = true)
-    @Mapping(target = "tokens", ignore = true)
-    @Mapping(target = "auditLogs", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "version", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "userTeamRoles", ignore = true)
+    @Mapping(target = "teamServices", ignore = true)
     void updateEntity(TeamDto teamDto, @MappingTarget Team team);
 }
 

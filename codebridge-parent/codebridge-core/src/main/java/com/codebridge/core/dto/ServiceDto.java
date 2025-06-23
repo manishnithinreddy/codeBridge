@@ -27,24 +27,16 @@ public class ServiceDto {
     @Size(max = 1000, message = "Description must be less than 1000 characters")
     private String description;
     
+    @NotNull(message = "Service type is required")
+    private ServiceType serviceType;
+    
     private String baseUrl;
     
     private String apiUrl;
     
     private String iconUrl;
     
-    private String documentationUrl;
-    
-    @NotNull(message = "Service type is required")
-    private ServiceType type;
-    
-    private boolean enabled;
-    
-    private boolean requiresAuthentication;
-    
-    private String authType;
-    
-    private String configSchema;
+    private boolean isEnabled;
     
     private LocalDateTime createdAt;
     

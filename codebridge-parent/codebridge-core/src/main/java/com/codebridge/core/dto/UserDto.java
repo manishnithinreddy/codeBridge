@@ -9,8 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -26,22 +24,24 @@ public class UserDto {
     private String username;
     
     @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @Email(message = "Email must be valid")
     private String email;
     
-    @Size(max = 50, message = "First name must be less than 50 characters")
     private String firstName;
     
-    @Size(max = 50, message = "Last name must be less than 50 characters")
     private String lastName;
     
-    private String password;
+    private String avatarUrl;
     
-    private String keycloakId;
+    private LocalDateTime lastLoginAt;
     
     private boolean enabled;
     
-    private Set<TeamSummaryDto> teams = new HashSet<>();
+    private boolean emailVerified;
+    
+    private String externalId;
+    
+    private String authProvider;
     
     private LocalDateTime createdAt;
     

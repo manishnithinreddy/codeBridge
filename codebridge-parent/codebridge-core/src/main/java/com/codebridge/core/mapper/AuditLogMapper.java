@@ -11,14 +11,12 @@ import java.util.List;
 
 @Mapper(
     componentModel = "spring",
+    uses = {UserMapper.class},
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface AuditLogMapper {
     
     @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "username", source = "user.username")
-    @Mapping(target = "teamId", source = "team.id")
-    @Mapping(target = "teamName", source = "team.name")
     AuditLogDto toDto(AuditLog auditLog);
     
     List<AuditLogDto> toDtoList(List<AuditLog> auditLogs);
@@ -26,15 +24,19 @@ public interface AuditLogMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "team", ignore = true)
     AuditLog toEntity(AuditLogDto auditLogDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "team", ignore = true)
     void updateEntity(AuditLogDto auditLogDto, @MappingTarget AuditLog auditLog);
 }
 
