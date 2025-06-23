@@ -100,6 +100,23 @@ public class ProjectSharingService {
                 .map(ShareGrant::getPermissionLevel)
                 .orElse(null);
     }
+    
+    /**
+     * List all projects shared with a user.
+     *
+     * @param userId the user ID
+     * @return the list of shared projects
+     */
+    public List<ProjectResponse> listSharedProjectsForUser(Long userId) {
+        List<ShareGrant> grants = shareGrantRepository.findByUserId(userId);
+        
+        return grants.stream()
+                .map(grant -> projectRepository.findById(grant.getProjectId()))
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .map(this::mapToProjectResponse)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Check if a granted permission is sufficient for a required permission.
@@ -266,6 +283,23 @@ public class ProjectSharingService {
         response.setPermissionLevel(grant.getPermissionLevel());
         response.setCreatedAt(grant.getCreatedAt());
         response.setCreatedBy(grant.getCreatedBy());
+        return response;
+    }
+    
+    /**
+     * Map a project to a response DTO.
+     *
+     * @param project the project
+     * @return the project response
+     */
+    private ProjectResponse mapToProjectResponse(Project project) {
+        ProjectResponse response = new ProjectResponse();
+        response.setId(project.getId());
+        response.setName(project.getName());
+        response.setDescription(project.getDescription());
+        response.setUserId(project.getUserId());
+        response.setCreatedAt(project.getCreatedAt());
+        response.setUpdatedAt(project.getUpdatedAt());
         return response;
     }
 }
