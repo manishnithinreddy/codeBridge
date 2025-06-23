@@ -114,6 +114,11 @@ public class ProjectToken {
         this.token = token;
     }
 
+    // For backward compatibility with code that uses setTokenValue
+    public void setTokenValue(String tokenValue) {
+        this.token = tokenValue;
+    }
+
     public String getDescription() {
         return description;
     }
