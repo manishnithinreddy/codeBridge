@@ -2,46 +2,45 @@ package com.codebridge.apitest.dto;
 
 import com.codebridge.apitest.model.enums.SharePermissionLevel; // Updated to use apitest.model.enums
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class ShareGrantResponse {
-    private UUID id; // ShareGrant ID
-    private UUID projectId;
+    private Long id; // ShareGrant ID
+    private Long projectId;
     private String projectName;
-    private UUID granteeUserId;
+    private Long userId;
     private SharePermissionLevel permissionLevel;
-    private UUID grantedByUserId;
+    private Long createdBy;
     private LocalDateTime createdAt;
 
     // Constructors
     public ShareGrantResponse() {
     }
 
-    public ShareGrantResponse(UUID id, UUID projectId, String projectName, UUID granteeUserId,
-                              SharePermissionLevel permissionLevel, UUID grantedByUserId, LocalDateTime createdAt) {
+    public ShareGrantResponse(Long id, Long projectId, String projectName, Long userId,
+                              SharePermissionLevel permissionLevel, Long createdBy, LocalDateTime createdAt) {
         this.id = id;
         this.projectId = projectId;
         this.projectName = projectName;
-        this.granteeUserId = granteeUserId;
+        this.userId = userId;
         this.permissionLevel = permissionLevel;
-        this.grantedByUserId = grantedByUserId;
+        this.createdBy = createdBy;
         this.createdAt = createdAt;
     }
 
     // Getters and Setters
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getProjectId() {
+    public Long getProjectId() {
         return projectId;
     }
 
-    public void setProjectId(UUID projectId) {
+    public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
 
@@ -53,12 +52,12 @@ public class ShareGrantResponse {
         this.projectName = projectName;
     }
 
-    public UUID getGranteeUserId() {
-        return granteeUserId;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setGranteeUserId(UUID granteeUserId) {
-        this.granteeUserId = granteeUserId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public SharePermissionLevel getPermissionLevel() {
@@ -69,12 +68,12 @@ public class ShareGrantResponse {
         this.permissionLevel = permissionLevel;
     }
 
-    public UUID getGrantedByUserId() {
-        return grantedByUserId;
+    public Long getCreatedBy() {
+        return createdBy;
     }
 
-    public void setGrantedByUserId(UUID grantedByUserId) {
-        this.grantedByUserId = grantedByUserId;
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -84,4 +83,22 @@ public class ShareGrantResponse {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+    
+    // New methods for compatibility with updated field names
+    public Long getGranteeUserId() {
+        return userId;
+    }
+
+    public void setGranteeUserId(Long granteeUserId) {
+        this.userId = granteeUserId;
+    }
+
+    public Long getGrantedByUserId() {
+        return createdBy;
+    }
+
+    public void setGrantedByUserId(Long grantedByUserId) {
+        this.createdBy = grantedByUserId;
+    }
 }
+

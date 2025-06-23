@@ -344,6 +344,16 @@ public class ProjectSharingService {
     }
 
     /**
+     * Delete all share grants for a project.
+     *
+     * @param projectId the project ID
+     */
+    @Transactional
+    public void deleteAllGrantsForProject(Long projectId) {
+        shareGrantRepository.deleteByProjectId(projectId);
+    }
+
+    /**
      * Map a share grant to a response DTO.
      *
      * @param grant the share grant
@@ -353,10 +363,10 @@ public class ProjectSharingService {
         ShareGrantResponse response = new ShareGrantResponse();
         response.setId(grant.getId());
         response.setProjectId(grant.getProject().getId());
-        response.setUserId(grant.getGranteeUserId());
+        response.setGranteeUserId(grant.getGranteeUserId());
         response.setPermissionLevel(grant.getPermissionLevel());
         response.setCreatedAt(grant.getCreatedAt());
-        response.setCreatedBy(grant.getGranterUserId());
+        response.setGrantedByUserId(grant.getGranterUserId());
         return response;
     }
     
