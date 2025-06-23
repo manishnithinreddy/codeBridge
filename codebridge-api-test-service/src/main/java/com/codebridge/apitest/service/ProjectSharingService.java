@@ -78,6 +78,28 @@ public class ProjectSharingService {
         shareGrantRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new AccessDeniedException("You do not have access to this project"));
     }
+    
+    /**
+     * Get the effective permission level for a user on a project.
+     *
+     * @param projectId the project ID
+     * @param userId the user ID
+     * @return the effective permission level, or null if no access
+     */
+    public SharePermissionLevel getEffectivePermission(Long projectId, Long userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Project owner has all permissions
+        if (project.getUserId().equals(userId)) {
+            return SharePermissionLevel.CAN_EDIT;
+        }
+
+        // Check if user has a share grant
+        return shareGrantRepository.findByProjectIdAndUserId(projectId, userId)
+                .map(ShareGrant::getPermissionLevel)
+                .orElse(null);
+    }
 
     /**
      * Check if a granted permission is sufficient for a required permission.
