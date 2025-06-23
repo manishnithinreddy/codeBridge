@@ -77,6 +77,16 @@ public class Collection {
     public void setProject(Project project) {
         this.project = project;
     }
+    
+    /**
+     * Get the user ID associated with this collection.
+     * This is a convenience method that delegates to the project.
+     *
+     * @return the user ID of the project owner
+     */
+    public Long getUserId() {
+        return project != null ? project.getUserId() : null;
+    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
