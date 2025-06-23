@@ -13,9 +13,13 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     // Finders for standalone collections (not associated with a project)
     List<Collection> findByUserId(Long userId);
     Optional<Collection> findByIdAndUserId(Long id, Long userId);
+    boolean existsByNameAndUserIdAndProjectIsNull(String name, Long userId);
+    boolean existsByNameAndUserIdAndProjectIsNullAndIdNot(String name, Long userId, Long id);
 
     // Finders for collections associated with a project
     List<Collection> findByProjectId(Long projectId);
+    boolean existsByNameAndProjectId(String name, Long projectId);
+    boolean existsByNameAndProjectIdAndIdNot(String name, Long projectId, Long id);
 
     // Finds collections within a specific project that are also primarily owned by a specific user.
     // The 'userId' on Collection entity is the direct owner.
