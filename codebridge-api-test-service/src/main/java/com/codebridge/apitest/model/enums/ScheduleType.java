@@ -15,6 +15,11 @@ public enum ScheduleType {
     FIXED_RATE,
     
     /**
+     * Interval-based schedule.
+     */
+    INTERVAL,
+    
+    /**
      * One-time execution.
      */
     ONE_TIME
