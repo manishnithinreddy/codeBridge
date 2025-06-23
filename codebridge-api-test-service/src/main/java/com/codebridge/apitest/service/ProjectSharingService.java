@@ -21,121 +21,230 @@ public class ProjectSharingService {
 
     private final ProjectRepository projectRepository;
     private final ShareGrantRepository shareGrantRepository;
-    private final ProjectMapper projectMapper;
 
-    public ProjectSharingService(ProjectRepository projectRepository, 
-                                ShareGrantRepository shareGrantRepository,
-                                ProjectMapper projectMapper) {
+    public ProjectSharingService(ProjectRepository projectRepository, ShareGrantRepository shareGrantRepository) {
         this.projectRepository = projectRepository;
         this.shareGrantRepository = shareGrantRepository;
-        this.projectMapper = projectMapper;
-    }
-
-    @Transactional
-    public ShareGrantResponse grantProjectAccess(Long projectId, ShareGrantRequest requestDto, Long granterUserId) {
-        Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
-
-        // Verify the granter is the owner of the project
-        if (!project.getPlatformUserId().equals(granterUserId)) {
-            throw new AccessDeniedException("Only the project owner can grant access");
-        }
-
-        // Create and save the share grant
-        ShareGrant shareGrant = new ShareGrant();
-        shareGrant.setProject(project);
-        shareGrant.setGranteeUserId(requestDto.getGranteeUserId());
-        shareGrant.setPermissionLevel(requestDto.getPermissionLevel());
-        shareGrant.setGranterUserId(granterUserId);
-
-        ShareGrant savedGrant = shareGrantRepository.save(shareGrant);
-
-        // Map to response
-        return new ShareGrantResponse(
-            savedGrant.getId(),
-            savedGrant.getProject().getId(),
-            savedGrant.getGranteeUserId(),
-            savedGrant.getGranterUserId(),
-            savedGrant.getPermissionLevel()
-        );
-    }
-
-    @Transactional
-    public void revokeProjectAccess(Long projectId, Long granteeUserId, Long revokerUserId) {
-        Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
-
-        // Verify the revoker is the owner of the project
-        if (!project.getPlatformUserId().equals(revokerUserId)) {
-            throw new AccessDeniedException("Only the project owner can revoke access");
-        }
-
-        // Find and delete the share grant
-        ShareGrant shareGrant = shareGrantRepository.findByProjectIdAndGranteeUserId(projectId, granteeUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("ShareGrant", "projectId and granteeUserId", 
-                projectId + " and " + granteeUserId));
-
-        shareGrantRepository.delete(shareGrant);
     }
 
     /**
-     * Gets the effective permission level for a user on a project.
-     * If the user is the owner, they have OWNER permission.
-     * Otherwise, returns the granted permission level or null if no access.
+     * Verify if a user has access to a project with the specified permission level.
      *
      * @param projectId the project ID
-     * @param platformUserId the user ID
-     * @return the effective permission level, or null if no access
+     * @param userId the user ID
+     * @param requiredPermission the required permission level
+     * @throws ResourceNotFoundException if the project is not found
+     * @throws AccessDeniedException if the user does not have the required permission
      */
-    public SharePermissionLevel getEffectivePermission(Long projectId, Long platformUserId) {
-        // Check if user is the owner
-        Project project = projectRepository.findById(projectId).orElse(null);
-        if (project == null) {
-            return null;
-        }
-
-        if (project.getPlatformUserId().equals(platformUserId)) {
-            return SharePermissionLevel.OWNER;
-        }
-
-        // Check for shared access
-        return shareGrantRepository.findByProjectIdAndGranteeUserId(projectId, platformUserId)
-            .map(ShareGrant::getPermissionLevel)
-            .orElse(null);
-    }
-
-    @Transactional(readOnly = true)
-    public List<ProjectResponse> listSharedProjectsForUser(Long platformUserId) {
-        return shareGrantRepository.findByGranteeUserId(platformUserId).stream()
-            .map(grant -> projectMapper.toProjectResponse(grant.getProject()))
-            .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ShareGrantResponse> listUsersForProject(Long projectId, Long platformUserId) {
+    public void verifyProjectAccess(Long projectId, Long userId, SharePermissionLevel requiredPermission) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
 
-        // Verify the requester has at least view access
-        SharePermissionLevel permission = getEffectivePermission(projectId, platformUserId);
-        if (permission == null) {
-            throw new AccessDeniedException("User does not have access to this project");
+        // Project owner has all permissions
+        if (project.getUserId().equals(userId)) {
+            return;
         }
 
-        return shareGrantRepository.findByProjectId(projectId).stream()
-            .map(grant -> new ShareGrantResponse(
-                grant.getId(),
-                grant.getProject().getId(),
-                grant.getGranteeUserId(),
-                grant.getGranterUserId(),
-                grant.getPermissionLevel()
-            ))
-            .collect(Collectors.toList());
+        // Check if user has a share grant with sufficient permissions
+        ShareGrant grant = shareGrantRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new AccessDeniedException("You do not have access to this project"));
+
+        SharePermissionLevel grantedPermission = grant.getPermissionLevel();
+
+        // Check if granted permission is sufficient
+        if (!hasPermission(grantedPermission, requiredPermission)) {
+            throw new AccessDeniedException("You do not have sufficient permissions for this operation");
+        }
     }
 
+    /**
+     * Verify if a user has access to a project (any permission level).
+     *
+     * @param projectId the project ID
+     * @param userId the user ID
+     * @throws ResourceNotFoundException if the project is not found
+     * @throws AccessDeniedException if the user does not have access
+     */
+    public void verifyProjectAccess(Long projectId, Long userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Project owner has all permissions
+        if (project.getUserId().equals(userId)) {
+            return;
+        }
+
+        // Check if user has any share grant
+        shareGrantRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new AccessDeniedException("You do not have access to this project"));
+    }
+
+    /**
+     * Check if a granted permission is sufficient for a required permission.
+     *
+     * @param grantedPermission the granted permission
+     * @param requiredPermission the required permission
+     * @return true if the granted permission is sufficient
+     */
+    private boolean hasPermission(SharePermissionLevel grantedPermission, SharePermissionLevel requiredPermission) {
+        // Handle aliases
+        if (grantedPermission == SharePermissionLevel.VIEW_ONLY) {
+            grantedPermission = SharePermissionLevel.CAN_VIEW;
+        }
+
+        // Check permission hierarchy
+        if (grantedPermission == SharePermissionLevel.CAN_EDIT) {
+            return true; // CAN_EDIT includes all permissions
+        } else if (grantedPermission == SharePermissionLevel.CAN_EXECUTE) {
+            return requiredPermission == SharePermissionLevel.CAN_VIEW 
+                || requiredPermission == SharePermissionLevel.CAN_EXECUTE;
+        } else if (grantedPermission == SharePermissionLevel.CAN_VIEW) {
+            return requiredPermission == SharePermissionLevel.CAN_VIEW;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all share grants for a project.
+     *
+     * @param projectId the project ID
+     * @param userId the user ID
+     * @return the list of share grants
+     */
+    public List<ShareGrantResponse> getProjectShares(Long projectId, Long userId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can view shares
+        if (!project.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Only the project owner can view shares");
+        }
+
+        List<ShareGrant> grants = shareGrantRepository.findByProjectId(projectId);
+        return grants.stream()
+                .map(this::mapToShareGrantResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Create a new share grant.
+     *
+     * @param projectId the project ID
+     * @param request the share grant request
+     * @param userId the user ID
+     * @return the created share grant
+     */
     @Transactional
-    public void deleteAllGrantsForProject(Long projectId) {
-        shareGrantRepository.deleteByProjectId(projectId);
+    public ShareGrantResponse createShareGrant(Long projectId, ShareGrantRequest request, Long userId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can create shares
+        if (!project.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Only the project owner can create shares");
+        }
+
+        // Check if share already exists
+        shareGrantRepository.findByProjectIdAndUserId(projectId, request.getUserId())
+                .ifPresent(grant -> {
+                    throw new IllegalArgumentException("Share already exists for this user");
+                });
+
+        // Create share grant
+        ShareGrant grant = new ShareGrant();
+        grant.setProjectId(projectId);
+        grant.setUserId(request.getUserId());
+        grant.setPermissionLevel(request.getPermissionLevel());
+        grant.setCreatedBy(userId);
+
+        ShareGrant savedGrant = shareGrantRepository.save(grant);
+        return mapToShareGrantResponse(savedGrant);
+    }
+
+    /**
+     * Update a share grant.
+     *
+     * @param projectId the project ID
+     * @param shareId the share ID
+     * @param request the share grant request
+     * @param userId the user ID
+     * @return the updated share grant
+     */
+    @Transactional
+    public ShareGrantResponse updateShareGrant(Long projectId, Long shareId, ShareGrantRequest request, Long userId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can update shares
+        if (!project.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Only the project owner can update shares");
+        }
+
+        // Get share grant
+        ShareGrant grant = shareGrantRepository.findById(shareId)
+                .orElseThrow(() -> new ResourceNotFoundException("ShareGrant", "id", shareId.toString()));
+
+        // Verify share grant belongs to project
+        if (!grant.getProjectId().equals(projectId)) {
+            throw new AccessDeniedException("Share grant does not belong to this project");
+        }
+
+        // Update share grant
+        grant.setPermissionLevel(request.getPermissionLevel());
+        ShareGrant savedGrant = shareGrantRepository.save(grant);
+        return mapToShareGrantResponse(savedGrant);
+    }
+
+    /**
+     * Delete a share grant.
+     *
+     * @param projectId the project ID
+     * @param shareId the share ID
+     * @param userId the user ID
+     */
+    @Transactional
+    public void deleteShareGrant(Long projectId, Long shareId, Long userId) {
+        // Verify user has access to the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+
+        // Only project owner can delete shares
+        if (!project.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Only the project owner can delete shares");
+        }
+
+        // Get share grant
+        ShareGrant grant = shareGrantRepository.findById(shareId)
+                .orElseThrow(() -> new ResourceNotFoundException("ShareGrant", "id", shareId.toString()));
+
+        // Verify share grant belongs to project
+        if (!grant.getProjectId().equals(projectId)) {
+            throw new AccessDeniedException("Share grant does not belong to this project");
+        }
+
+        // Delete share grant
+        shareGrantRepository.delete(grant);
+    }
+
+    /**
+     * Map a share grant to a response DTO.
+     *
+     * @param grant the share grant
+     * @return the share grant response
+     */
+    private ShareGrantResponse mapToShareGrantResponse(ShareGrant grant) {
+        ShareGrantResponse response = new ShareGrantResponse();
+        response.setId(grant.getId());
+        response.setProjectId(grant.getProjectId());
+        response.setUserId(grant.getUserId());
+        response.setPermissionLevel(grant.getPermissionLevel());
+        response.setCreatedAt(grant.getCreatedAt());
+        response.setCreatedBy(grant.getCreatedBy());
+        return response;
     }
 }
 
