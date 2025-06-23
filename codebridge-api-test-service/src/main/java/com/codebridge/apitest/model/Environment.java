@@ -11,6 +11,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Entity for environment configurations.
@@ -39,6 +41,10 @@ public class Environment {
     @Column
     @Lob
     private String variables; // JSON string with environment variables
+
+    @Column
+    @Lob
+    private String headers; // JSON string with environment headers
 
     @Column(nullable = false)
     private Long createdBy;
@@ -111,6 +117,14 @@ public class Environment {
 
     public void setVariables(String variables) {
         this.variables = variables;
+    }
+
+    public String getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(String headers) {
+        this.headers = headers;
     }
 
     public Long getCreatedBy() {

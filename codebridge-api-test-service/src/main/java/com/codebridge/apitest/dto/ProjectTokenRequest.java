@@ -42,6 +42,9 @@ public class ProjectTokenRequest {
     private Boolean active;
 
     private Boolean autoRefresh;
+    
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
+    private String description;
 
     public String getName() {
         return name;
@@ -129,6 +132,14 @@ public class ProjectTokenRequest {
 
     public void setAutoRefresh(Boolean autoRefresh) {
         this.autoRefresh = autoRefresh;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
 
