@@ -13,11 +13,11 @@ import java.util.Optional;
 @Repository
 public interface ShareGrantRepository extends JpaRepository<ShareGrant, Long> {
 
-    Optional<ShareGrant> findByProjectIdAndGranteeUserId(Long projectId, Long granteeUserId);
+    Optional<ShareGrant> findByProjectIdAndUserId(Long projectId, Long userId);
 
     List<ShareGrant> findByProjectId(Long projectId);
 
-    List<ShareGrant> findByGranteeUserId(Long granteeUserId);
+    List<ShareGrant> findByUserId(Long userId);
 
     @Modifying
     @Transactional
