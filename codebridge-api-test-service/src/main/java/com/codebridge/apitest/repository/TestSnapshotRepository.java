@@ -2,6 +2,8 @@ package com.codebridge.apitest.repository;
 
 import com.codebridge.apitest.model.TestSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,7 +38,8 @@ public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, Long
      * @param testId the test ID
      * @return the list of approved snapshots
      */
-    List<TestSnapshot> findByTestIdAndApprovedTrue(Long testId);
+    @Query("SELECT s FROM TestSnapshot s WHERE s.testId = :testId AND s.approved = true")
+    List<TestSnapshot> findAllByTestIdAndApprovedTrue(@Param("testId") Long testId);
     
     /**
      * Find the approved snapshot for a test.
@@ -44,6 +47,7 @@ public interface TestSnapshotRepository extends JpaRepository<TestSnapshot, Long
      * @param testId the test ID
      * @return the approved snapshot if found
      */
-    Optional<TestSnapshot> findByTestIdAndApprovedTrue(Long testId);
+    @Query("SELECT s FROM TestSnapshot s WHERE s.testId = :testId AND s.approved = true")
+    Optional<TestSnapshot> findByTestIdAndApprovedTrue(@Param("testId") Long testId);
 }
 

@@ -1,72 +1,26 @@
-package com.codebridge.apitest.model;
-
-import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+package com.codebridge.apitest.dto;
 
 import java.time.LocalDateTime;
 
 /**
- * Entity for test response snapshots.
- * Snapshots are used to compare test results over time.
+ * DTO for test snapshot responses.
  */
-@Entity
-@Table(name = "test_snapshots")
-public class TestSnapshot {
+public class TestSnapshotResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private Long testId;
-
-    @Column(nullable = false)
     private String name;
-
-    @Column
     private String description;
-
-    @Column(nullable = false)
-    @Lob
     private String responseBody;
-
-    @Column
-    @Lob
     private String responseHeaders;
-
-    @Column
     private Integer statusCode;
-    
-    @Column(name = "response_status")
     private String responseStatus;
-
-    @Column(nullable = false)
     private Boolean approved;
-
-    @Column
     private Long approvedBy;
-
-    @Column
     private LocalDateTime approvedAt;
-
-    @Column(nullable = false)
     private Long createdBy;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        if (approved == null) {
-            approved = false;
-        }
-    }
 
     // Getters and Setters
 
