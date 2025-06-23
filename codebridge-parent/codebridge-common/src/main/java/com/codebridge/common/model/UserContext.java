@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -13,17 +15,29 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserContext {
     
+    public enum ContextType {
+        PERSONAL,
+        TEAM
+    }
+    
     private UUID userId;
     private String username;
-    private UUID currentTeamId;
-    private String currentTeamName;
-    private boolean isPersonalContext;
+    private String email;
+    private UUID teamId;
+    private String teamName;
+    private ContextType contextType;
+    
+    @Builder.Default
+    private Set<String> roles = new HashSet<>();
+    
+    @Builder.Default
+    private Set<String> permissions = new HashSet<>();
     
     public static UserContext createPersonalContext(UUID userId, String username) {
         return UserContext.builder()
                 .userId(userId)
                 .username(username)
-                .isPersonalContext(true)
+                .contextType(ContextType.PERSONAL)
                 .build();
     }
     
@@ -31,10 +45,22 @@ public class UserContext {
         return UserContext.builder()
                 .userId(userId)
                 .username(username)
-                .currentTeamId(teamId)
-                .currentTeamName(teamName)
-                .isPersonalContext(false)
+                .teamId(teamId)
+                .teamName(teamName)
+                .contextType(ContextType.TEAM)
                 .build();
+    }
+    
+    public boolean hasRole(String role) {
+        return roles.contains(role);
+    }
+    
+    public boolean hasPermission(String permission) {
+        return permissions.contains(permission);
+    }
+    
+    public boolean isPersonalContext() {
+        return contextType == ContextType.PERSONAL;
     }
 }
 
