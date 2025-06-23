@@ -36,23 +36,31 @@ public interface TeamMapper {
     List<TeamSummaryDto> toSummaryDtoList(List<Team> teams);
     
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "parentTeam", ignore = true)
     @Mapping(target = "childTeams", ignore = true)
     @Mapping(target = "members", ignore = true)
     @Mapping(target = "teamServices", ignore = true)
     @Mapping(target = "teamRoles", ignore = true)
+    @Mapping(target = "tokens", ignore = true)
+    @Mapping(target = "auditLogs", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     Team toEntity(TeamDto teamDto);
     
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "parentTeam", ignore = true)
     @Mapping(target = "childTeams", ignore = true)
     @Mapping(target = "members", ignore = true)
     @Mapping(target = "teamServices", ignore = true)
     @Mapping(target = "teamRoles", ignore = true)
+    @Mapping(target = "tokens", ignore = true)
+    @Mapping(target = "auditLogs", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     void updateEntity(TeamDto teamDto, @MappingTarget Team team);
 }
 
