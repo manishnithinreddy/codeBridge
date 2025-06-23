@@ -2,22 +2,21 @@ package com.codebridge.apitest.dto;
 
 import com.codebridge.apitest.model.enums.SharePermissionLevel; // Updated to use apitest.model.enums
 import jakarta.validation.constraints.NotNull;
-import java.util.UUID;
 
 public class ShareGrantRequest {
 
     @NotNull(message = "Grantee User ID cannot be null")
-    private UUID granteeUserId;
+    private Long granteeUserId;
 
     @NotNull(message = "Permission level cannot be null")
     private SharePermissionLevel permissionLevel;
 
     // Getters and Setters
-    public UUID getGranteeUserId() {
+    public Long getGranteeUserId() {
         return granteeUserId;
     }
 
-    public void setGranteeUserId(UUID granteeUserId) {
+    public void setGranteeUserId(Long granteeUserId) {
         this.granteeUserId = granteeUserId;
     }
 
@@ -28,4 +27,14 @@ public class ShareGrantRequest {
     public void setPermissionLevel(SharePermissionLevel permissionLevel) {
         this.permissionLevel = permissionLevel;
     }
+    
+    // For backward compatibility
+    public Long getUserId() {
+        return granteeUserId;
+    }
+
+    public void setUserId(Long userId) {
+        this.granteeUserId = userId;
+    }
 }
+
