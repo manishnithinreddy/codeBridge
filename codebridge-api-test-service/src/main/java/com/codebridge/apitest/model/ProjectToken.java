@@ -53,6 +53,9 @@ public class ProjectToken {
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
+    @Column(name = "revoked_by")
+    private Long revokedBy;
+
     @NotNull
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
@@ -139,6 +142,14 @@ public class ProjectToken {
         this.revokedAt = revokedAt;
     }
 
+    public Long getRevokedBy() {
+        return revokedBy;
+    }
+
+    public void setRevokedBy(Long revokedBy) {
+        this.revokedBy = revokedBy;
+    }
+
     public Long getCreatedBy() {
         return createdBy;
     }
@@ -161,6 +172,16 @@ public class ProjectToken {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    /**
+     * Check if the token is active (not revoked and not expired).
+     *
+     * @return true if the token is active, false otherwise
+     */
+    public Boolean getActive() {
+        LocalDateTime now = LocalDateTime.now();
+        return revokedAt == null && (expiresAt == null || expiresAt.isAfter(now));
     }
 
     // Equals and HashCode
