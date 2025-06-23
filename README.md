@@ -1,155 +1,38 @@
-# CodeBridge Platform
+# CodeBridge
 
-## Overview
+CodeBridge is a comprehensive microservices platform for managing and deploying applications across multiple environments.
 
-CodeBridge is a comprehensive platform for managing development workflows, integrating with various tools and services, and streamlining the development process.
+## Services
 
-## Architecture
+The platform consists of the following microservices:
 
-The CodeBridge platform follows a microservices architecture, with each service responsible for a specific domain. The architecture has been optimized to balance modularity with operational simplicity.
+- **API Test Service**: Testing and validation service for APIs
+- **Gateway Service**: API Gateway for routing requests to appropriate services
+- **Docker Service**: Container management service
+- **Server Service**: Server provisioning and management
+- **Organization Service**: User and team management
+- **Identity Service**: Authentication and authorization
+- **Events Service**: Event logging and monitoring
+- **GitLab Service**: GitLab integration
 
-### Services
+## Java 21 Compatibility
 
-#### Core Services (Remain Separate)
+All services have been updated to be compatible with Java 21. The following changes were made:
 
-1. **GitLab Service**
-   - Version control integration
-   - Repository management
-   - Git provider configuration
-   - Webhook management
-   - Issue tracking and management
-   - Repository access control
-   - Git credentials management
-   - Provider type support (GitLab, GitHub, etc.)
-   - Issue comments and management
-   - Multiple provider support
+1. Updated parent POM references to use `com.codebridge:codebridge-parent:0.1.0-SNAPSHOT`
+2. Added Spring Cloud dependencies for service discovery
+3. Standardized dependency management across all services
 
-2. **Docker Service**
-   - Docker registry management
-   - Container lifecycle management (start, stop, restart)
-   - Image management and tagging
-   - Registry connection testing
-   - Container logs streaming
-   - Container monitoring
-   - Multi-registry support
-   - Access control and security
-   - Docker context management
-
-3. **Server Service**
-   - Server infrastructure management
-   - SSH key management
-   - Server monitoring
-   - Infrastructure configuration
-   - Access control
-   - Server provisioning
-   - Security management
-   - Multiple provider support (AWS, Azure, GCP, Digital Ocean, On-Premise)
-   - Team-based server access
-
-4. **API Test Service**
-   - API endpoint testing and validation
-   - Test case management with name, description, and validation scripts
-   - HTTP method support (GET, POST, PUT, DELETE, etc.)
-   - Request/response validation with expected status codes and response bodies
-   - Custom validation scripts for complex validations
-   - Team-based test management
-   - Timeout configuration
-   - Test execution and results tracking
-   - User-specific test management
-
-#### Consolidated Services
-
-5. **Identity Service** (Consolidation of Auth Gateway and Security Service)
-   - User authentication and authorization
-   - JWT token generation and validation
-   - Session management
-   - Role-based access control
-   - Multi-device session support
-   - Token refresh mechanism
-   - Complete and device-specific logout
-   - Security auditing
-
-6. **Organization Service** (Consolidation of User Management Service and Teams Service)
-   - User profile management
-   - Team management
-   - Team hierarchy (parent/child teams)
-   - Team membership
-   - Role assignment
-   - User preferences and settings
-   - Feature flag management
-   - GitLab issue integration
-   - Team-based access control
-   - Team collaboration features
-
-7. **Events Service** (Consolidation of Webhook Service and Audit Service)
-   - Webhook event handling
-   - Event processing and routing
-   - Event status tracking
-   - Retry mechanism
-   - Event type filtering
-   - Signature validation
-   - IP filtering
-   - Audit logging
-   - Security monitoring
-   - User activity tracking
-   - Service activity logging
-   - Error tracking
-   - Request/response logging
-   - IP and user agent tracking
-   - Metadata capture
-
-## Service Communication
-
-Services communicate with each other through:
-
-1. **REST APIs**: Synchronous communication between services
-2. **Service Discovery**: Using Eureka for service registration and discovery
-3. **Event-Based Communication**: Asynchronous communication for certain operations
-
-## Benefits of Consolidation
-
-The consolidation of services provides several benefits:
-
-1. **Reduced Operational Overhead**
-   - Fewer services to deploy, monitor, and maintain
-   - Simplified infrastructure requirements
-
-2. **Improved Data Consistency**
-   - Fewer distributed transactions across service boundaries
-   - Reduced need for complex data synchronization
-
-3. **Simplified Development**
-   - Clearer boundaries for developers
-   - Fewer inter-service dependencies to manage
-
-4. **Lower Latency**
-   - Fewer network hops for common operations
-   - Reduced communication overhead
-
-## Technologies
-
-- **Spring Boot**: Framework for building microservices
-- **Spring Cloud**: Tools for building cloud-native applications
-- **Spring Data JPA**: Data access layer
-- **Spring Security**: Security framework
-- **PostgreSQL**: Relational database
-- **Eureka**: Service discovery
-- **Feign**: Declarative REST client
-- **JWT**: JSON Web Tokens for authentication
-- **Flyway**: Database migration
-- **Lombok**: Reduces boilerplate code
-- **Maven**: Build tool
-
-## Getting Started
+## Local Development Setup
 
 ### Prerequisites
 
-- Java 17
-- Maven
-- PostgreSQL
-- Docker (optional)
+- Java 21 JDK
+- Maven 3.8+
+- Docker and Docker Compose
+- PostgreSQL (or use the provided Docker Compose setup)
 
-### Building the Services
+### Building the Project
 
 To build all services:
 
@@ -157,24 +40,45 @@ To build all services:
 mvn clean install
 ```
 
-### Running the Services
+### Running Services Locally
 
-Each service can be run independently:
+1. Start the discovery service first:
 
 ```bash
-cd codebridge-identity-service
+cd codebridge-discovery
 mvn spring-boot:run
 ```
 
-### Docker Compose
-
-A Docker Compose file is provided to run all services together:
+2. Start other services as needed:
 
 ```bash
-docker-compose up -d
+cd codebridge-[service-name]
+mvn spring-boot:run
 ```
+
+## Service Dependencies
+
+- All services depend on the discovery service for service registration
+- Most services require a PostgreSQL database
+- The Gateway service routes requests to other services
+- The Identity service is required for authentication
 
 ## Configuration
 
-Each service can be configured using environment variables or application.yml files. See the README.md file in each service directory for specific configuration options.
+Each service has its own application.yml file with configuration options. Common configurations include:
+
+- Database connection settings
+- Service discovery settings
+- Security settings
+- Logging configuration
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
