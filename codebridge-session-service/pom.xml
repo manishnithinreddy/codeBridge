@@ -23,6 +23,13 @@
     </properties>
 
     <dependencies>
+        <!-- CodeBridge Core -->
+        <dependency>
+            <groupId>com.codebridge</groupId>
+            <artifactId>codebridge-core</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
