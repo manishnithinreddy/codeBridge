@@ -249,11 +249,12 @@ public class TestSchedulerService {
                 
                 if (lastRun == null) {
                     // If never run, check if it should run now
-                    return cronExpression.next(now.minusMinutes(1)).isBefore(now);
+                    LocalDateTime nextTime = cronExpression.next(now.minusMinutes(1));
+                    return nextTime != null && nextTime.isBefore(now);
                 } else {
                     // Check if next execution time after last run is before now
-                    Optional<LocalDateTime> nextAfterLast = cronExpression.next(lastRun);
-                    return nextAfterLast.isPresent() && nextAfterLast.get().isBefore(now);
+                    LocalDateTime nextAfterLast = cronExpression.next(lastRun);
+                    return nextAfterLast != null && nextAfterLast.isBefore(now);
                 }
             } catch (IllegalArgumentException e) {
                 logger.warn("Invalid cron expression for test {}: {}", test.getId(), test.getCronExpression());
@@ -289,9 +290,9 @@ public class TestSchedulerService {
             try {
                 CronExpression cronExpression = CronExpression.parse(test.getCronExpression());
                 LocalDateTime now = LocalDateTime.now();
-                Optional<LocalDateTime> nextRun = cronExpression.next(now);
-                if (nextRun.isPresent()) {
-                    test.setNextRunAt(nextRun.get());
+                LocalDateTime nextRun = cronExpression.next(now);
+                if (nextRun != null) {
+                    test.setNextRunAt(nextRun);
                 }
             } catch (IllegalArgumentException e) {
                 logger.warn("Could not parse cron expression for test {}: {}", test.getId(), test.getCronExpression());
@@ -389,9 +390,9 @@ public class TestSchedulerService {
                 try {
                     CronExpression cronExpression = CronExpression.parse(test.getCronExpression());
                     LocalDateTime now = LocalDateTime.now();
-                    Optional<LocalDateTime> nextRun = cronExpression.next(now);
-                    if (nextRun.isPresent()) {
-                        response.setNextRunAt(nextRun.get());
+                    LocalDateTime nextRun = cronExpression.next(now);
+                    if (nextRun != null) {
+                        response.setNextRunAt(nextRun);
                     }
                 } catch (IllegalArgumentException e) {
                     logger.warn("Could not parse cron expression for test {}: {}", test.getId(), test.getCronExpression());
