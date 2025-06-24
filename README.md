@@ -1,117 +1,99 @@
-# CodeBridge GitLab and Docker Services
+# CodeBridge Platform
 
-This repository contains two microservices for the CodeBridge platform:
+CodeBridge is a comprehensive development platform that integrates various development tools and services into a unified ecosystem. It provides a unified interface for managing code repositories, CI/CD pipelines, containers, databases, documentation, and team collaboration.
 
-1. **GitLab Service**: A RESTful API for interacting with GitLab, allowing users to manage projects, pipelines, and jobs.
-2. **Docker Service**: A RESTful API for interacting with Docker, allowing users to manage containers, images, and registries.
+## Architecture Overview
+
+The CodeBridge platform follows a microservices architecture with the following components:
+
+### Core Infrastructure
+
+- **Gateway Service** (`codebridge-gateway-service`): Centralized entry point for all client requests, handling routing, load balancing, and service discovery.
+- **Identity Platform** (`codebridge-identity-platform`): User identity management, authentication, and SSO.
+- **Security** (`codebridge-security`): Security components, authentication, and authorization.
+
+### Development Tools
+
+- **GitLab Service** (`codebridge-gitlab-service`): Integration with GitLab for project management, pipelines, and jobs.
+- **Docker Service** (`codebridge-docker-service`): Integration with Docker for container management, images, and registries.
+- **Documentation Service** (`codebridge-documentation-service`): API documentation generation, versioning, and publishing.
+
+### Database and AI Services
+
+- **DB Service** (`db-service`): Go implementation for database connection management and query execution.
+- **AI Service** (`ai-service`): Python implementation for AI-powered database interactions.
+
+### Session and Server Management
+
+- **Session Service** (`session-service`): Go implementation for session management.
+- **Server Service** (`codebridge-server-service`): Server provisioning and management.
+
+### Team Collaboration
+
+- **Teams Service** (`codebridge-teams-service`): Team management and collaboration.
+
+### Monitoring and Performance
+
+- **Monitoring Service** (`codebridge-monitoring-service`): Consolidated monitoring service including performance monitoring.
 
 ## Technology Stack
 
-- Java 21
-- Spring Boot 3.2.0
-- Spring Cloud 2023.0.0
-- Docker Java Client 3.3.3
-- JWT for security
-- RESTful API design
-- Lombok for boilerplate reduction
-- SLF4J for logging
-
-## Services
-
-### GitLab Service
-
-The GitLab Service provides the following features:
-
-- Authentication with GitLab personal access tokens
-- Project management (list, get, create, archive/unarchive)
-- Pipeline management (list, get, create, cancel, retry)
-- Job management (list, get, logs)
-- JWT-based security
-- Comprehensive error handling
-- Swagger/OpenAPI documentation
-
-For more details, see the [GitLab Service README](codebridge-gitlab-service/README.md).
-
-### Docker Service
-
-The Docker Service provides the following features:
-
-- Authentication with Docker Registry
-- Container management (list, get, create, start, stop, restart, logs, stats)
-- Image management (list, get, pull, push, build, tag, remove)
-- JWT-based security
-- Comprehensive error handling
-- Swagger/OpenAPI documentation
-
-For more details, see the [Docker Service README](codebridge-docker-service/README.md).
+- **Java**: Primary implementation language for most services (Spring Boot)
+- **Go**: Implementation for performance-critical services (DB Service, Session Service)
+- **Python**: Implementation for AI-related services
+- **Redis**: For caching and session storage
+- **PostgreSQL**: For persistent storage
+- **Docker & Kubernetes**: For containerization and orchestration
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 21 or higher
-- Maven 3.8.0 or higher
-- Docker (required for Docker Service functionality)
+- Docker and Docker Compose
+- Java 17 or higher
+- Go 1.21 or higher
+- Python 3.10 or higher
 
 ### Running with Docker Compose
 
-The easiest way to run both services is using Docker Compose:
+The easiest way to run the platform is using Docker Compose:
 
 ```bash
 docker-compose up -d
 ```
 
-This will build and start both services:
-
-- GitLab Service: http://localhost:8081/api/gitlab
-- Docker Service: http://localhost:8082/api/docker
+This will start all services and their dependencies.
 
 ### Building and Running Manually
 
-To build and run the services manually:
+To build and run the services manually, refer to the README.md file in each service directory.
 
-#### GitLab Service
+## Service Endpoints
 
-```bash
-cd codebridge-gitlab-service
-mvn clean package
-java -jar target/codebridge-gitlab-service-0.0.1-SNAPSHOT.jar
-```
-
-#### Docker Service
-
-```bash
-cd codebridge-docker-service
-mvn clean package
-java -jar target/codebridge-docker-service-0.0.1-SNAPSHOT.jar
-```
+- Gateway Service: http://localhost:8080
+- GitLab Service: http://localhost:8081/api/gitlab
+- Docker Service: http://localhost:8082/api/docker
+- Session Service: http://localhost:8083/api/session
+- DB Service: http://localhost:8084/api/db
+- AI Service: http://localhost:8085/api/ai
+- Documentation Service: http://localhost:8087/api/docs
+- Monitoring Service: http://localhost:8088/monitoring
+- Teams Service: http://localhost:8089/teams
+- Identity Platform: http://localhost:8090/identity
 
 ## API Documentation
 
-Each service provides Swagger/OpenAPI documentation:
+Each service provides Swagger/OpenAPI documentation at its `/swagger-ui.html` endpoint.
 
-- GitLab Service: http://localhost:8081/api/gitlab/swagger-ui.html
-- Docker Service: http://localhost:8082/api/docker/swagger-ui.html
+## Multi-Language Implementation Strategy
 
-## Testing
+The platform employs a polyglot strategy with services implemented in different languages:
 
-Each service includes unit tests and integration tests. To run the tests:
+- **Java**: Primary implementation language for most services
+- **Go**: Implementation for performance-critical services (DB Service, Session Service)
+- **Python**: Implementation for AI-related services
 
-```bash
-# GitLab Service
-cd codebridge-gitlab-service
-mvn test
-
-# Docker Service
-cd codebridge-docker-service
-mvn test
-```
-
-## CI/CD
-
-Each service includes a GitHub Actions workflow for CI/CD. The workflows build the services, run tests, and publish Docker images to DockerHub.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
+This strategy allows for:
+1. Optimizing performance-critical services with Go
+2. Leveraging Python's strengths for AI and machine learning
+3. Using Java's ecosystem for enterprise features

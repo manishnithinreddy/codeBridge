@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  # Gateway Service
+  gateway-service:
+    build:
+      context: ./codebridge-gateway-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  # GitLab Service
   gitlab-service:
     build:
       context: ./codebridge-gitlab-service
@@ -13,6 +30,7 @@ services:
       - codebridge-network
     restart: unless-stopped
 
+  # Docker Service
   docker-service:
     build:
       context: ./codebridge-docker-service
@@ -27,7 +45,138 @@ services:
       - codebridge-network
     restart: unless-stopped
 
+  # Session Service (Go implementation)
+  session-service:
+    build:
+      context: ./session-service/go-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - ENVIRONMENT=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  # DB Service (Go implementation)
+  db-service:
+    build:
+      context: ./db-service/go-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - ENVIRONMENT=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # AI Service (Python implementation)
+  ai-service:
+    build:
+      context: ./ai-service/python-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - ENVIRONMENT=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - db-service
+
+  # Documentation Service
+  documentation-service:
+    build:
+      context: ./codebridge-documentation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # Monitoring Service
+  monitoring-service:
+    build:
+      context: ./codebridge-monitoring-service
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # Teams Service
+  teams-service:
+    build:
+      context: ./codebridge-teams-service
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # Identity Platform
+  identity-platform:
+    build:
+      context: ./codebridge-identity-platform
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # PostgreSQL for persistent storage
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=codebridge
+      - POSTGRES_PASSWORD=codebridge
+      - POSTGRES_MULTIPLE_DATABASES=codebridge,codebridge_docs,codebridge_teams,codebridge_identity
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
 networks:
   codebridge-network:
     driver: bridge
 
+volumes:
+  redis-data:
+  postgres-data:
