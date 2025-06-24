@@ -1,4 +1,4 @@
-package com.codebridge.monitoring.performance.dto;
+package com.codebridge.performance.dto;
 
 import lombok.Data;
 
