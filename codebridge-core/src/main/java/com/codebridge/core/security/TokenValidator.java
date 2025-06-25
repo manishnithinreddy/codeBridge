@@ -46,7 +46,7 @@ public class TokenValidator {
                 .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
                 .bodyValue("token=" + token + "&token_type_hint=access_token")
                 .retrieve()
-                .onStatus(HttpStatus::isError, response -> {
+                .onStatus(status -> status.isError(), response -> {
                     log.error("Error validating token: {}", response.statusCode());
                     return Mono.error(new RuntimeException("Token validation failed"));
                 })
@@ -85,4 +85,3 @@ public class TokenValidator {
                 });
     }
 }
-
