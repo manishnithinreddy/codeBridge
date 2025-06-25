@@ -1,6 +1,7 @@
 package com.codebridge.core.config;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
@@ -23,7 +24,7 @@ public class CircuitBreakerConfig {
         
         return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
                 .circuitBreakerConfig(circuitBreakerRegistry.getDefaultConfig())
-                .timeLimiterConfig(timeLimiterRegistry.getDefaultConfig().toBuilder()
+                .timeLimiterConfig(TimeLimiterConfig.custom()
                         .timeoutDuration(Duration.ofSeconds(3))
                         .build())
                 .build());
