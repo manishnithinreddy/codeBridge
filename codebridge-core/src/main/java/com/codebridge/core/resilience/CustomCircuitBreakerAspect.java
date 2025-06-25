@@ -15,18 +15,19 @@ import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 /**
- * Aspect for applying circuit breakers to methods.
+ * Custom aspect for applying circuit breakers to methods annotated with @CircuitBreaker.
+ * This is separate from Resilience4j's auto-configured CircuitBreakerAspect.
  */
 @Aspect
-@Component
-public class CircuitBreakerAspect {
+@Component("customCircuitBreakerAspect")
+public class CustomCircuitBreakerAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger(CircuitBreakerAspect.class);
+    private static final Logger logger = LoggerFactory.getLogger(CustomCircuitBreakerAspect.class);
 
     private final CircuitBreakerRegistry circuitBreakerRegistry;
 
     @Autowired
-    public CircuitBreakerAspect(CircuitBreakerRegistry circuitBreakerRegistry) {
+    public CustomCircuitBreakerAspect(CircuitBreakerRegistry circuitBreakerRegistry) {
         this.circuitBreakerRegistry = circuitBreakerRegistry;
     }
 
@@ -58,4 +59,3 @@ public class CircuitBreakerAspect {
         return circuitBreaker.executeSupplier(supplier);
     }
 }
-
