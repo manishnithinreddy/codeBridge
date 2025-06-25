@@ -15,6 +15,8 @@ public class ErrorResponse {
     private String error;
     private String message;
     private String path;
+    private String traceId;
+    private String errorCode;
 
     /**
      * Default constructor.
@@ -37,6 +39,44 @@ public class ErrorResponse {
         this.error = error;
         this.message = message;
         this.path = path;
+    }
+
+    /**
+     * Constructor with status, error, message, path, and timestamp.
+     *
+     * @param status The HTTP status code
+     * @param error The error type
+     * @param message The error message
+     * @param path The request path
+     * @param timestamp The timestamp of the error
+     */
+    public ErrorResponse(int status, String error, String message, String path, LocalDateTime timestamp) {
+        this.status = status;
+        this.error = error;
+        this.message = message;
+        this.path = path;
+        this.timestamp = timestamp;
+    }
+
+    /**
+     * Constructor with status, error, message, path, timestamp, traceId, and errorCode.
+     *
+     * @param status The HTTP status code
+     * @param error The error type
+     * @param message The error message
+     * @param path The request path
+     * @param timestamp The timestamp of the error
+     * @param traceId The trace ID for debugging
+     * @param errorCode The error code
+     */
+    public ErrorResponse(int status, String error, String message, String path, LocalDateTime timestamp, String traceId, String errorCode) {
+        this.status = status;
+        this.error = error;
+        this.message = message;
+        this.path = path;
+        this.timestamp = timestamp;
+        this.traceId = traceId;
+        this.errorCode = errorCode;
     }
 
     /**
@@ -127,6 +167,42 @@ public class ErrorResponse {
      */
     public void setPath(String path) {
         this.path = path;
+    }
+
+    /**
+     * Gets the trace ID.
+     *
+     * @return The trace ID
+     */
+    public String getTraceId() {
+        return traceId;
+    }
+
+    /**
+     * Sets the trace ID.
+     *
+     * @param traceId The trace ID
+     */
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    /**
+     * Gets the error code.
+     *
+     * @return The error code
+     */
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    /**
+     * Sets the error code.
+     *
+     * @param errorCode The error code
+     */
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
     }
 }
 
