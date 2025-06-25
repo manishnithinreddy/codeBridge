@@ -3,6 +3,7 @@ package com.codebridge.core.ratelimit;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
+import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.Refill;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import io.github.bucket4j.grid.jcache.JCacheProxyManager;
@@ -93,7 +94,9 @@ public class RateLimiterConfig {
      * @return The bucket
      */
     public Bucket resolveBucket(ProxyManager<String> proxyManager, Bandwidth bandwidth, String key) {
-        return proxyManager.builder().build(key, () -> bandwidth);
+        BucketConfiguration configuration = BucketConfiguration.builder()
+                .addLimit(bandwidth)
+                .build();
+        return proxyManager.builder().build(key, () -> configuration);
     }
 }
-
