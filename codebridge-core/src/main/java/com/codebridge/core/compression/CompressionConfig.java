@@ -6,6 +6,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Configuration for request and response compression.
@@ -32,10 +33,9 @@ public class CompressionConfig {
         return factory -> {
             Compression compression = new Compression();
             compression.setEnabled(compressionEnabled);
-            compression.setMinResponseSize(minResponseSize);
+            compression.setMinResponseSize(DataSize.ofBytes(minResponseSize));
             compression.setMimeTypes(mimeTypes);
             factory.setCompression(compression);
         };
     }
 }
-
