@@ -1,5 +1,6 @@
 package com.codebridge.core.exception;
 
+import com.codebridge.common.exception.ErrorResponse;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,4 +111,3 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.REQUEST_TIMEOUT);
     }
 }
-
