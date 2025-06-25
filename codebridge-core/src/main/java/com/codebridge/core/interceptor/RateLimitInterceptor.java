@@ -1,7 +1,7 @@
 package com.codebridge.core.interceptor;
 
 import com.codebridge.core.config.RateLimiterConfig;
-import com.codebridge.core.exception.ErrorResponse;
+import com.codebridge.common.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -97,4 +97,3 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
     }
 }
-
