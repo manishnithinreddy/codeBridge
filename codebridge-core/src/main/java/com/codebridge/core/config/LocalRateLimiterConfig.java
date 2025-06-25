@@ -18,11 +18,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Configuration for rate limiting.
+ * Configuration for local in-memory rate limiting.
  * Uses Bucket4j for token bucket algorithm implementation.
  */
 @Configuration
-public class RateLimiterConfig {
+public class LocalRateLimiterConfig {
 
     @Value("${rate-limiter.default-capacity:100}")
     private int defaultCapacity;
