@@ -12,10 +12,10 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 
 /**
- * Configuration for circuit breakers using Resilience4j.
+ * Configuration for reactive circuit breakers using Resilience4j.
  */
 @Configuration
-public class CircuitBreakerConfig {
+public class ReactiveCircuitBreakerConfig {
 
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer(
@@ -30,4 +30,3 @@ public class CircuitBreakerConfig {
                 .build());
     }
 }
-
