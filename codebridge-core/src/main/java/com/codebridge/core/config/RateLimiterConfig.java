@@ -85,9 +85,6 @@ public class RateLimiterConfig {
     private Bucket createBucket(int capacity, int refillTokens, int refillDuration) {
         Refill refill = Refill.intervally(refillTokens, Duration.ofSeconds(refillDuration));
         Bandwidth limit = Bandwidth.classic(capacity, refill);
-        BucketConfiguration configuration = BucketConfiguration.builder()
-                .addLimit(limit)
-                .build();
         return Bucket4j.builder().addLimit(limit).build();
     }
 }
