@@ -1,6 +1,6 @@
 package com.codebridge.core.interceptor;
 
-import com.codebridge.core.config.RateLimiterConfig;
+import com.codebridge.core.config.LocalRateLimiterConfig;
 import com.codebridge.common.exception.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.bucket4j.Bucket;
@@ -29,11 +29,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
     private static final String RATE_LIMIT_RETRY_AFTER_HEADER = "X-Rate-Limit-Retry-After-Seconds";
 
-    private final RateLimiterConfig rateLimiterConfig;
+    private final LocalRateLimiterConfig rateLimiterConfig;
     private final ObjectMapper objectMapper;
     private final String keyPrefix;
 
-    public RateLimitInterceptor(RateLimiterConfig rateLimiterConfig, ObjectMapper objectMapper, String keyPrefix) {
+    public RateLimitInterceptor(LocalRateLimiterConfig rateLimiterConfig, ObjectMapper objectMapper, String keyPrefix) {
         this.rateLimiterConfig = rateLimiterConfig;
         this.objectMapper = objectMapper;
         this.keyPrefix = keyPrefix;
