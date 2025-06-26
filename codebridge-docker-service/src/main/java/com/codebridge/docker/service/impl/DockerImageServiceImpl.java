@@ -5,11 +5,11 @@ import com.codebridge.docker.service.DockerImageService;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.BuildImageResultCallback;
 import com.github.dockerjava.api.command.PullImageResultCallback;
-import com.github.dockerjava.api.command.PushImageResultCallback;
 import com.github.dockerjava.api.exception.DockerException;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.SearchItem;
+import com.github.dockerjava.core.command.PushImageResultCallback;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
