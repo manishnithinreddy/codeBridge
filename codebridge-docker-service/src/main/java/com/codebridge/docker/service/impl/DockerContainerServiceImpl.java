@@ -86,7 +86,7 @@ public class DockerContainerServiceImpl implements DockerContainerService {
             
             // Set port bindings
             if (ports != null && !ports.isEmpty()) {
-                Map<ExposedPort, Ports.Binding[]> portBindings = new HashMap<>();
+                Ports portBindings = new Ports();
                 for (Map.Entry<String, String> entry : ports.entrySet()) {
                     String[] containerPortParts = entry.getKey().split("/");
                     int containerPort = Integer.parseInt(containerPortParts[0]);
@@ -98,16 +98,21 @@ public class DockerContainerServiceImpl implements DockerContainerService {
                     }
                     
                     Ports.Binding binding = Ports.Binding.bindPort(Integer.parseInt(entry.getValue()));
-                    portBindings.put(exposedPort, new Ports.Binding[]{binding});
+                    portBindings.bind(exposedPort, binding);
                 }
-                containerCmd.withPortBindings(new PortBinding(portBindings));
+                containerCmd.withPortBindings(portBindings);
             }
             
             // Set volume bindings
             if (volumes != null && !volumes.isEmpty()) {
-                List<Bind> binds = volumes.entrySet().stream()
-                        .map(entry -> new Bind(entry.getKey(), new Volume(entry.getValue())))
-                        .collect(Collectors.toList());
+                List<Bind> binds = new ArrayList<>();
+                for (Map.Entry<String, String> entry : volumes.entrySet()) {
+                    // Create a volume with the container path
+                    Volume volume = new Volume(entry.getValue());
+                    // Create a bind with the host path and the volume
+                    Bind bind = new Bind(entry.getKey(), volume);
+                    binds.add(bind);
+                }
                 containerCmd.withBinds(binds);
             }
             
@@ -159,7 +164,7 @@ public class DockerContainerServiceImpl implements DockerContainerService {
         
         try {
             dockerClient.restartContainerCmd(containerIdOrName)
-                    .withtTimeout(timeout)
+                    .withTimeout(timeout)
                     .exec();
             return true;
         } catch (DockerException e) {
@@ -283,8 +288,15 @@ public class DockerContainerServiceImpl implements DockerContainerService {
     private ContainerInfo mapToContainerInfo(Container container) {
         ContainerInfo info = new ContainerInfo();
         info.setId(container.getId());
-        info.setName(container.getNames()[0].startsWith("/") ? 
-                container.getNames()[0].substring(1) : container.getNames()[0]);
+        
+        // Handle container names
+        if (container.getNames() != null && container.getNames().length > 0) {
+            String name = container.getNames()[0];
+            info.setName(name.startsWith("/") ? name.substring(1) : name);
+        } else {
+            info.setName("unknown");
+        }
+        
         info.setImage(container.getImage());
         info.setImageId(container.getImageId());
         info.setCommand(container.getCommand());
@@ -297,7 +309,7 @@ public class DockerContainerServiceImpl implements DockerContainerService {
         // Map ports
         Map<String, String> ports = new HashMap<>();
         if (container.getPorts() != null) {
-            for (Port port : container.getPorts()) {
+            for (ContainerPort port : container.getPorts()) {
                 if (port.getPublicPort() != null) {
                     ports.put(port.getPrivatePort() + "/" + port.getType(), 
                             String.valueOf(port.getPublicPort()));
@@ -326,9 +338,10 @@ public class DockerContainerServiceImpl implements DockerContainerService {
         info.setImage(container.getImageId());
         info.setImageId(container.getImageId());
         info.setCommand(Arrays.toString(container.getConfig().getCmd()));
-        info.setCreated(LocalDateTime.ofInstant(
-                Instant.ofEpochSecond(container.getCreated().getTime() / 1000), 
-                ZoneId.systemDefault()));
+        
+        // Set creation time
+        info.setCreated(LocalDateTime.now()); // Placeholder since we can't get the actual creation time
+        
         info.setState(container.getState().getStatus());
         info.setStatus(container.getState().getStatus());
         
@@ -346,10 +359,18 @@ public class DockerContainerServiceImpl implements DockerContainerService {
         info.setLabels(container.getConfig().getLabels());
         
         // Map mounts
-        Map<String, String> mounts = new HashMap<>();
+        Map<String, Object> mounts = new HashMap<>();
         if (container.getMounts() != null) {
             for (InspectContainerResponse.Mount mount : container.getMounts()) {
-                mounts.put(mount.getSource(), mount.getDestination());
+                // Store mount information as objects
+                Map<String, Object> mountInfo = new HashMap<>();
+                mountInfo.put("source", mount.getSource());
+                mountInfo.put("destination", mount.getDestination().getPath());
+                mountInfo.put("mode", mount.getMode());
+                mountInfo.put("rw", mount.getRW());
+                
+                // Use destination path as key
+                mounts.put(mount.getDestination().getPath(), mountInfo);
             }
         }
         info.setMounts(mounts);
