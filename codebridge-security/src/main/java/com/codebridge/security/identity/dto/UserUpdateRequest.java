@@ -7,26 +7,24 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Data Transfer Object for User update requests.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserUpdateRequest {
-    @Size(max = 50)
-    @Email
-    private String email;
     
+    @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
     private String firstName;
     
+    @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
     private String lastName;
     
-    private String phoneNumber;
+    @Email(message = "Email should be valid")
+    private String email;
     
-    private String profileImageUrl;
-    
-    private String currentPassword;
-    
-    @Size(min = 6, max = 40)
-    private String newPassword;
+    private Boolean mfaEnabled;
 }
 

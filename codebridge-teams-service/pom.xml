@@ -3,21 +3,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>com.codebridge</groupId>
+        <artifactId>codebridge-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../codebridge-parent</relativePath>
     </parent>
-    <groupId>com.codebridge</groupId>
-    <artifactId>teams-service</artifactId>
+    <artifactId>codebridge-teams-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>CodeBridge Teams Service</name>
     <description>Team management service for CodeBridge</description>
-    
-    <properties>
-        <java.version>17</java.version>
-        <spring-cloud.version>2022.0.4</spring-cloud.version>
-    </properties>
     
     <dependencies>
         <!-- Spring Boot Starters -->
@@ -62,6 +56,17 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- CodeBridge Common -->
+        <dependency>
+            <groupId>com.codebridge</groupId>
+            <artifactId>codebridge-common</artifactId>
+        </dependency>
         
         <!-- Lombok -->
         <dependency>
@@ -80,7 +85,6 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.1.0</version>
         </dependency>
         
         <!-- Testing -->
@@ -96,18 +100,6 @@
         </dependency>
     </dependencies>
     
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-    
     <build>
         <plugins>
             <plugin>
@@ -122,6 +114,22 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
+
