@@ -5,19 +5,25 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.codebridge</groupId>
-        <artifactId>codebridge-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
-        <relativePath>../codebridge-parent</relativePath>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
+    <groupId>com.codebridge</groupId>
     <artifactId>codebridge-gateway-service</artifactId>
     <version>1.0.0</version>
     <name>CodeBridge Gateway Service</name>
     <description>Unified Gateway Service combining API Gateway, Gateway, and Service Discovery for the CodeBridge platform</description>
 
     <properties>
+        <java.version>21</java.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
         <jjwt.version>0.11.5</jjwt.version>
+        <springdoc.version>2.2.0</springdoc.version>
+        <bucket4j.version>7.6.0</bucket4j.version>
+        <start-class>com.codebridge.gateway.GatewayServiceApplication</start-class>
     </properties>
 
     <dependencies>
@@ -82,10 +88,12 @@
         <dependency>
             <groupId>com.github.vladimir-bukhtoyarov</groupId>
             <artifactId>bucket4j-core</artifactId>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.vladimir-bukhtoyarov</groupId>
             <artifactId>bucket4j-jcache</artifactId>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.cache</groupId>
@@ -115,6 +123,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
         
         <!-- Utilities -->
@@ -142,12 +151,26 @@
         </dependency>
     </dependencies>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.2.0</version>
                 <configuration>
+                    <mainClass>com.codebridge.gateway.GatewayServiceApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

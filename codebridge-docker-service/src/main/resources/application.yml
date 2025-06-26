@@ -8,6 +8,8 @@ spring:
     name: codebridge-docker-service
   profiles:
     active: dev
+  main:
+    allow-bean-definition-overriding: true
 
 docker:
   api:
