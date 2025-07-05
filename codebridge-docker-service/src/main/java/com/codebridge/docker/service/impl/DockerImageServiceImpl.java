@@ -3,6 +3,7 @@ package com.codebridge.docker.service.impl;
 import com.codebridge.docker.model.ImageInfo;
 import com.codebridge.docker.service.DockerImageService;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.BuildImageCmd;
 import com.github.dockerjava.api.command.BuildImageResultCallback;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.exception.DockerException;
@@ -163,12 +164,18 @@ public class DockerImageServiceImpl implements DockerImageService {
             
             BuildImageResultCallback callback = new BuildImageResultCallback();
             
-            String imageId = dockerClient.buildImageCmd()
+            BuildImageCmd buildCmd = dockerClient.buildImageCmd()
                     .withDockerfile(new File(dockerfilePath))
-                    .withTags(Collections.singleton(fullImageName))
-                    .withBuildArgs(buildArgs)
-                    .exec(callback)
-                    .awaitImageId();
+                    .withTags(Collections.singleton(fullImageName));
+            
+            // Add build args individually for compatibility
+            if (buildArgs != null && !buildArgs.isEmpty()) {
+                for (Map.Entry<String, String> entry : buildArgs.entrySet()) {
+                    buildCmd.withBuildArg(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            String imageId = buildCmd.exec(callback).awaitImageId();
             
             return getImage(imageId);
         } catch (DockerException e) {
@@ -214,6 +221,16 @@ public class DockerImageServiceImpl implements DockerImageService {
         log.info("Getting history for image: {}", imageIdOrName);
         
         try {
+            // Note: historyCmd was removed in newer docker-java versions
+            // For now, return basic image information instead
+            var imageResponse = dockerClient.inspectImageCmd(imageIdOrName).exec();
+            Map<String, Object> historyMap = new HashMap<>();
+            historyMap.put("id", imageResponse.getId());
+            historyMap.put("created", imageResponse.getCreated());
+            historyMap.put("size", imageResponse.getSize());
+            historyMap.put("comment", "Image inspection (history API not available)");
+            return Collections.singletonList(historyMap);
+            /*
             return dockerClient.historyCmd(imageIdOrName)
                     .exec()
                     .stream()
@@ -228,6 +245,7 @@ public class DockerImageServiceImpl implements DockerImageService {
                         return historyMap;
                     })
                     .collect(Collectors.toList());
+            */
         } catch (DockerException e) {
             log.error("Error getting history for image: {}", imageIdOrName, e);
             return Collections.emptyList();
@@ -249,7 +267,8 @@ public class DockerImageServiceImpl implements DockerImageService {
                         resultMap.put("name", item.getName());
                         resultMap.put("description", item.getDescription());
                         resultMap.put("official", item.isOfficial());
-                        resultMap.put("automated", item.isAutomated());
+                        // Note: isAutomated() method removed in newer docker-java versions
+                        resultMap.put("automated", false);
                         resultMap.put("starCount", item.getStarCount());
                         return resultMap;
                     })
@@ -282,4 +301,3 @@ public class DockerImageServiceImpl implements DockerImageService {
         return info;
     }
 }
-

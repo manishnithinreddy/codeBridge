@@ -1,19 +1,31 @@
-FROM eclipse-temurin:17-jdk-alpine as build
-WORKDIR /workspace/app
+FROM openjdk:21-jdk-slim as builder
 
-COPY mvnw .
-COPY .mvn .mvn
+WORKDIR /app
+
+# Copy Maven files
 COPY pom.xml .
-COPY src src
+COPY src ./src
 
-RUN ./mvnw install -DskipTests
-RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+# Install Maven
+RUN apt-get update && apt-get install -y maven
 
-FROM eclipse-temurin:17-jre-alpine
-VOLUME /tmp
-ARG DEPENDENCY=/workspace/app/target/dependency
-COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
-COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
-COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","com.codebridge.server.ServerServiceApplication"]
+# Build the application
+RUN mvn clean package -DskipTests
 
+# Runtime stage
+FROM openjdk:21-jre-slim
+
+WORKDIR /app
+
+# Copy the built JAR file
+COPY --from=builder /app/target/codebridge-server-service-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose port
+EXPOSE 8088
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8088/actuator/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

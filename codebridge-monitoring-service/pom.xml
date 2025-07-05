@@ -12,7 +12,6 @@
     </parent>
 
     <artifactId>codebridge-monitoring-service</artifactId>
-    <version>1.0.0</version>
     <name>CodeBridge Monitoring Service</name>
     <description>Unified monitoring, performance, platform operations, and high availability service for CodeBridge platform</description>
 

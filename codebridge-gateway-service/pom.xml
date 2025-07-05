@@ -13,7 +13,6 @@
 
     <groupId>com.codebridge</groupId>
     <artifactId>codebridge-gateway-service</artifactId>
-    <version>1.0.0</version>
     <name>CodeBridge Gateway Service</name>
     <description>Unified Gateway Service combining API Gateway, Gateway, and Service Discovery for the CodeBridge platform</description>
 
@@ -197,4 +196,3 @@
         </plugins>
     </build>
 </project>
-

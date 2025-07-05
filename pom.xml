@@ -28,7 +28,7 @@
         <bucket4j.version>7.6.0</bucket4j.version>
         <swagger-parser.version>2.1.16</swagger-parser.version>
         <openapi-generator.version>7.0.1</openapi-generator.version>
-        <swagger-codegen.version>3.0.46</swagger-codegen.version>
+        <swagger-codegen.version>3.0.68</swagger-codegen.version>
         <asciidoctor.version>2.5.7</asciidoctor.version>
         <commonmark.version>0.21.0</commonmark.version>
         <jgit.version>6.5.0.202303070854-r</jgit.version>
