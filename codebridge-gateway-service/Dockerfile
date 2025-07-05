@@ -18,7 +18,7 @@ FROM openjdk:21-jre-slim
 WORKDIR /app
 
 # Copy the built JAR file
-COPY --from=builder /app/target/codebridge-gateway-service-1.0.0.jar app.jar
+COPY --from=builder /app/target/codebridge-gateway-service-3.2.0.jar app.jar
 
 # Expose port
 EXPOSE 8080
@@ -29,4 +29,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
-

@@ -1,99 +1,259 @@
 # CodeBridge Platform
 
-CodeBridge is a comprehensive development platform that integrates various development tools and services into a unified ecosystem. It provides a unified interface for managing code repositories, CI/CD pipelines, containers, databases, documentation, and team collaboration.
+CodeBridge is a cross-platform plugin ecosystem that integrates daily-use tools and features directly into your IDE, reducing context switching and improving developer productivity.
 
-## Architecture Overview
+## 🚀 Services Overview
 
-The CodeBridge platform follows a microservices architecture with the following components:
+The CodeBridge platform consists of multiple microservices:
 
-### Core Infrastructure
+### Java Services (Spring Boot)
+- **Gateway Service** (Port 8080) - API Gateway and routing
+- **Docker Service** (Port 8082) - Docker container management
+- **GitLab Service** (Port 8086) - GitLab integration and Git operations
+- **Documentation Service** (Port 8087) - Documentation management
+- **Server Service** (Port 8088) - Server management and SSH access
 
-- **Gateway Service** (`codebridge-gateway-service`): Centralized entry point for all client requests, handling routing, load balancing, and service discovery.
-- **Identity Platform** (`codebridge-identity-platform`): User identity management, authentication, and SSO.
-- **Security** (`codebridge-security`): Security components, authentication, and authorization.
+### Go Services
+- **Session Service** (Port 8083) - Session management
+- **DB Service** (Port 8084) - Database operations
 
-### Development Tools
+### Python Services
+- **AI Service** (Port 8085) - AI-powered database query conversion
 
-- **GitLab Service** (`codebridge-gitlab-service`): Integration with GitLab for project management, pipelines, and jobs.
-- **Docker Service** (`codebridge-docker-service`): Integration with Docker for container management, images, and registries.
-- **Documentation Service** (`codebridge-documentation-service`): API documentation generation, versioning, and publishing.
+### Infrastructure
+- **PostgreSQL** (Port 5432) - Primary database
+- **Redis** (Port 6379) - Caching and session storage
 
-### Database and AI Services
+## 📋 Prerequisites
 
-- **DB Service** (`db-service`): Go implementation for database connection management and query execution.
-- **AI Service** (`ai-service`): Python implementation for AI-powered database interactions.
+- **Java 21** (OpenJDK or Oracle JDK)
+- **Maven 3.8+**
+- **Docker & Docker Compose**
+- **Go 1.19+** (for Go services)
+- **Python 3.9+** (for AI service)
 
-### Session and Server Management
+## 🛠️ Building the Project
 
-- **Session Service** (`session-service`): Go implementation for session management.
-- **Server Service** (`codebridge-server-service`): Server provisioning and management.
+### Quick Build
 
-### Team Collaboration
+Use the provided build script to compile all Java services:
 
-- **Teams Service** (`codebridge-teams-service`): Team management and collaboration.
+```bash
+chmod +x build-services.sh
+./build-services.sh
+```
 
-### Monitoring and Performance
+### Manual Build
 
-- **Monitoring Service** (`codebridge-monitoring-service`): Consolidated monitoring service including performance monitoring.
+1. **Set Java Version** (using SDKMAN):
+```bash
+sdk use java 21.0.5-tem
+```
 
-## Technology Stack
+2. **Build Core Services**:
+```bash
+mvn clean compile -DskipTests -pl codebridge-common,codebridge-core,codebridge-security,codebridge-gateway-service,codebridge-gitlab-service,codebridge-docker-service,codebridge-documentation-service,codebridge-server-service
+```
 
-- **Java**: Primary implementation language for most services (Spring Boot)
-- **Go**: Implementation for performance-critical services (DB Service, Session Service)
-- **Python**: Implementation for AI-related services
-- **Redis**: For caching and session storage
-- **PostgreSQL**: For persistent storage
-- **Docker & Kubernetes**: For containerization and orchestration
+3. **Package JAR Files**:
+```bash
+mvn clean package -DskipTests -Dmaven.test.skip=true -pl codebridge-common,codebridge-core,codebridge-security,codebridge-gateway-service,codebridge-gitlab-service,codebridge-docker-service,codebridge-documentation-service,codebridge-server-service
+```
 
-## Getting Started
+## 🐳 Running with Docker
 
-### Prerequisites
-
-- Docker and Docker Compose
-- Java 17 or higher
-- Go 1.21 or higher
-- Python 3.10 or higher
-
-### Running with Docker Compose
-
-The easiest way to run the platform is using Docker Compose:
+### Start All Services
 
 ```bash
 docker-compose up -d
 ```
 
-This will start all services and their dependencies.
+### Start Specific Services
 
-### Building and Running Manually
+```bash
+# Start only infrastructure
+docker-compose up -d postgres redis
 
-To build and run the services manually, refer to the README.md file in each service directory.
+# Start Java services
+docker-compose up -d gateway-service docker-service gitlab-service documentation-service server-service
 
-## Service Endpoints
+# Start Go services
+docker-compose up -d session-service db-service
 
-- Gateway Service: http://localhost:8080
-- GitLab Service: http://localhost:8081/api/gitlab
-- Docker Service: http://localhost:8082/api/docker
-- Session Service: http://localhost:8083/api/session
-- DB Service: http://localhost:8084/api/db
-- AI Service: http://localhost:8085/api/ai
-- Documentation Service: http://localhost:8087/api/docs
-- Monitoring Service: http://localhost:8088/monitoring
-- Teams Service: http://localhost:8089/teams
-- Identity Platform: http://localhost:8090/identity
+# Start Python services
+docker-compose up -d ai-service
+```
 
-## API Documentation
+### View Logs
 
-Each service provides Swagger/OpenAPI documentation at its `/swagger-ui.html` endpoint.
+```bash
+# All services
+docker-compose logs -f
 
-## Multi-Language Implementation Strategy
+# Specific service
+docker-compose logs -f gateway-service
+```
 
-The platform employs a polyglot strategy with services implemented in different languages:
+### Stop Services
 
-- **Java**: Primary implementation language for most services
-- **Go**: Implementation for performance-critical services (DB Service, Session Service)
-- **Python**: Implementation for AI-related services
+```bash
+docker-compose down
+```
 
-This strategy allows for:
-1. Optimizing performance-critical services with Go
-2. Leveraging Python's strengths for AI and machine learning
-3. Using Java's ecosystem for enterprise features
+## 🔧 Running Individual Services
+
+### Java Services
+
+```bash
+# Gateway Service
+java -jar codebridge-gateway-service/target/codebridge-gateway-service-3.2.0.jar
+
+# Docker Service
+java -jar codebridge-docker-service/target/codebridge-docker-service-0.0.1-SNAPSHOT.jar
+
+# GitLab Service
+java -jar codebridge-gitlab-service/target/codebridge-gitlab-service-0.0.1-SNAPSHOT.jar
+
+# Documentation Service
+java -jar codebridge-documentation-service/target/codebridge-documentation-service-0.0.1-SNAPSHOT.jar
+
+# Server Service
+java -jar codebridge-server-service/target/codebridge-server-service-0.0.1-SNAPSHOT.jar
+```
+
+### Environment Variables
+
+Each service can be configured using environment variables:
+
+```bash
+# Database Configuration
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/codebridge
+SPRING_DATASOURCE_USERNAME=codebridge
+SPRING_DATASOURCE_PASSWORD=codebridge
+
+# Redis Configuration
+SPRING_REDIS_HOST=localhost
+SPRING_REDIS_PORT=6379
+
+# Profile
+SPRING_PROFILES_ACTIVE=prod
+```
+
+## 🗄️ Database Setup
+
+The PostgreSQL database is automatically initialized with:
+
+- **codebridge_git** - Git operations data
+- **codebridge_docker** - Docker container data
+- **codebridge_server** - Server management data
+- **codebridge_api** - API testing data
+
+UUID extensions are enabled for all databases.
+
+## 🔍 Health Checks
+
+All services include health check endpoints:
+
+- Gateway Service: http://localhost:8080/actuator/health
+- Docker Service: http://localhost:8082/actuator/health
+- GitLab Service: http://localhost:8086/actuator/health
+- Documentation Service: http://localhost:8087/actuator/health
+- Server Service: http://localhost:8088/actuator/health
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Gateway       │    │   Docker        │    │   GitLab        │
+│   Service       │    │   Service       │    │   Service       │
+│   (Port 8080)   │    │   (Port 8082)   │    │   (Port 8086)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Documentation  │    │   Server        │    │   Session       │
+│   Service       │    │   Service       │    │   Service (Go)  │
+│   (Port 8087)   │    │   (Port 8088)   │    │   (Port 8083)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+┌─────────────────┐    ┌─────────────────┐
+│   DB Service    │    │   AI Service    │
+│   (Go)          │    │   (Python)      │
+│   (Port 8084)   │    │   (Port 8085)   │
+└─────────────────┘    └─────────────────┘
+         │                       │
+         └───────────────────────┘
+                 │
+    ┌─────────────────┐    ┌─────────────────┐
+    │   PostgreSQL    │    │     Redis       │
+    │   (Port 5432)   │    │   (Port 6379)   │
+    └─────────────────┘    └─────────────────┘
+```
+
+## 🔧 Development
+
+### Adding New Services
+
+1. Create service directory following the naming convention
+2. Add service configuration to `docker-compose.yml`
+3. Update build scripts and documentation
+4. Ensure proper health checks and logging
+
+### Testing
+
+```bash
+# Run tests for specific service
+mvn test -pl codebridge-gateway-service
+
+# Run all tests
+mvn test
+```
+
+## 📝 Features
+
+- **GitLab Integration** - Repository management, CI/CD pipelines
+- **Docker Management** - Container lifecycle, image management
+- **API Testing** - REST API testing and validation
+- **Server Session Management** - Secure server access without credential sharing
+- **AI Database Agent** - Natural language to SQL query conversion
+- **Team Collaboration** - Shared access and team management
+- **Documentation** - Integrated documentation management
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+1. **Java Version Mismatch**: Ensure Java 21 is installed and active
+2. **Port Conflicts**: Check if ports are already in use
+3. **Docker Issues**: Ensure Docker daemon is running
+4. **Database Connection**: Verify PostgreSQL is running and accessible
+
+### Logs
+
+Check service logs for detailed error information:
+
+```bash
+# Docker logs
+docker-compose logs [service-name]
+
+# Application logs
+tail -f logs/application.log
+```
+
+For more help, please check the documentation or create an issue in the repository.
+

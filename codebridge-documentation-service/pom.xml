@@ -12,7 +12,6 @@
     </parent>
 
     <artifactId>codebridge-documentation-service</artifactId>
-    <version>1.0.0</version>
     <name>CodeBridge Documentation Service</name>
     <description>API Documentation and Developer Experience Service for CodeBridge</description>
 
@@ -86,10 +85,7 @@
             <artifactId>swagger-parser</artifactId>
             <version>${swagger-parser.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.swagger.codegen.v3</groupId>
-            <artifactId>swagger-codegen-core</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>openapi-generator-core</artifactId>

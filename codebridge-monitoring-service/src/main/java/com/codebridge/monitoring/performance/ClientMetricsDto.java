@@ -1,4 +1,4 @@
-package com.codebridge.performance.dto;
+package com.codebridge.monitoring.performance.dto;
 
 import lombok.Data;
 
@@ -48,4 +48,3 @@ public class ClientMetricsDto {
     // Custom metrics
     private Map<String, Double> customMetrics;
 }
-
