@@ -63,5 +63,54 @@ public class SharedStash extends BaseEntity {
      */
     @Column(name = "branch")
     private String branch;
+    
+    // Manual setters in case Lombok is not working
+    public void setStashHash(String stashHash) {
+        this.stashHash = stashHash;
+    }
+    
+    public void setRepository(Repository repository) {
+        this.repository = repository;
+    }
+    
+    public void setSharedBy(String sharedBy) {
+        this.sharedBy = sharedBy;
+    }
+    
+    public void setSharedAt(LocalDateTime sharedAt) {
+        this.sharedAt = sharedAt;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
+    
+    // Manual getters in case Lombok is not working
+    public String getStashHash() {
+        return stashHash;
+    }
+    
+    public Repository getRepository() {
+        return repository;
+    }
+    
+    public String getSharedBy() {
+        return sharedBy;
+    }
+    
+    public LocalDateTime getSharedAt() {
+        return sharedAt;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public String getBranch() {
+        return branch;
+    }
 }
-

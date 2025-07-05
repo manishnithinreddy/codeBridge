@@ -1,4 +1,4 @@
-package com.codebridge.identity.platform.dto;
+package com.codebridge.security.identity.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -26,5 +26,21 @@ public class UserUpdateRequest {
     private String email;
     
     private Boolean mfaEnabled;
-}
 
+    // Manual getter methods
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Boolean getMfaEnabled() {
+        return mfaEnabled;
+    }
+}

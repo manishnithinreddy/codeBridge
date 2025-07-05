@@ -18,5 +18,21 @@ public class AuthRequest {
     
     @NotBlank(message = "Personal access token is required")
     private String personalAccessToken;
+    
+    // Manual getters in case Lombok is not working
+    public String getUsername() {
+        return username;
+    }
+    
+    public String getPersonalAccessToken() {
+        return personalAccessToken;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
+    public void setPersonalAccessToken(String personalAccessToken) {
+        this.personalAccessToken = personalAccessToken;
+    }
 }
-

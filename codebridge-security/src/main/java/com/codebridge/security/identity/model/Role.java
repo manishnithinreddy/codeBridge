@@ -1,4 +1,4 @@
-package com.codebridge.identity.platform.model;
+package com.codebridge.security.identity.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,4 +33,3 @@ public class Role {
         ROLE_TEAM_ADMIN
     }
 }
-

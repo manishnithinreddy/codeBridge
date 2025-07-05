@@ -20,5 +20,9 @@ public class ApiKeyScopeUpdateRequest {
 
     @NotEmpty(message = "Scopes cannot be empty")
     private Set<String> scopes = new HashSet<>();
-}
 
+    // Manual getter for scopes field
+    public Set<String> getScopes() {
+        return scopes;
+    }
+}

@@ -130,5 +130,89 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
-}
 
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    // Manual getter for roles field
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    // Manual getter for id field
+    public Long getId() {
+        return id;
+    }
+
+    // Manual getter for failedAttempts field
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    // Manual getter for mfaEnabled field
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    // Manual getter for email field
+    public String getEmail() {
+        return email;
+    }
+
+    // Manual getter for mfaSecret field
+    public String getMfaSecret() {
+        return mfaSecret;
+    }
+
+    // Manual setter for mfaSecret field
+    public void setMfaSecret(String mfaSecret) {
+        this.mfaSecret = mfaSecret;
+    }
+
+    // Manual setter for mfaEnabled field
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
+    // Manual getter for createdAt field
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    // Manual getter for updatedAt field
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    // Manual getter for firstName field
+    public String getFirstName() {
+        return firstName;
+    }
+
+    // Manual getter for lastName field
+    public String getLastName() {
+        return lastName;
+    }
+
+    // Manual setter for firstName field
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    // Manual setter for lastName field
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    // Manual setter for email field
+    public void setEmail(String email) {
+        this.email = email;
+    }
+}

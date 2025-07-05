@@ -3,6 +3,8 @@ package com.codebridge.security.audit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +30,7 @@ import java.util.UUID;
 @Slf4j
 public class AuditLogger {
 
+    private static final Logger log = LoggerFactory.getLogger(AuditLogger.class);
     private final ObjectMapper objectMapper;
     
     @Value("${security.audit.enabled:true}")
@@ -96,4 +99,3 @@ public class AuditLogger {
         logSecurityEvent(eventType, message, null);
     }
 }
-

@@ -152,7 +152,7 @@ public class LoggingFilter implements GlobalFilter, Ordered {
                                     
                                     byte[] bytes = new byte[buffer.readableByteCount()];
                                     buffer.read(bytes);
-                                    buffer.rewind(bytes.length);
+                                    buffer.readPosition(0); // Reset read position to beginning
                                     
                                     String bodyContent = new String(bytes, StandardCharsets.UTF_8);
                                     
@@ -182,4 +182,3 @@ public class LoggingFilter implements GlobalFilter, Ordered {
         return Ordered.HIGHEST_PRECEDENCE + 500;
     }
 }
-

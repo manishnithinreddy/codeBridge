@@ -1,4 +1,4 @@
-package com.codebridge.git.model;
+package com.codebridge.gitlab.git.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -79,5 +79,13 @@ public class GitCredential extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "provider_id", nullable = false)
     private GitProvider provider;
+    
+    // Manual setter in case Lombok is not working
+    public void setProvider(GitProvider provider) {
+        this.provider = provider;
+    }
+    
+    public GitProvider getProvider() {
+        return provider;
+    }
 }
-

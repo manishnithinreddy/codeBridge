@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * DTO for requesting to share a stash.
  */
@@ -27,7 +29,7 @@ public class ShareStashRequest {
      * The ID of the repository that this stash belongs to.
      */
     @NotNull(message = "Repository ID is required")
-    private Long repositoryId;
+    private UUID repositoryId;
 
     /**
      * A description of the stash provided by the user.
@@ -39,5 +41,37 @@ public class ShareStashRequest {
      * The branch that the stash was created from.
      */
     private String branch;
+    
+    // Manual getters and setters in case Lombok is not working
+    public String getStashHash() {
+        return stashHash;
+    }
+    
+    public void setStashHash(String stashHash) {
+        this.stashHash = stashHash;
+    }
+    
+    public UUID getRepositoryId() {
+        return repositoryId;
+    }
+    
+    public void setRepositoryId(UUID repositoryId) {
+        this.repositoryId = repositoryId;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getBranch() {
+        return branch;
+    }
+    
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
 }
-

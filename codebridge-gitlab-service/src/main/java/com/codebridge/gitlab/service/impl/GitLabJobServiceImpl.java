@@ -3,6 +3,8 @@ package com.codebridge.gitlab.service.impl;
 import com.codebridge.gitlab.model.GitLabJob;
 import com.codebridge.gitlab.service.GitLabJobService;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -22,6 +24,8 @@ import java.util.List;
 @Service
 public class GitLabJobServiceImpl implements GitLabJobService {
 
+    private static final Logger log = LoggerFactory.getLogger(GitLabJobServiceImpl.class);
+    
     private final RestTemplate restTemplate;
     private final String gitLabApiBaseUrl;
 
@@ -110,4 +114,3 @@ public class GitLabJobServiceImpl implements GitLabJobService {
         return headers;
     }
 }
-

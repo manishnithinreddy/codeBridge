@@ -1,9 +1,9 @@
-package com.codebridge.identity.platform.controller;
+package com.codebridge.security.identity.controller;
 
-import com.codebridge.identity.platform.dto.OrganizationDto;
-import com.codebridge.identity.platform.dto.OrganizationRequest;
-import com.codebridge.identity.platform.dto.UserDto;
-import com.codebridge.identity.platform.service.OrganizationService;
+import com.codebridge.security.identity.dto.OrganizationDto;
+import com.codebridge.security.identity.dto.OrganizationRequest;
+import com.codebridge.security.identity.dto.UserDto;
+import com.codebridge.security.identity.service.OrganizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -126,4 +126,3 @@ public class OrganizationController {
         return ResponseEntity.ok().build();
     }
 }
-

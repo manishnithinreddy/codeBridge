@@ -18,5 +18,9 @@ import java.util.Set;
 public class ApiKeyIpRestrictionUpdateRequest {
 
     private Set<String> ipRestrictions = new HashSet<>();
-}
 
+    // Manual getter for ipRestrictions field
+    public Set<String> getIpRestrictions() {
+        return ipRestrictions;
+    }
+}

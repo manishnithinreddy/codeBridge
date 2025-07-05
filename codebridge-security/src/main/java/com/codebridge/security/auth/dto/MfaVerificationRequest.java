@@ -23,5 +23,19 @@ public class MfaVerificationRequest {
 
     @NotBlank(message = "MFA code is required")
     private String mfaCode;
-}
 
+    // Manual getter for username field
+    public String getUsername() {
+        return username;
+    }
+
+    // Manual getter for mfaToken field
+    public String getMfaToken() {
+        return mfaToken;
+    }
+
+    // Manual getter for mfaCode field
+    public String getMfaCode() {
+        return mfaCode;
+    }
+}

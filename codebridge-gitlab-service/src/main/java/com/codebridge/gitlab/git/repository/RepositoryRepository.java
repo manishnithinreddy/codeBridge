@@ -1,7 +1,7 @@
-package com.codebridge.git.repository;
+package com.codebridge.gitlab.git.repository;
 
-import com.codebridge.git.model.GitProvider;
-import com.codebridge.git.model.Repository;
+import com.codebridge.gitlab.git.model.GitProvider;
+import com.codebridge.gitlab.git.model.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,4 +33,3 @@ public interface RepositoryRepository extends JpaRepository<Repository, UUID> {
     @Query("SELECT COUNT(r) FROM Repository r WHERE r.teamId = :teamId")
     long countByTeamId(@Param("teamId") UUID teamId);
 }
-

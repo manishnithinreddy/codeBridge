@@ -1,6 +1,6 @@
-package com.codebridge.git.dto;
+package com.codebridge.gitlab.git.dto;
 
-import com.codebridge.git.model.Webhook.WebhookStatus;
+import com.codebridge.gitlab.git.model.Webhook.WebhookStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

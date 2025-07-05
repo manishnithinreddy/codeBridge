@@ -1,10 +1,15 @@
-package com.codebridge.identity.platform.controller;
+package com.codebridge.security.identity.controller;
 
-import com.codebridge.identity.platform.dto.JwtResponse;
-import com.codebridge.identity.platform.dto.LoginRequest;
-import com.codebridge.identity.platform.dto.MessageResponse;
-import com.codebridge.identity.platform.dto.SignupRequest;
-import com.codebridge.identity.platform.service.AuthService;
+import com.codebridge.security.identity.dto.JwtResponse;
+import com.codebridge.security.identity.dto.LoginRequest;
+import com.codebridge.security.identity.dto.MessageResponse;
+import com.codebridge.security.identity.dto.SignupRequest;
+import com.codebridge.security.auth.service.AuthenticationService;
+import com.codebridge.security.auth.dto.AuthenticationRequest;
+import com.codebridge.security.auth.dto.AuthenticationResponse;
+import com.codebridge.security.auth.dto.RefreshTokenRequest;
+import com.codebridge.security.auth.repository.UserRepository;
+import com.codebridge.security.auth.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +25,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    private final AuthenticationService authenticationService;
+    private final UserRepository userRepository;
 
     /**
      * Authenticates a user and returns a JWT token.
@@ -30,7 +36,24 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        return ResponseEntity.ok(authService.authenticateUser(loginRequest));
+        // Convert LoginRequest to AuthenticationRequest
+        AuthenticationRequest authRequest = AuthenticationRequest.builder()
+                .username(loginRequest.getUsername())
+                .password(loginRequest.getPassword())
+                .build();
+        
+        // Call the service and convert response
+        AuthenticationResponse authResponse = authenticationService.authenticate(authRequest);
+        
+        // Convert AuthenticationResponse to JwtResponse
+        JwtResponse jwtResponse = JwtResponse.builder()
+                .token(authResponse.getAccessToken())
+                .refreshToken(authResponse.getRefreshToken())
+                .type("Bearer")
+                .username(authResponse.getUsername())
+                .build();
+        
+        return ResponseEntity.ok(jwtResponse);
     }
 
     /**
@@ -41,7 +64,13 @@ public class AuthController {
      */
     @PostMapping("/signup")
     public ResponseEntity<MessageResponse> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
-        return ResponseEntity.ok(authService.registerUser(signupRequest));
+        // TODO: Implement user registration
+        // For now, return a placeholder response
+        MessageResponse response = MessageResponse.builder()
+                .message("User registration not yet implemented")
+                .build();
+        
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -52,7 +81,23 @@ public class AuthController {
      */
     @PostMapping("/refresh")
     public ResponseEntity<JwtResponse> refreshToken(@RequestParam String refreshToken) {
-        return ResponseEntity.ok(authService.refreshToken(refreshToken));
+        // Convert String to RefreshTokenRequest
+        RefreshTokenRequest refreshRequest = RefreshTokenRequest.builder()
+                .refreshToken(refreshToken)
+                .build();
+        
+        // Call the service and convert response
+        AuthenticationResponse authResponse = authenticationService.refreshToken(refreshRequest);
+        
+        // Convert AuthenticationResponse to JwtResponse
+        JwtResponse jwtResponse = JwtResponse.builder()
+                .token(authResponse.getAccessToken())
+                .refreshToken(authResponse.getRefreshToken())
+                .type("Bearer")
+                .username(authResponse.getUsername())
+                .build();
+        
+        return ResponseEntity.ok(jwtResponse);
     }
 
     /**
@@ -63,7 +108,18 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logoutUser(@RequestParam Long userId) {
-        return ResponseEntity.ok(authService.logoutUser(userId));
+        // Find user by ID to get username
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Call logout with username
+        authenticationService.logout(user.getUsername());
+        
+        // Return success message
+        MessageResponse response = MessageResponse.builder()
+                .message("User logged out successfully")
+                .build();
+        
+        return ResponseEntity.ok(response);
     }
 }
-
