@@ -20,5 +20,13 @@ public class UserRoleRequest {
 
     @NotNull(message = "Role ID is required")
     private Long roleId;
-}
 
+    // Manual getters
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+}

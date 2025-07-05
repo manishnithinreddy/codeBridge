@@ -1,7 +1,7 @@
-package com.codebridge.git.service;
+package com.codebridge.gitlab.git.service;
 
-import com.codebridge.git.dto.GitProviderDto;
-import com.codebridge.git.model.GitProvider.ProviderType;
+import com.codebridge.gitlab.git.dto.GitProviderDto;
+import com.codebridge.gitlab.git.model.GitProvider.ProviderType;
 
 import java.util.List;
 import java.util.UUID;

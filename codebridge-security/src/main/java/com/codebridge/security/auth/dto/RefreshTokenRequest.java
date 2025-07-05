@@ -17,5 +17,9 @@ public class RefreshTokenRequest {
 
     @NotBlank(message = "Refresh token is required")
     private String refreshToken;
-}
 
+    // Manual getter for refreshToken field
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+}

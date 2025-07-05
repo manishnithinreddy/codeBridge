@@ -1,15 +1,14 @@
-package com.codebridge.git.repository;
+package com.codebridge.gitlab.git.repository;
 
-import com.codebridge.git.model.Repository;
-import com.codebridge.git.model.Webhook;
+import com.codebridge.gitlab.git.model.Repository;
+import com.codebridge.gitlab.git.model.Webhook;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
+@org.springframework.stereotype.Repository
 public interface WebhookRepository extends JpaRepository<Webhook, UUID> {
     
     List<Webhook> findByRepository(Repository repository);
@@ -20,4 +19,3 @@ public interface WebhookRepository extends JpaRepository<Webhook, UUID> {
     
     void deleteByRepository(Repository repository);
 }
-

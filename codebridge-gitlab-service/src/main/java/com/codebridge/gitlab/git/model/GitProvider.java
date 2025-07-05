@@ -1,4 +1,4 @@
-package com.codebridge.git.model;
+package com.codebridge.gitlab.git.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -89,4 +89,3 @@ public class GitProvider extends BaseEntity {
     @OneToMany(mappedBy = "provider", fetch = FetchType.LAZY)
     private Set<Repository> repositories = new HashSet<>();
 }
-

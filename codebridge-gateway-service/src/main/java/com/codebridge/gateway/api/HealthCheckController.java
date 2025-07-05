@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.core.ParameterizedTypeReference;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -127,7 +128,7 @@ public class HealthCheckController {
                 .get()
                 .uri("http://" + serviceId + "/actuator/health")
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .timeout(Duration.ofSeconds(5))
                 .onErrorResume(e -> {
                     Map<String, Object> error = new HashMap<>();
@@ -139,4 +140,3 @@ public class HealthCheckController {
                 });
     }
 }
-

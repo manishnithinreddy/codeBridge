@@ -17,5 +17,9 @@ public class ApiKeyRateLimitUpdateRequest {
 
     @Min(value = 1, message = "Rate limit must be at least 1")
     private Integer rateLimit;
-}
 
+    // Manual getter for rateLimit field
+    public Integer getRateLimit() {
+        return rateLimit;
+    }
+}

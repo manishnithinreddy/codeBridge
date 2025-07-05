@@ -3,6 +3,7 @@ package com.codebridge.gitlab.git.service;
 import com.codebridge.gitlab.git.model.SharedStash;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service interface for operations related to shared stashes.
@@ -19,7 +20,7 @@ public interface SharedStashService {
      * @param branch The branch that the stash was created from (optional)
      * @return The created SharedStash entity
      */
-    SharedStash registerSharedStash(String stashHash, Long repositoryId, String description, String sharedBy, String branch);
+    SharedStash registerSharedStash(String stashHash, UUID repositoryId, String description, String sharedBy, String branch);
 
     /**
      * Get all shared stashes for a specific repository.
@@ -27,7 +28,7 @@ public interface SharedStashService {
      * @param repositoryId The ID of the repository to get shared stashes for
      * @return A list of shared stashes for the repository
      */
-    List<SharedStash> getSharedStashes(Long repositoryId);
+    List<SharedStash> getSharedStashes(UUID repositoryId);
 
     /**
      * Get a specific shared stash by its ID.
@@ -35,14 +36,14 @@ public interface SharedStashService {
      * @param id The ID of the shared stash
      * @return The shared stash, if found
      */
-    SharedStash getSharedStash(Long id);
+    SharedStash getSharedStash(UUID id);
 
     /**
      * Delete a shared stash.
      *
      * @param id The ID of the shared stash to delete
      */
-    void deleteSharedStash(Long id);
+    void deleteSharedStash(UUID id);
 
     /**
      * Check if a stash with the given hash exists in the repository.
@@ -51,6 +52,5 @@ public interface SharedStashService {
      * @param repositoryId The ID of the repository to check
      * @return True if the stash exists, false otherwise
      */
-    boolean existsByStashHashAndRepository(String stashHash, Long repositoryId);
+    boolean existsByStashHashAndRepository(String stashHash, UUID repositoryId);
 }
-

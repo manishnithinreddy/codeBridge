@@ -4,6 +4,8 @@ import com.codebridge.gitlab.model.GitLabJob;
 import com.codebridge.gitlab.model.GitLabPipeline;
 import com.codebridge.gitlab.service.GitLabPipelineService;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -25,6 +27,8 @@ import java.util.Map;
 @Service
 public class GitLabPipelineServiceImpl implements GitLabPipelineService {
 
+    private static final Logger log = LoggerFactory.getLogger(GitLabPipelineServiceImpl.class);
+    
     private final RestTemplate restTemplate;
     private final String gitLabApiBaseUrl;
 
@@ -183,4 +187,3 @@ public class GitLabPipelineServiceImpl implements GitLabPipelineService {
         return headers;
     }
 }
-

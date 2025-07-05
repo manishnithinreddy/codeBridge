@@ -1,4 +1,4 @@
-package com.codebridge.git;
+package com.codebridge.gitlab.git;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,4 +12,3 @@ public class GitServiceApplication {
         SpringApplication.run(GitServiceApplication.class, args);
     }
 }
-
