@@ -2,9 +2,12 @@ FROM maven:3.9-eclipse-temurin-21 as builder
 
 WORKDIR /app
 
-# Copy Maven files
-COPY pom.xml .
-COPY src ./src
+# Copy parent pom.xml first (required for dependency resolution)
+COPY pom.xml ./parent-pom.xml
+
+# Copy service pom.xml and source
+COPY codebridge-docker-service/pom.xml .
+COPY codebridge-docker-service/src ./src
 
 # Build the application
 RUN mvn clean package -DskipTests

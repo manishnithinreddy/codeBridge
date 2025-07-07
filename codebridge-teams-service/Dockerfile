@@ -2,11 +2,12 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-# Copy pom.xml first for better caching
-COPY pom.xml .
+# Copy parent pom.xml first (required for dependency resolution)
+COPY pom.xml ./parent-pom.xml
 
-# Copy source code
-COPY src ./src
+# Copy service pom.xml and source
+COPY codebridge-teams-service/pom.xml .
+COPY codebridge-teams-service/src ./src
 
 # Build the application
 RUN mvn clean package -DskipTests

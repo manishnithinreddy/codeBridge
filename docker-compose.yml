@@ -2,8 +2,8 @@ services:
   # Gateway Service
   gateway-service:
     build:
-      context: ./codebridge-gateway-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-gateway-service/Dockerfile
     ports:
       - "8080:8080"
     environment:
@@ -23,8 +23,8 @@ services:
   # Docker Service
   docker-service:
     build:
-      context: ./codebridge-docker-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-docker-service/Dockerfile
     ports:
       - "8082:8082"
     environment:
@@ -46,8 +46,8 @@ services:
   # GitLab Service
   gitlab-service:
     build:
-      context: ./codebridge-gitlab-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-gitlab-service/Dockerfile
     ports:
       - "8086:8086"
     environment:
@@ -67,8 +67,8 @@ services:
   # Documentation Service
   documentation-service:
     build:
-      context: ./codebridge-documentation-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-documentation-service/Dockerfile
     ports:
       - "8087:8087"
     environment:
@@ -88,8 +88,8 @@ services:
   # Server Service
   server-service:
     build:
-      context: ./codebridge-server-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-server-service/Dockerfile
     ports:
       - "8088:8088"
     environment:
@@ -109,8 +109,8 @@ services:
   # Teams Service
   teams-service:
     build:
-      context: ./codebridge-teams-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-teams-service/Dockerfile
     ports:
       - "8089:8089"
     environment:
