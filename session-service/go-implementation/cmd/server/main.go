@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,13 +25,15 @@ func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		logger.Fatal("Failed to load configuration", "error", err)
+		logger.Error("Failed to load configuration", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialize Redis repository
 	repo, err := repository.NewRedisRepository(cfg.Redis)
 	if err != nil {
-		logger.Fatal("Failed to initialize Redis repository", "error", err)
+		logger.Error("Failed to initialize Redis repository", "error", err)
+		os.Exit(1)
 	}
 	defer repo.Close()
 
@@ -49,7 +51,8 @@ func main() {
 	go func() {
 		logger.Info("Starting HTTP server", "port", cfg.Server.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("Failed to start server", "error", err)
+			logger.Error("Failed to start server", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -66,7 +69,8 @@ func main() {
 
 	// Attempt graceful shutdown
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Fatal("Server forced to shutdown", "error", err)
+		logger.Error("Server forced to shutdown", "error", err)
+		os.Exit(1)
 	}
 
 	logger.Info("Server exited gracefully")

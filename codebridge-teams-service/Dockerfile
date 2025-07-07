@@ -1,25 +1,12 @@
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM openjdk:21-jdk-slim
 
 WORKDIR /app
 
-# Copy pom.xml first for better caching
-COPY pom.xml .
-
-# Copy source code
-COPY src ./src
-
-# Build the application
-RUN mvn clean package -DskipTests
-
-FROM openjdk:21-jre-slim
-
-WORKDIR /app
-
-# Copy the JAR file from the builder stage
-COPY --from=builder /app/target/codebridge-teams-service-3.2.0.jar app.jar
+# Copy the JAR file from the host
+COPY target/codebridge-teams-service-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port
-EXPOSE 8088
+EXPOSE 8089
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

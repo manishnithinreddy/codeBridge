@@ -1,0 +1,20 @@
+server:
+  port: 8080
+  readTimeout: 10s
+  writeTimeout: 10s
+  idleTimeout: 60s
+
+redis:
+  host: redis
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: "your-session-jwt-secret-key-that-is-long-and-secure"
+  expirationHours: 1
+  refreshSecret: "your-session-refresh-jwt-secret-key-that-is-long-and-secure"
+  refreshExpHours: 720
+  issuer: "codebridge-session-service"
+
+securityServiceBaseURL: "http://gateway-service:8080"

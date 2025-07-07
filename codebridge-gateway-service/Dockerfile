@@ -1,21 +1,9 @@
-FROM maven:3.9-eclipse-temurin-21 as builder
+FROM openjdk:21-jdk-slim
 
 WORKDIR /app
 
-# Copy Maven files
-COPY pom.xml .
-COPY src ./src
-
-# Build the application
-RUN mvn clean package -DskipTests
-
-# Runtime stage
-FROM openjdk:21-jre-slim
-
-WORKDIR /app
-
-# Copy the built JAR file
-COPY --from=builder /app/target/codebridge-gateway-service-3.2.0.jar app.jar
+# Copy the JAR file from the host
+COPY target/codebridge-gateway-service-3.2.0.jar app.jar
 
 # Expose port
 EXPOSE 8080

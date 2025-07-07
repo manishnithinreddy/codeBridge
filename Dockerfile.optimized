@@ -3,7 +3,7 @@
 # Usage: docker build --build-arg SERVICE_NAME=gateway-service -t codebridge-gateway .
 
 ARG SERVICE_NAME
-FROM openjdk:21-jre-slim
+FROM openjdk:21-jdk-slim
 
 WORKDIR /app
 
