@@ -43,11 +43,11 @@ public class TemplateService {
      * Registers Handlebars helpers.
      */
     private void registerHelpers() {
-        // Register conditional helpers (if, unless, etc.)
-        ConditionalHelpers.each(helper -> handlebars.registerHelper(helper.name(), helper));
+        // Register conditional helpers using class registration
+        handlebars.registerHelpers(ConditionalHelpers.class);
         
-        // Register string helpers (uppercase, lowercase, etc.)
-        StringHelpers.each(helper -> handlebars.registerHelper(helper.name(), helper));
+        // Register string helpers using class registration
+        handlebars.registerHelpers(StringHelpers.class);
         
         // Register custom helpers
         handlebars.registerHelper("json", (context, options) -> {
@@ -150,4 +150,3 @@ public class TemplateService {
         return templateCache.size();
     }
 }
-
