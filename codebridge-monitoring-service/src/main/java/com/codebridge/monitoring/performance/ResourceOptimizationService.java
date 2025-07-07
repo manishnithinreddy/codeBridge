@@ -232,8 +232,8 @@ public class ResourceOptimizationService {
         Instant startTime = endTime.minusSeconds(analysisPeriodHours * 3600);
         
         // Get slow query metrics
-        List<PerformanceMetric> slowQueries = metricRepository.findByServiceNameAndMetricNameAndTimestampBetween(
-                "database-service", "query.slow", startTime, endTime, MetricType.COUNTER);
+        List<PerformanceMetric> slowQueries = metricRepository.findByServiceNameAndMetricNameAndMetricTypeAndTimestampBetween(
+                "database-service", "query.slow", MetricType.COUNTER, startTime, endTime);
         
         Map<String, Integer> slowQueryCounts = new HashMap<>();
         Map<String, String> slowQueryTypes = new HashMap<>();
@@ -631,4 +631,3 @@ public class ResourceOptimizationService {
         }
     }
 }
-

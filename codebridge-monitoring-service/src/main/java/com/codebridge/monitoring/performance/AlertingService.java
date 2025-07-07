@@ -501,5 +501,65 @@ public class AlertingService {
         
         return alert;
     }
-}
 
+    /**
+     * Get alert rules by service and metric name.
+     *
+     * @param serviceName Service name
+     * @param metricName Metric name
+     * @return List of alert rules
+     */
+    public List<AlertRule> getAlertRulesByServiceAndMetric(String serviceName, String metricName) {
+        log.info("Getting alert rules for service: {} and metric: {}", serviceName, metricName);
+        // Implementation for getting alert rules by service and metric
+        return alertRuleRepository.findByServiceNameAndMetricName(serviceName, metricName);
+    }
+
+    /**
+     * Create a degradation alert.
+     *
+     * @param serviceName Service name
+     * @param metricName Metric name
+     * @param alertName Alert name
+     * @param description Alert description
+     * @param isCritical Whether the alert is critical
+     */
+    public void createDegradationAlert(String serviceName, String metricName, String alertName, 
+                                     String description, boolean isCritical) {
+        log.info("Creating degradation alert for service: {} and metric: {}", serviceName, metricName);
+        
+        // First, create or find an alert rule for this service and metric
+        AlertRule alertRule = new AlertRule();
+        alertRule.setId(UUID.randomUUID());
+        alertRule.setServiceName(serviceName);
+        alertRule.setMetricName(metricName);
+        alertRule.setName(alertName);
+        alertRule.setDescription(description);
+        alertRule.setSeverity(isCritical ? AlertSeverity.CRITICAL : AlertSeverity.WARNING);
+        alertRule.setEnabled(true);
+        alertRule.setOperator(AlertRule.Operator.GREATER_THAN);
+        alertRule.setThreshold(0.0); // Default threshold
+        
+        alertRule = alertRuleRepository.save(alertRule);
+        
+        // Create performance alert
+        PerformanceAlert alert = new PerformanceAlert();
+        alert.setAlertRule(alertRule);
+        alert.setStatus(AlertStatus.ACTIVE);
+        alert.setMessage(description);
+        alert.setCurrentValue(0.0); // Default value
+        alert.setThreshold(0.0); // Default threshold
+        alert.setTriggeredAt(Instant.now());
+        
+        alertRepository.save(alert);
+        
+        // Send notifications if enabled
+        if (webhookNotificationEnabled && webhookUrl != null && !webhookUrl.isEmpty()) {
+            sendWebhookNotification(alert);
+        }
+        
+        if (emailNotificationEnabled && emailRecipients != null && !emailRecipients.isEmpty()) {
+            sendEmailNotification(alert);
+        }
+    }
+}

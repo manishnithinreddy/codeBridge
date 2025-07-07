@@ -13,11 +13,13 @@ import org.springframework.session.SaveMode;
 import org.springframework.session.config.SessionRepositoryCustomizer;
 import org.springframework.session.data.redis.RedisSessionRepository;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
-import org.springframework.session.hazelcast.HazelcastSessionRepository;
+import org.springframework.session.hazelcast.HazelcastIndexedSessionRepository;
 import org.springframework.session.hazelcast.config.annotation.web.http.EnableHazelcastHttpSession;
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
+
+import java.time.Duration;
 
 /**
  * Configuration for distributed session management.
@@ -64,7 +66,7 @@ public class SessionConfig {
     @Bean
     public SessionRepositoryCustomizer<RedisSessionRepository> redisSessionRepositoryCustomizer() {
         return repository -> {
-            repository.setDefaultMaxInactiveInterval(timeoutSeconds);
+            repository.setDefaultMaxInactiveInterval(Duration.ofSeconds(timeoutSeconds));
             repository.setFlushMode(FlushMode.IMMEDIATE);
             repository.setSaveMode(SaveMode.ALWAYS);
         };
@@ -76,9 +78,9 @@ public class SessionConfig {
      * @return the session repository customizer
      */
     @Bean
-    public SessionRepositoryCustomizer<HazelcastSessionRepository> hazelcastSessionRepositoryCustomizer() {
+    public SessionRepositoryCustomizer<HazelcastIndexedSessionRepository> hazelcastSessionRepositoryCustomizer() {
         return repository -> {
-            repository.setDefaultMaxInactiveInterval(timeoutSeconds);
+            repository.setDefaultMaxInactiveInterval(Duration.ofSeconds(timeoutSeconds));
             repository.setFlushMode(FlushMode.IMMEDIATE);
             repository.setSaveMode(SaveMode.ALWAYS);
         };
@@ -121,4 +123,3 @@ public class SessionConfig {
         }
     }
 }
-

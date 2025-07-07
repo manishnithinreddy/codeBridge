@@ -11,12 +11,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Repository for API tests with optimized queries.
  */
 @Repository
-public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
+public interface ApiTestRepository extends JpaRepository<ApiTest, UUID> {
 
     /**
      * Finds API tests by project ID.
@@ -24,7 +25,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @param projectId The project ID
      * @return The list of API tests
      */
-    List<ApiTest> findByProjectId(Long projectId);
+    List<ApiTest> findByProjectId(UUID projectId);
 
     /**
      * Finds API tests by project ID with pagination.
@@ -33,7 +34,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @param pageable The pagination information
      * @return The page of API tests
      */
-    Page<ApiTest> findByProjectId(Long projectId, Pageable pageable);
+    Page<ApiTest> findByProjectId(UUID projectId, Pageable pageable);
 
     /**
      * Finds API tests by name containing the given text.
@@ -52,7 +53,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @param pageable The pagination information
      * @return The page of API tests
      */
-    Page<ApiTest> findByProjectIdAndNameContainingIgnoreCase(Long projectId, String name, Pageable pageable);
+    Page<ApiTest> findByProjectIdAndNameContainingIgnoreCase(UUID projectId, String name, Pageable pageable);
 
     /**
      * Finds API tests by project ID and created after the given date.
@@ -62,7 +63,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @param pageable The pagination information
      * @return The page of API tests
      */
-    Page<ApiTest> findByProjectIdAndCreatedAtAfter(Long projectId, LocalDateTime createdAt, Pageable pageable);
+    Page<ApiTest> findByProjectIdAndCreatedAtAfter(UUID projectId, LocalDateTime createdAt, Pageable pageable);
 
     /**
      * Finds API tests by project ID with optimized query.
@@ -71,7 +72,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @return The list of API tests
      */
     @Query("SELECT a FROM ApiTest a LEFT JOIN FETCH a.headers LEFT JOIN FETCH a.queryParams WHERE a.projectId = :projectId")
-    List<ApiTest> findByProjectIdWithDetails(@Param("projectId") Long projectId);
+    List<ApiTest> findByProjectIdWithDetails(@Param("projectId") UUID projectId);
 
     /**
      * Finds an API test by ID with optimized query.
@@ -80,7 +81,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @return The API test
      */
     @Query("SELECT a FROM ApiTest a LEFT JOIN FETCH a.headers LEFT JOIN FETCH a.queryParams LEFT JOIN FETCH a.formParams WHERE a.id = :id")
-    Optional<ApiTest> findByIdWithDetails(@Param("id") Long id);
+    Optional<ApiTest> findByIdWithDetails(@Param("id") UUID id);
 
     /**
      * Counts API tests by project ID.
@@ -89,7 +90,7 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @return The count of API tests
      */
     @Query("SELECT COUNT(a) FROM ApiTest a WHERE a.projectId = :projectId")
-    long countByProjectId(@Param("projectId") Long projectId);
+    long countByProjectId(@Param("projectId") UUID projectId);
 
     /**
      * Finds the latest API tests by project ID.
@@ -99,6 +100,22 @@ public interface ApiTestRepository extends JpaRepository<ApiTest, Long> {
      * @return The list of API tests
      */
     @Query(value = "SELECT * FROM api_test WHERE project_id = :projectId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<ApiTest> findLatestByProjectId(@Param("projectId") Long projectId, @Param("limit") int limit);
-}
+    List<ApiTest> findLatestByProjectId(@Param("projectId") UUID projectId, @Param("limit") int limit);
 
+    /**
+     * Finds API tests by user ID.
+     *
+     * @param userId The user ID
+     * @return The list of API tests
+     */
+    List<ApiTest> findByUserId(UUID userId);
+
+    /**
+     * Finds an API test by ID and user ID.
+     *
+     * @param id The API test ID
+     * @param userId The user ID
+     * @return The API test
+     */
+    Optional<ApiTest> findByIdAndUserId(UUID id, UUID userId);
+}
