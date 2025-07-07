@@ -1,12 +1,9 @@
-FROM openjdk:21-jdk-slim AS builder
+FROM maven:3.9.6-openjdk-21-slim AS builder
 
 WORKDIR /app
 
 # Copy pom.xml first for better caching
 COPY pom.xml .
-
-# Install Maven
-RUN apt-get update && apt-get install -y maven
 
 # Copy source code
 COPY src ./src
