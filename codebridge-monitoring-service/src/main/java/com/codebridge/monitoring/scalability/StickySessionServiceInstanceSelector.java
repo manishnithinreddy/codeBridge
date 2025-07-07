@@ -6,8 +6,8 @@ import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 
 /**
@@ -115,4 +115,3 @@ public class StickySessionServiceInstanceSelector implements ServiceInstanceSele
         return SESSION_ATTRIBUTE_PREFIX + serviceId;
     }
 }
-
