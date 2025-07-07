@@ -1,6 +1,6 @@
 module github.com/codebridge/session-service
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gin-gonic/gin v1.9.1
@@ -10,4 +10,3 @@ require (
 	github.com/spf13/viper v1.16.0
 	golang.org/x/crypto v0.12.0
 )
-
