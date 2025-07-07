@@ -1,6 +1,6 @@
 module github.com/codebridge/db-service
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gin-gonic/gin v1.9.1
@@ -49,4 +49,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
