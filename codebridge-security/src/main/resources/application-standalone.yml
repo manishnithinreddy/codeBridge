@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: codebridge-security
+  main:
+    allow-circular-references: true
+  datasource:
+    url: jdbc:h2:mem:securitydb
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  cloud:
+    discovery:
+      enabled: false
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 2000ms
+    jedis:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+server:
+  port: 8080
+
+# Security Configuration
+security:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY:5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437}
+    expiration-time: 86400000  # 24 hours in milliseconds
+    refresh-token:
+      expiration-time: 604800000  # 7 days in milliseconds
+  mfa:
+    issuer: CodeBridge
+    time-step-seconds: 30
+    code-digits: 6
+    allowed-time-skew: 1
+  password:
+    min-length: 12
+    require-uppercase: true
+    require-lowercase: true
+    require-digit: true
+    require-special-char: true
+    max-age-days: 90
+    history-count: 5
+  account:
+    max-failed-attempts: 5
+    lockout-duration-minutes: 30
+  api-key:
+    expiration-days: 90
+    max-keys-per-user: 5
+  encryption:
+    algorithm: AES/GCM/NoPadding
+    key-size: 256
+  ssh:
+    host: 0.0.0.0
+    port: 2222
+    key-directory: ${user.home}/.ssh/codebridge
+  audit:
+    enabled: true
+    retention-days: 365
+    log-directory: ${user.home}/codebridge/audit-logs
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -32,6 +32,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Configures the security filter chain.
@@ -66,7 +67,7 @@ public class SecurityConfig {
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 
@@ -82,14 +83,5 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * Creates a password encoder.
-     *
-     * @return The password encoder
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-}
 
+}

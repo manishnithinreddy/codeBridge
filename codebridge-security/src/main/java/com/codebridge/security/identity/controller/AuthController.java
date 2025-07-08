@@ -4,6 +4,7 @@ import com.codebridge.security.identity.dto.JwtResponse;
 import com.codebridge.security.identity.dto.LoginRequest;
 import com.codebridge.security.identity.dto.MessageResponse;
 import com.codebridge.security.identity.dto.SignupRequest;
+import com.codebridge.security.identity.service.UserRegistrationService;
 import com.codebridge.security.auth.service.AuthenticationService;
 import com.codebridge.security.auth.dto.AuthenticationRequest;
 import com.codebridge.security.auth.dto.AuthenticationResponse;
@@ -21,12 +22,13 @@ import org.springframework.web.bind.annotation.*;
  */
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/identity")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
+    private final UserRegistrationService userRegistrationService;
 
     /**
      * Authenticates a user and returns a JWT token.
@@ -64,13 +66,22 @@ public class AuthController {
      */
     @PostMapping("/signup")
     public ResponseEntity<MessageResponse> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
-        // TODO: Implement user registration
-        // For now, return a placeholder response
-        MessageResponse response = MessageResponse.builder()
-                .message("User registration not yet implemented")
-                .build();
-        
-        return ResponseEntity.ok(response);
+        try {
+            // Register the user
+            User newUser = userRegistrationService.registerUser(signupRequest);
+            
+            MessageResponse response = MessageResponse.builder()
+                    .message("User registered successfully! Welcome " + newUser.getUsername())
+                    .build();
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            MessageResponse response = MessageResponse.builder()
+                    .message("Registration failed: " + e.getMessage())
+                    .build();
+            
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
     /**

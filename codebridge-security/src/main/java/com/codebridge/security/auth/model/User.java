@@ -54,6 +54,14 @@ public class User implements UserDetails {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_organizations",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "organization_id")
+    )
+    private Set<com.codebridge.security.identity.model.Organization> organizations = new HashSet<>();
+
     @Column(name = "account_non_expired")
     private boolean accountNonExpired = true;
 
@@ -214,5 +222,15 @@ public class User implements UserDetails {
     // Manual setter for email field
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    // Manual getter for organizations field
+    public Set<com.codebridge.security.identity.model.Organization> getOrganizations() {
+        return organizations;
+    }
+
+    // Manual setter for organizations field
+    public void setOrganizations(Set<com.codebridge.security.identity.model.Organization> organizations) {
+        this.organizations = organizations;
     }
 }

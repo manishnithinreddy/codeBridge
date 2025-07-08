@@ -1,5 +1,6 @@
 package com.codebridge.security.identity.model;
 
+import com.codebridge.security.auth.model.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

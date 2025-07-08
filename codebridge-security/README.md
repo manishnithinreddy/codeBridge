@@ -108,26 +108,62 @@ com.codebridge.security
 ## Getting Started
 
 ### Prerequisites
-- Java 17 or higher
-- PostgreSQL database
-- Redis (for token storage)
+- Java 21
+- Maven 3.6+
+- Redis (for production, optional for standalone mode)
 
 ### Configuration
 The service can be configured through application.yml or environment variables.
 
+#### Standalone Profile
+The application includes a standalone profile (`application-standalone.yml`) that:
+- Uses H2 in-memory database
+- Configures Redis connection
+- Allows circular references for complex dependency injection
+- Sets up development-friendly logging
+
 ### Building
 ```bash
-mvn clean package
+mvn clean package -DskipTests
 ```
 
 ### Running
+
+#### Standalone Mode (Development)
 ```bash
-java -jar target/codebridge-security-platform-1.0.0.jar
+java -jar target/codebridge-security-0.1.0-SNAPSHOT.jar --spring.profiles.active=standalone
 ```
+
+The application will start on port 8080 with context path `/security`.
+
+#### Using Docker
+```bash
+docker compose up --build
+```
+
+This will start:
+- Redis server on port 6379
+- CodeBridge Security application on port 8080
+
+### Testing
+```bash
+# Health check
+curl http://localhost:8080/security/actuator/health
+
+# Test authentication endpoint
+curl -X POST http://localhost:8080/security/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test"}'
+```
+
+### Resolved Issues
+1. **Circular Dependencies**: Separated PasswordEncoder configuration into its own class
+2. **Duplicate Controllers**: Changed identity controller mapping from `/api/auth` to `/api/identity`
+3. **Entity Conflicts**: Removed duplicate Role entity from identity package
+4. **Build Configuration**: Updated to use Java 21 and Spring Boot 3.2.0
 
 ## Integration with Other Services
 This service integrates with other CodeBridge services:
 - Provides authentication for all services
 - Manages API keys for external API access
 - Handles user and organization management
-

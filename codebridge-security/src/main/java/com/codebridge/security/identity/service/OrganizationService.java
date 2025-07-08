@@ -4,9 +4,9 @@ import com.codebridge.security.identity.dto.OrganizationDto;
 import com.codebridge.security.identity.dto.OrganizationRequest;
 import com.codebridge.security.identity.dto.UserDto;
 import com.codebridge.security.identity.model.Organization;
-import com.codebridge.security.identity.model.User;
+import com.codebridge.security.auth.model.User;
 import com.codebridge.security.identity.repository.OrganizationRepository;
-import com.codebridge.security.identity.repository.UserRepository;
+import com.codebridge.security.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -224,7 +224,7 @@ public class OrganizationService {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .enabled(user.isActive())
+                .enabled(user.isEnabled())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

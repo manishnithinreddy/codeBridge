@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: codebridge-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - codebridge-network
+
+  codebridge-security:
+    build: .
+    container_name: codebridge-security
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=standalone
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:securitydb
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_MAIN_ALLOW_CIRCULAR_REFERENCES=true
+    depends_on:
+      - redis
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+
+networks:
+  codebridge-network:
+    driver: bridge
