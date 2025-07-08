@@ -134,6 +134,15 @@ mvn clean package -DskipTests
 java -jar target/codebridge-security-0.1.0-SNAPSHOT.jar --spring.profiles.active=standalone
 ```
 
+#### External Database Mode (Production)
+```bash
+java -jar target/codebridge-security-0.1.0-SNAPSHOT.jar --spring.profiles.active=external
+```
+
+This mode connects to external PostgreSQL and Redis instances. Configure the following:
+- PostgreSQL: 10.212.183.94:5432 (database: codebridge_security)
+- Redis: 10.212.183.94:6379
+
 The application will start on port 8080 with context path `/security`.
 
 #### Using Docker
