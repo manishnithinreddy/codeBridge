@@ -9,7 +9,7 @@ spring:
   
   # PostgreSQL Configuration
   datasource:
-    url: jdbc:postgresql://10.212.183.94:5432/codebridge_security
+    url: jdbc:postgresql://223.187.54.126:5432/codebridge_security
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
@@ -34,7 +34,7 @@ spring:
 
   # Redis Configuration
   redis:
-    host: 10.212.183.94
+    host: 223.187.54.126
     port: 6379
     password: ${REDIS_PASSWORD:}
     timeout: 2000ms
