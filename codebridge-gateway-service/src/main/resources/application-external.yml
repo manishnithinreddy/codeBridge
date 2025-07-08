@@ -1,0 +1,130 @@
+spring:
+  application:
+    name: codebridge-gateway-service
+  profiles:
+    active: external
+  
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # Security Service Route
+        - id: security-service
+          uri: http://223.187.54.126:8080
+          predicates:
+            - Path=/security/**
+          filters:
+            - StripPrefix=1
+        # Monitoring Service Route
+        - id: monitoring-service
+          uri: http://223.187.54.126:8081
+          predicates:
+            - Path=/monitoring/**
+          filters:
+            - StripPrefix=1
+        # Server Service Route
+        - id: server-service
+          uri: http://223.187.54.126:8082
+          predicates:
+            - Path=/server/**
+          filters:
+            - StripPrefix=1
+        # Teams Service Route
+        - id: teams-service
+          uri: http://223.187.54.126:8083
+          predicates:
+            - Path=/teams/**
+          filters:
+            - StripPrefix=1
+        # Documentation Service Route
+        - id: documentation-service
+          uri: http://223.187.54.126:8084
+          predicates:
+            - Path=/docs/**
+          filters:
+            - StripPrefix=1
+        # API Test Service Route
+        - id: api-test-service
+          uri: http://223.187.54.126:8085
+          predicates:
+            - Path=/api-test/**
+          filters:
+            - StripPrefix=1
+        # Docker Service Route
+        - id: docker-service
+          uri: http://223.187.54.126:8086
+          predicates:
+            - Path=/docker/**
+          filters:
+            - StripPrefix=1
+
+server:
+  port: 8080
+
+# Eureka Server Configuration for External Environment
+eureka:
+  instance:
+    hostname: 223.187.54.126
+    prefer-ip-address: true
+    ip-address: 223.187.54.126
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://223.187.54.126:8080/eureka/
+  server:
+    wait-time-in-ms-when-sync-empty: 5
+    enable-self-preservation: false
+
+# Security Configuration
+security:
+  jwt:
+    secret-key: ${JWT_SECRET:codebridge-external-secret-key-for-production-jwt-token-generation}
+    expiration-time: 86400000 # 24 hours in milliseconds
+  allowed-origins: http://223.187.54.126:3000,http://223.187.54.126:8080,http://localhost:3000,http://localhost:8080
+
+# Rate Limiting
+rate-limiting:
+  enabled: true
+  default-limit: 1000  # Higher limit for production
+  default-refresh-period: 60
+  ip-based: true
+
+# Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 20  # Larger window for production
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s  # Longer wait for production
+        failureRateThreshold: 60  # More tolerant in production
+        eventConsumerBufferSize: 20
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO  # Less verbose for production
+    org.springframework.security: INFO
+    com.codebridge: DEBUG

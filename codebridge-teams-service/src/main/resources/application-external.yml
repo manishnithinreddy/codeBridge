@@ -1,0 +1,152 @@
+spring:
+  application:
+    name: codebridge-teams-service
+  profiles:
+    active: external
+    
+  # External PostgreSQL Database Configuration (instead of H2)
+  datasource:
+    url: jdbc:postgresql://223.187.54.126:5432/codebridge_teams
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Changed from update for production
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect  # Changed from H2
+        format_sql: false  # Disabled for production
+        jdbc.batch_size: 30
+        order_inserts: true
+        order_updates: true
+        connection.provider_disables_autocommit: true
+        cache.use_second_level_cache: true
+        cache.use_query_cache: true
+        generate_statistics: false
+    show-sql: false  # Disabled for production
+    
+  # Flyway for database migrations
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    url: jdbc:postgresql://223.187.54.126:5432/codebridge_teams
+    user: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    
+  # Remove H2 console for production
+  # h2:
+  #   console:
+  #     enabled: false
+      
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://223.187.54.126:8080/identity
+          jwk-set-uri: http://223.187.54.126:8080/identity/.well-known/jwks.json
+
+server:
+  port: 8083  # Different port for external deployment
+  servlet:
+    context-path: /teams
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 10000
+    accept-count: 100
+
+# External Eureka Configuration
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://223.187.54.126:8080/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    ip-address: 223.187.54.126
+    hostname: 223.187.54.126
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 0.1  # Reduced sampling for production
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: INFO  # Less verbose for production
+    org.springframework.security: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: /var/log/codebridge/teams-service.log
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 10000  # Increased for production
+        readTimeout: 10000
+        loggerLevel: basic  # Less verbose for production
+
+# External service URLs
+identity-service:
+  url: http://223.187.54.126:8080/identity
+
+# Additional production configurations
+codebridge:
+  teams:
+    cache:
+      enabled: true
+      ttl: 300  # 5 minutes cache TTL
+    security:
+      jwt:
+        shared-secret: ${JWT_SHARED_SECRET:codebridge-teams-external-jwt-secret}
+    service-urls:
+      security-service: "http://223.187.54.126:8080/api/security"
+      server-service: "http://223.187.54.126:8082/api/server"
+      monitoring-service: "http://223.187.54.126:8081/api/monitoring"
+      documentation-service: "http://223.187.54.126:8084/api/docs"
+      api-test-service: "http://223.187.54.126:8085/api/test"
+      docker-service: "http://223.187.54.126:8086/api/docker"
+    ratelimit:
+      capacity: 200
+      refill-tokens: 20
+      refill-duration: 1
+      cache-expiry: 3600
+    resilience:
+      circuitbreaker:
+        failure-rate-threshold: 60
+        slow-call-rate-threshold: 60
+        slow-call-duration-threshold: 3000
+        permitted-calls-in-half-open-state: 10
+        sliding-window-size: 100
+        minimum-number-of-calls: 10
+        wait-duration-in-open-state: 60000

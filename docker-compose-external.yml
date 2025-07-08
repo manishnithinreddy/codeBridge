@@ -1,0 +1,263 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: codebridge-postgres
+    environment:
+      POSTGRES_DB: codebridge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: codebridge-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: codebridge-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Security Service
+  security-service:
+    build:
+      context: ./codebridge-security
+      dockerfile: Dockerfile
+    container_name: codebridge-security-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      JWT_SECRET: codebridge-external-jwt-secret
+      JASYPT_ENCRYPTOR_PASSWORD: codebridge-external-jasypt-password
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+    restart: unless-stopped
+
+  # Gateway Service
+  gateway-service:
+    build:
+      context: ./codebridge-gateway-service
+      dockerfile: Dockerfile
+    container_name: codebridge-gateway-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      JWT_SECRET: codebridge-external-jwt-secret
+    ports:
+      - "8080:8080"  # Main gateway port
+    depends_on:
+      - security-service
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+    restart: unless-stopped
+
+  # Server Service
+  server-service:
+    build:
+      context: ./codebridge-server-service
+      dockerfile: Dockerfile
+    container_name: codebridge-server-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      JWT_SHARED_SECRET: codebridge-external-jwt-shared-secret
+      JASYPT_ENCRYPTOR_PASSWORD: codebridge-external-jasypt-password
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      security-service:
+        condition: service_started
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+      - /var/codebridge/ssh-keys:/var/codebridge/ssh-keys
+    restart: unless-stopped
+
+  # Teams Service
+  teams-service:
+    build:
+      context: ./codebridge-teams-service
+      dockerfile: Dockerfile
+    container_name: codebridge-teams-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SHARED_SECRET: codebridge-teams-external-jwt-secret
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      security-service:
+        condition: service_started
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+    restart: unless-stopped
+
+  # Monitoring Service
+  monitoring-service:
+    build:
+      context: ./codebridge-monitoring-service
+      dockerfile: Dockerfile
+    container_name: codebridge-monitoring-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      security-service:
+        condition: service_started
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+    restart: unless-stopped
+
+  # Documentation Service
+  documentation-service:
+    build:
+      context: ./codebridge-documentation-service
+      dockerfile: Dockerfile
+    container_name: codebridge-documentation-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      security-service:
+        condition: service_started
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+    restart: unless-stopped
+
+  # API Test Service
+  api-test-service:
+    build:
+      context: ./codebridge-api-test-service
+      dockerfile: Dockerfile
+    container_name: codebridge-api-test-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      security-service:
+        condition: service_started
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+    restart: unless-stopped
+
+  # Docker Service
+  docker-service:
+    build:
+      context: ./codebridge-docker-service
+      dockerfile: Dockerfile
+    container_name: codebridge-docker-service
+    environment:
+      SPRING_PROFILES_ACTIVE: external
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      security-service:
+        condition: service_started
+    networks:
+      - codebridge-network
+    volumes:
+      - ./logs:/var/log/codebridge
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for container management
+    restart: unless-stopped
+
+networks:
+  codebridge-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:

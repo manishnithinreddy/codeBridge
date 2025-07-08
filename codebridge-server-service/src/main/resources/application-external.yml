@@ -1,0 +1,177 @@
+spring:
+  application:
+    name: server-service
+  profiles:
+    active: external
+  
+  # External PostgreSQL Database Configuration
+  datasource:
+    url: jdbc:postgresql://223.187.54.126:5432/codebridge_server
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20  # Increased for production
+      minimum-idle: 10
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000  # Added for production monitoring
+      
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false  # Disabled for production
+        jdbc.batch_size: 30
+        order_inserts: true
+        order_updates: true
+        connection.provider_disables_autocommit: true
+        cache.use_second_level_cache: true
+        cache.use_query_cache: true
+        generate_statistics: false
+    show-sql: false
+    
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    url: jdbc:postgresql://223.187.54.126:5432/codebridge_server
+    user: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    
+  cloud:
+    config:
+      enabled: false
+      
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://223.187.54.126:8080/auth/realms/codebridge
+          jwk-set-uri: http://223.187.54.126:8080/auth/realms/codebridge/protocol/openid-connect/certs
+          
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterAccess=600s  # Increased cache size for production
+
+  # External RabbitMQ Configuration
+  rabbitmq:
+    host: 223.187.54.126
+    port: 5672
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    connection-timeout: 60000
+    virtual-host: /
+
+server:
+  port: 8082  # Different port for external deployment
+  servlet:
+    context-path: /api/server
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+  tomcat:
+    max-threads: 300  # Increased for production
+    min-spare-threads: 50
+    max-connections: 20000
+    accept-count: 200
+
+# External Eureka Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://223.187.54.126:8080/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    ip-address: 223.187.54.126
+    hostname: 223.187.54.126
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 0.1  # Reduced sampling for production
+
+logging:
+  level:
+    com.codebridge: INFO  # Less verbose for production
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: /var/log/codebridge/server-service.log
+
+ssh:
+  connection:
+    timeout: 30000
+    retry-count: 3
+    retry-delay: 5000
+  key-storage:
+    path: /var/codebridge/ssh-keys  # Production path
+
+jasypt:
+  encryptor:
+    password: ${JASYPT_ENCRYPTOR_PASSWORD:codebridge-external-jasypt-password}
+
+# Application-specific AMQP properties
+codebridge:
+  security:
+    jwt:
+      shared-secret: ${JWT_SHARED_SECRET:codebridge-external-jwt-shared-secret-change-in-production}
+  service-urls:
+    session-service: "http://223.187.54.126:8083/api/sessions"
+    ai-db-agent-service: "http://223.187.54.126:8084/api/ai-db-agent"
+    security-service: "http://223.187.54.126:8080/api/security"
+    monitoring-service: "http://223.187.54.126:8081/api/monitoring"
+    teams-service: "http://223.187.54.126:8083/api/teams"
+    documentation-service: "http://223.187.54.126:8084/api/docs"
+    api-test-service: "http://223.187.54.126:8085/api/test"
+    docker-service: "http://223.187.54.126:8086/api/docker"
+  rabbitmq:
+    activity-log:
+      exchange-name: "codebridge.activitylog.exchange"
+      queue-name: "codebridge.activitylog.queue"
+      routing-key: "codebridge.activitylog.routingkey"
+  ratelimit:
+    capacity: 500  # Increased for production
+    refill-tokens: 50
+    refill-duration: 1
+    cache-expiry: 3600
+  resilience:
+    circuitbreaker:
+      failure-rate-threshold: 60  # More tolerant in production
+      slow-call-rate-threshold: 60
+      slow-call-duration-threshold: 3000
+      permitted-calls-in-half-open-state: 20
+      sliding-window-size: 200
+      minimum-number-of-calls: 20
+      wait-duration-in-open-state: 120000
+  async:
+    core-pool-size: 10  # Increased for production
+    max-pool-size: 20
+    queue-capacity: 100
+    thread-name-prefix: Server-Async-
+  compression:
+    enabled: true
+    min-response-size: 2048
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  tracing:
+    enabled: true
