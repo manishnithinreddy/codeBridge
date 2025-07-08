@@ -1,8 +1,6 @@
 spring:
   application:
     name: codebridge-teams-service
-  profiles:
-    active: external
     
   # External PostgreSQL Database Configuration (instead of H2)
   datasource:

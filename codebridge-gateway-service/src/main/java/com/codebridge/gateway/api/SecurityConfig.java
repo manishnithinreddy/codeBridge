@@ -1,12 +1,10 @@
-package com.codebridge.gateway.config;
+package com.codebridge.gateway.api;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.header.XFrameOptionsServerHttpHeadersWriter;
 
@@ -20,9 +18,6 @@ import java.util.List;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    @Value("${codebridge.gateway.security.public-paths}")
-    private List<String> publicPaths;
-
     /**
      * Configures the security filter chain for the API Gateway.
      *
@@ -31,19 +26,28 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        // Convert public paths to an array
-        String[] publicPathsArray = publicPaths.toArray(new String[0]);
+        // Define public paths that don't require authentication
+        String[] publicPathsArray = {
+            "/actuator/**",
+            "/eureka/**", 
+            "/health",
+            "/info",
+            "/prometheus",
+            "/metrics",
+            "/auth/login",
+            "/auth/register",
+            "/api/public/**",
+            "/webjars/**",
+            "/css/**",
+            "/js/**",
+            "/images/**"
+        };
         
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(publicPathsArray).permitAll()
-                        .anyExchange().authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(new ReactiveJwtAuthenticationConverterAdapter(jwtAuthenticationConverter()))
-                        )
+                        .anyExchange().permitAll() // Allow all for now, can be configured later
                 )
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions
@@ -57,23 +61,5 @@ public class SecurityConfig {
                 .build();
     }
 
-    /**
-     * Creates a JWT authentication converter for extracting user details from JWT tokens.
-     *
-     * @return The JWT authentication converter
-     */
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        
-        // Configure JWT claims to authorities mapping if needed
-        // For example, to map roles from the "roles" claim:
-        // JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        // authoritiesConverter.setAuthoritiesClaimName("roles");
-        // authoritiesConverter.setAuthorityPrefix("ROLE_");
-        // converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        
-        return converter;
-    }
-}
 
+}

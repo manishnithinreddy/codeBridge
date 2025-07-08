@@ -1,8 +1,6 @@
 spring:
   application:
     name: server-service
-  profiles:
-    active: external
   
   # External PostgreSQL Database Configuration
   datasource:

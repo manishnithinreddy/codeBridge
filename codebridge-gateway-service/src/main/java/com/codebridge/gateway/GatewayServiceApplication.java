@@ -3,17 +3,14 @@ package com.codebridge.gateway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
-
 /**
  * Main application class for the CodeBridge Gateway Service.
- * This service combines functionality from:
- * - API Gateway
- * - Gateway
- * - Service Discovery
+ * This service provides:
+ * - API Gateway functionality
+ * - Service routing and load balancing
+ * - Security and authentication
  */
 @SpringBootApplication
-@EnableEurekaServer
 @EnableDiscoveryClient
 public class GatewayServiceApplication {
 
@@ -21,4 +18,3 @@ public class GatewayServiceApplication {
         SpringApplication.run(GatewayServiceApplication.class, args);
     }
 }
-

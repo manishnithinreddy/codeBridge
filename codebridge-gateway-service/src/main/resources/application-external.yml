@@ -1,8 +1,6 @@
 spring:
   application:
     name: codebridge-gateway-service
-  profiles:
-    active: external
   
   cloud:
     gateway:
@@ -64,20 +62,17 @@ spring:
 server:
   port: 8080
 
-# Eureka Server Configuration for External Environment
+# Eureka Client Configuration for External Environment
 eureka:
   instance:
     hostname: 223.187.54.126
     prefer-ip-address: true
     ip-address: 223.187.54.126
   client:
-    register-with-eureka: false
-    fetch-registry: false
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
-      defaultZone: http://223.187.54.126:8080/eureka/
-  server:
-    wait-time-in-ms-when-sync-empty: 5
-    enable-self-preservation: false
+      defaultZone: http://223.187.54.126:8761/eureka/
 
 # Security Configuration
 security:
@@ -85,6 +80,31 @@ security:
     secret-key: ${JWT_SECRET:codebridge-external-secret-key-for-production-jwt-token-generation}
     expiration-time: 86400000 # 24 hours in milliseconds
   allowed-origins: http://223.187.54.126:3000,http://223.187.54.126:8080,http://localhost:3000,http://localhost:8080
+
+# CodeBridge Gateway Configuration
+codebridge:
+  gateway:
+    security:
+      public-paths:
+        - /actuator/**
+        - /eureka/**
+        - /health
+        - /info
+        - /prometheus
+        - /metrics
+        - /auth/login
+        - /auth/register
+        - /api/public/**
+        - /webjars/**
+        - /css/**
+        - /js/**
+        - /images/**
+    cors:
+      allowed-origins: "http://223.187.54.126:3000,http://223.187.54.126:8080,http://localhost:3000,http://localhost:8080"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      allowed-headers: "Authorization,Content-Type,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers"
+      allow-credentials: true
+      max-age: 3600
 
 # Rate Limiting
 rate-limiting:
