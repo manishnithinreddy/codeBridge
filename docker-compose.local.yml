@@ -6,6 +6,7 @@ services:
     build:
       context: ./codebridge-gateway-service
       dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8080:8080"
     environment:
@@ -14,10 +15,31 @@ services:
     depends_on:
       - codebridge-teams
       - codebridge-server
+      - codebridge-security
     networks:
       - codebridge-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Security Service - Authentication and authorization
+  codebridge-security:
+    build:
+      context: ./codebridge-security
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -28,11 +50,14 @@ services:
     build:
       context: ./codebridge-teams-service
       dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=local
       - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      - codebridge-security
     networks:
       - codebridge-network
     healthcheck:
@@ -47,11 +72,14 @@ services:
     build:
       context: ./codebridge-server-service
       dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=local
       - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      - codebridge-security
     networks:
       - codebridge-network
     healthcheck:
@@ -61,11 +89,166 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # Docker Service - Container management
+  codebridge-docker:
+    build:
+      context: ./codebridge-docker-service
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for container management
+    depends_on:
+      - codebridge-security
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # GitLab Service - GitLab integration
+  codebridge-gitlab:
+    build:
+      context: ./codebridge-gitlab-service
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      - codebridge-security
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Documentation Service - API documentation
+  codebridge-documentation:
+    build:
+      context: ./codebridge-documentation-service
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      - codebridge-security
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Monitoring Service - System monitoring
+  codebridge-monitoring:
+    build:
+      context: ./codebridge-monitoring-service
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      - codebridge-security
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Session Service (Go) - Session management
+  codebridge-session:
+    build:
+      context: ./session-service/go-implementation
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8088:8080"
+    environment:
+      - ENVIRONMENT=local
+      - PORT=8080
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # DB Service (Go) - Database operations
+  codebridge-db:
+    build:
+      context: ./db-service/go-implementation
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8089:8081"
+    environment:
+      - ENVIRONMENT=local
+      - PORT=8081
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # AI Service (Python) - AI/ML operations
+  codebridge-ai:
+    build:
+      context: ./ai-service/python-implementation
+      dockerfile: Dockerfile
+      no_cache: true  # Always rebuild to get latest code
+    ports:
+      - "8090:8082"
+    environment:
+      - ENVIRONMENT=local
+      - PORT=8082
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
 networks:
   codebridge-network:
     driver: bridge
 
-# Note: No external databases needed - services use embedded H2 databases
-# H2 console access:
+# Note: All services use embedded databases for local development
+# H2 console access (Java services):
+# - Security Service: http://localhost:8083/h2-console
 # - Teams Service: http://localhost:8082/teams/h2-console
 # - Server Service: http://localhost:8081/api/server/h2-console
+# - Docker Service: http://localhost:8084/h2-console
+# - GitLab Service: http://localhost:8085/h2-console
+# - Documentation Service: http://localhost:8086/h2-console
+# - Monitoring Service: http://localhost:8087/h2-console
