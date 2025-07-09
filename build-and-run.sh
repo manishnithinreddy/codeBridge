@@ -21,11 +21,11 @@ print_error() {
 
 # Step 1: Stop any running containers
 print_status "🛑 Stopping any running containers..."
-docker compose -f docker compose.local.yml down
+docker compose -f docker-compose.local.yml down
 
 # Step 2: Remove old images to force rebuild
 print_status "🧹 Cleaning up old Docker images..."
-docker compose -f docker compose.local.yml down --rmi all --volumes --remove-orphans 2>/dev/null || true
+docker compose -f docker-compose.local.yml down --rmi all --volumes --remove-orphans 2>/dev/null || true
 
 # Step 3: Build all Java services first (to ensure latest code)
 print_status "🔨 Building Java services with Maven..."
@@ -52,8 +52,8 @@ done
 
 # Step 4: Build and start all services with Docker Compose
 print_status "🐳 Building and starting all services with Docker Compose..."
-docker compose -f docker compose.local.yml build --no-cache
-docker compose -f docker compose.local.yml up --force-recreate -d
+docker compose -f docker-compose.local.yml build --no-cache
+docker compose -f docker-compose.local.yml up --force-recreate -d
 
 # Step 5: Wait for services to start
 print_status "⏳ Waiting for services to start..."
@@ -114,7 +114,7 @@ print_success "  🦊 GitLab DB:                http://localhost:8085/h2-console
 print_success "  📚 Documentation DB:         http://localhost:8086/h2-console"
 print_success "  📊 Monitoring DB:            http://localhost:8087/h2-console"
 print_success ""
-print_success "📝 To view logs: docker compose -f docker compose.local.yml logs -f [service-name]"
-print_success "🛑 To stop all:  docker compose -f docker compose.local.yml down"
+print_success "📝 To view logs: docker compose -f docker-compose.local.yml logs -f [service-name]"
+print_success "🛑 To stop all:  docker compose -f docker-compose.local.yml down"
 print_success ""
 print_success "✨ Happy coding! ✨"
