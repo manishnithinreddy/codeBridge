@@ -25,8 +25,9 @@ public class TeamMember {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "team_id")
-    private Long teamId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    private Team team;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
@@ -46,4 +47,3 @@ public class TeamMember {
         OWNER
     }
 }
-

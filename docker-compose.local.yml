@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Gateway Service - Entry point for all requests
+  codebridge-gateway:
+    build:
+      context: ./codebridge-gateway-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    depends_on:
+      - codebridge-teams
+      - codebridge-server
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Teams Service - Team management functionality
+  codebridge-teams:
+    build:
+      context: ./codebridge-teams-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/teams/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Server Service - Server management functionality
+  codebridge-server:
+    build:
+      context: ./codebridge-server-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    networks:
+      - codebridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/server/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  codebridge-network:
+    driver: bridge
+
+# Note: No external databases needed - services use embedded H2 databases
+# H2 console access:
+# - Teams Service: http://localhost:8082/teams/h2-console
+# - Server Service: http://localhost:8081/api/server/h2-console

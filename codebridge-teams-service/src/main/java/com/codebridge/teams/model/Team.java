@@ -43,12 +43,7 @@ public class Team {
     @OneToMany(mappedBy = "parentTeam", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Team> childTeams = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "team_members",
-            joinColumns = @JoinColumn(name = "team_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TeamMember> members = new HashSet<>();
 
     @Column(name = "active")
@@ -62,4 +57,3 @@ public class Team {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
-

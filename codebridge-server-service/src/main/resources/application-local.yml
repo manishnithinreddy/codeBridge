@@ -1,0 +1,150 @@
+spring:
+  application:
+    name: server-service
+  
+  # Local H2 Database Configuration
+  datasource:
+    url: jdbc:h2:mem:serverdb
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 20000
+      
+  jpa:
+    hibernate:
+      ddl-auto: update  # Use update for local development
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        cache.use_second_level_cache: false
+        cache.use_query_cache: false
+        generate_statistics: false
+    show-sql: true
+    
+  # Enable H2 console for local development
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+    
+  # Disable Flyway for local development
+  flyway:
+    enabled: false
+    
+  cloud:
+    config:
+      enabled: false
+      
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Use local auth service or disable for testing
+          issuer-uri: http://localhost:8080/auth/realms/codebridge
+          jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+          
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterAccess=300s
+
+  # Local RabbitMQ Configuration (optional)
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    connection-timeout: 60000
+    virtual-host: /
+
+server:
+  port: 8081  # Local development port
+  servlet:
+    context-path: /api/server
+
+# Local Eureka Configuration with fallback
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: false  # Disable registration if Eureka is not available
+    fetch-registry: false        # Disable registry fetching if Eureka is not available
+    enabled: false               # Completely disable Eureka client for local development
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.codebridge: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    org.springframework.security: INFO
+
+ssh:
+  connection:
+    timeout: 30000
+    retry-count: 3
+    retry-delay: 5000
+  key-storage:
+    path: ./ssh-keys  # Local development path
+
+jasypt:
+  encryptor:
+    password: ${JASYPT_ENCRYPTOR_PASSWORD:local-development-password}
+
+# Application-specific local properties
+codebridge:
+  security:
+    jwt:
+      shared-secret: ${JWT_SHARED_SECRET:local-development-jwt-secret-that-is-long-enough-for-hmac-sha-256-algorithm}
+  service-urls:
+    session-service: "http://localhost:8083/api/sessions"
+    ai-db-agent-service: "http://localhost:8084/api/ai-db-agent"
+    security-service: "http://localhost:8080/api/security"
+    monitoring-service: "http://localhost:8081/api/monitoring"
+    teams-service: "http://localhost:8082/teams"
+    documentation-service: "http://localhost:8084/api/docs"
+    api-test-service: "http://localhost:8085/api/test"
+    docker-service: "http://localhost:8086/api/docker"
+  rabbitmq:
+    activity-log:
+      exchange-name: "codebridge.activitylog.exchange"
+      queue-name: "codebridge.activitylog.queue"
+      routing-key: "codebridge.activitylog.routingkey"
+  ratelimit:
+    capacity: 100  # Reduced for local development
+    refill-tokens: 10
+    refill-duration: 1
+    cache-expiry: 3600
+  resilience:
+    circuitbreaker:
+      failure-rate-threshold: 50
+      slow-call-rate-threshold: 50
+      slow-call-duration-threshold: 2000
+      permitted-calls-in-half-open-state: 5
+      sliding-window-size: 50
+      minimum-number-of-calls: 5
+      wait-duration-in-open-state: 60000
+  async:
+    core-pool-size: 2  # Reduced for local development
+    max-pool-size: 5
+    queue-capacity: 50
+    thread-name-prefix: Server-Async-
+  compression:
+    enabled: false  # Disabled for local development
+  tracing:
+    enabled: false  # Disabled for local development
