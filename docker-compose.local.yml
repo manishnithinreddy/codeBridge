@@ -1,12 +1,9 @@
-version: '3.8'
-
 services:
   # Gateway Service - Entry point for all requests
   codebridge-gateway:
     build:
       context: ./codebridge-gateway-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8080:8080"
     environment:
@@ -30,7 +27,6 @@ services:
     build:
       context: ./codebridge-security
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8083:8083"
     environment:
@@ -50,7 +46,6 @@ services:
     build:
       context: ./codebridge-teams-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8082:8082"
     environment:
@@ -72,7 +67,6 @@ services:
     build:
       context: ./codebridge-server-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8081:8081"
     environment:
@@ -94,7 +88,6 @@ services:
     build:
       context: ./codebridge-docker-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8084:8084"
     environment:
@@ -118,7 +111,6 @@ services:
     build:
       context: ./codebridge-gitlab-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8085:8085"
     environment:
@@ -140,7 +132,6 @@ services:
     build:
       context: ./codebridge-documentation-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8086:8086"
     environment:
@@ -162,7 +153,6 @@ services:
     build:
       context: ./codebridge-monitoring-service
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8087:8087"
     environment:
@@ -184,7 +174,6 @@ services:
     build:
       context: ./session-service/go-implementation
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8088:8080"
     environment:
@@ -204,7 +193,6 @@ services:
     build:
       context: ./db-service/go-implementation
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8089:8081"
     environment:
@@ -224,7 +212,6 @@ services:
     build:
       context: ./ai-service/python-implementation
       dockerfile: Dockerfile
-      no_cache: true  # Always rebuild to get latest code
     ports:
       - "8090:8082"
     environment:
