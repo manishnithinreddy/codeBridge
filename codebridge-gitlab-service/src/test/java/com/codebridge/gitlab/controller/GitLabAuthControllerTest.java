@@ -33,7 +33,8 @@ class GitLabAuthControllerTest {
     void login_ValidRequest_ReturnsAuthResponse() throws Exception {
         // Arrange
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setToken("valid_token");
+        authRequest.setUsername("testuser");
+        authRequest.setPersonalAccessToken("valid_token");
         
         AuthResponse authResponse = new AuthResponse();
         authResponse.setToken("jwt_token");
@@ -69,7 +70,8 @@ class GitLabAuthControllerTest {
     void login_ServiceThrowsException_ReturnsInternalServerError() throws Exception {
         // Arrange
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setToken("invalid_token");
+        authRequest.setUsername("testuser");
+        authRequest.setPersonalAccessToken("invalid_token");
         
         when(gitLabAuthService.authenticate(any(AuthRequest.class)))
                 .thenThrow(new RuntimeException("Invalid token"));
@@ -81,4 +83,3 @@ class GitLabAuthControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 }
-

@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +38,8 @@ class SharedStashServiceImplTest {
 
     private Repository repository;
     private SharedStash sharedStash;
-    private final Long repositoryId = 1L;
+    private final UUID repositoryId = UUID.randomUUID();
+    private final UUID sharedStashId = UUID.randomUUID();
     private final String stashHash = "abcd1234";
     private final String description = "Test stash";
     private final String sharedBy = "testuser";
@@ -50,7 +52,6 @@ class SharedStashServiceImplTest {
         repository.setName("test-repo");
 
         sharedStash = SharedStash.builder()
-                .id(1L)
                 .stashHash(stashHash)
                 .repository(repository)
                 .sharedBy(sharedBy)
@@ -58,6 +59,7 @@ class SharedStashServiceImplTest {
                 .description(description)
                 .branch(branch)
                 .build();
+        sharedStash.setId(sharedStashId);
     }
 
     @Test
@@ -151,7 +153,7 @@ class SharedStashServiceImplTest {
     @Test
     void getSharedStash_ShouldReturnStash() {
         // Arrange
-        Long stashId = 1L;
+        UUID stashId = UUID.randomUUID();
         when(sharedStashRepository.findById(stashId)).thenReturn(Optional.of(sharedStash));
 
         // Act
@@ -167,7 +169,7 @@ class SharedStashServiceImplTest {
     @Test
     void getSharedStash_ShouldThrowException_WhenStashNotFound() {
         // Arrange
-        Long stashId = 1L;
+        UUID stashId = UUID.randomUUID();
         when(sharedStashRepository.findById(stashId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -180,7 +182,7 @@ class SharedStashServiceImplTest {
     @Test
     void deleteSharedStash_ShouldDeleteStash() {
         // Arrange
-        Long stashId = 1L;
+        UUID stashId = UUID.randomUUID();
         when(sharedStashRepository.findById(stashId)).thenReturn(Optional.of(sharedStash));
 
         // Act
@@ -194,7 +196,7 @@ class SharedStashServiceImplTest {
     @Test
     void deleteSharedStash_ShouldThrowException_WhenStashNotFound() {
         // Arrange
-        Long stashId = 1L;
+        UUID stashId = UUID.randomUUID();
         when(sharedStashRepository.findById(stashId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -250,4 +252,3 @@ class SharedStashServiceImplTest {
         verify(sharedStashRepository, never()).existsByStashHashAndRepository(anyString(), any(Repository.class));
     }
 }
-

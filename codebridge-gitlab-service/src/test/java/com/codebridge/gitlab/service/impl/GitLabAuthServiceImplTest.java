@@ -34,7 +34,8 @@ class GitLabAuthServiceImplTest {
     void authenticate_ValidToken_ReturnsAuthResponse() {
         // Arrange
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setToken("valid_token");
+        authRequest.setUsername("testuser");
+        authRequest.setPersonalAccessToken("valid_token");
         
         // Mock the GitLab API response
         when(restTemplate.getForObject(anyString(), any())).thenReturn(new Object());
@@ -53,7 +54,8 @@ class GitLabAuthServiceImplTest {
     void authenticate_InvalidToken_ThrowsException() {
         // Arrange
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setToken("invalid_token");
+        authRequest.setUsername("testuser");
+        authRequest.setPersonalAccessToken("invalid_token");
         
         // Mock the GitLab API response to throw an exception
         when(restTemplate.getForObject(anyString(), any())).thenThrow(new RuntimeException("Invalid token"));
@@ -66,4 +68,3 @@ class GitLabAuthServiceImplTest {
         assertTrue(exception.getMessage().contains("Invalid token"));
     }
 }
-

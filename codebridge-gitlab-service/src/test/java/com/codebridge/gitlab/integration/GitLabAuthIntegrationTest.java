@@ -40,7 +40,8 @@ class GitLabAuthIntegrationTest {
     void authenticate_ValidToken_ReturnsAuthResponse() throws Exception {
         // Arrange
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setToken("valid_token");
+        authRequest.setUsername("testuser");
+        authRequest.setPersonalAccessToken("valid_token");
         
         // Mock the GitLab API response
         when(restTemplate.getForObject(anyString(), any())).thenReturn(new Object());
@@ -66,7 +67,8 @@ class GitLabAuthIntegrationTest {
     void authenticate_InvalidToken_ReturnsInternalServerError() throws Exception {
         // Arrange
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setToken("invalid_token");
+        authRequest.setUsername("testuser");
+        authRequest.setPersonalAccessToken("invalid_token");
         
         // Mock the GitLab API response to throw an exception
         when(restTemplate.getForObject(anyString(), any())).thenThrow(new RuntimeException("Invalid token"));
@@ -78,4 +80,3 @@ class GitLabAuthIntegrationTest {
                 .andExpect(status().isInternalServerError());
     }
 }
-
