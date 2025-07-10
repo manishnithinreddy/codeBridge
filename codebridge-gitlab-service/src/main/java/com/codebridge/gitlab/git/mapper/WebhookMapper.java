@@ -43,4 +43,3 @@ public interface WebhookMapper {
         return entity;
     }
 }
-

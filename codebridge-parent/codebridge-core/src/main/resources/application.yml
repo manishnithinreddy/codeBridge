@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: codebridge-core
+  datasource:
+    url: jdbc:postgresql://localhost:5432/codebridge
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/auth/realms/codebridge
+          jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+
+app:
+  security:
+    issuer-uri: http://localhost:8080/auth/realms/codebridge
+    resource-id: codebridge-api
+    allowed-origins:
+      - http://localhost:3000
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+    allow-credentials: true
+    max-age-in-seconds: 3600
+  token:
+    access-token-expiration-ms: 900000  # 15 minutes
+    refresh-token-expiration-ms: 2592000000  # 30 days
+    api-token-expiration-ms: 31536000000  # 1 year
+    secret: ${JWT_SECRET:codebridge-secret-key-for-development-only}
+    issuer: codebridge
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  health:
+    db:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.codebridge: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    disable-swagger-default-url: true
+

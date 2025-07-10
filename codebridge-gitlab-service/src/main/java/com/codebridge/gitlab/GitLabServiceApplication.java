@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * Main application class for the GitLab service.
@@ -11,7 +12,8 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.codebridge.gitlab", "com.codebridge.gitlab.git"})
+@ComponentScan(basePackages = {"com.codebridge.gitlab"})
+@EnableJpaRepositories(basePackages = {"com.codebridge.gitlab.git.repository"})
 public class GitLabServiceApplication {
 
     public static void main(String[] args) {

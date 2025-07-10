@@ -8,6 +8,22 @@ spring:
     name: codebridge-gitlab-service
   profiles:
     active: dev
+  cloud:
+    discovery:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/codebridge_git
+    username: codebridge
+    password: codebridge
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
 
 gitlab:
   api:
@@ -17,6 +33,12 @@ gitlab:
     write-timeout: 10000
   auth:
     token-expiration: 86400000
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
 
 logging:
   level:
@@ -33,4 +55,3 @@ springdoc:
     tagsSorter: alpha
     disable-swagger-default-url: true
   packages-to-scan: com.codebridge.gitlab.controller
-

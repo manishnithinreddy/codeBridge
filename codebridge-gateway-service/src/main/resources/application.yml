@@ -57,6 +57,16 @@ security:
     expiration-time: 86400000 # 24 hours in milliseconds
   allowed-origins: http://localhost:3000,http://localhost:8080
 
+# Gateway CORS Configuration
+codebridge:
+  gateway:
+    cors:
+      allowed-origins: "http://localhost:3000,http://localhost:8080,http://localhost:4200"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      allowed-headers: "Authorization,Content-Type,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,X-User-ID"
+      allow-credentials: true
+      max-age: 3600
+
 # Rate Limiting
 rate-limiting:
   enabled: true
@@ -99,4 +109,3 @@ logging:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.security: DEBUG
     com.codebridge: DEBUG
-
