@@ -1,259 +1,227 @@
-# CodeBridge Platform
+# CodeBridge - Microservices Platform
 
-CodeBridge is a cross-platform plugin ecosystem that integrates daily-use tools and features directly into your IDE, reducing context switching and improving developer productivity.
+## 🎉 Status: All Compilation Issues Fixed!
 
-## 🚀 Services Overview
-
-The CodeBridge platform consists of multiple microservices:
-
-### Java Services (Spring Boot)
-- **Gateway Service** (Port 8080) - API Gateway and routing
-- **Docker Service** (Port 8082) - Docker container management
-- **GitLab Service** (Port 8086) - GitLab integration and Git operations
-- **Documentation Service** (Port 8087) - Documentation management
-- **Server Service** (Port 8088) - Server management and SSH access
-
-### Go Services
-- **Session Service** (Port 8083) - Session management
-- **DB Service** (Port 8084) - Database operations
-
-### Python Services
-- **AI Service** (Port 8085) - AI-powered database query conversion
-
-### Infrastructure
-- **PostgreSQL** (Port 5432) - Primary database
-- **Redis** (Port 6379) - Caching and session storage
-
-## 📋 Prerequisites
-
-- **Java 21** (OpenJDK or Oracle JDK)
-- **Maven 3.8+**
-- **Docker & Docker Compose**
-- **Go 1.19+** (for Go services)
-- **Python 3.9+** (for AI service)
-
-## 🛠️ Building the Project
-
-### Quick Build
-
-Use the provided build script to compile all Java services:
-
-```bash
-chmod +x build-services.sh
-./build-services.sh
-```
-
-### Manual Build
-
-1. **Set Java Version** (using SDKMAN):
-```bash
-sdk use java 21.0.5-tem
-```
-
-2. **Build Core Services**:
-```bash
-mvn clean compile -DskipTests -pl codebridge-common,codebridge-core,codebridge-security,codebridge-gateway-service,codebridge-gitlab-service,codebridge-docker-service,codebridge-documentation-service,codebridge-server-service
-```
-
-3. **Package JAR Files**:
-```bash
-mvn clean package -DskipTests -Dmaven.test.skip=true -pl codebridge-common,codebridge-core,codebridge-security,codebridge-gateway-service,codebridge-gitlab-service,codebridge-docker-service,codebridge-documentation-service,codebridge-server-service
-```
-
-## 🐳 Running with Docker
-
-### Start All Services
-
-```bash
-docker-compose up -d
-```
-
-### Start Specific Services
-
-```bash
-# Start only infrastructure
-docker-compose up -d postgres redis
-
-# Start Java services
-docker-compose up -d gateway-service docker-service gitlab-service documentation-service server-service
-
-# Start Go services
-docker-compose up -d session-service db-service
-
-# Start Python services
-docker-compose up -d ai-service
-```
-
-### View Logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f gateway-service
-```
-
-### Stop Services
-
-```bash
-docker-compose down
-```
-
-## 🔧 Running Individual Services
-
-### Java Services
-
-```bash
-# Gateway Service
-java -jar codebridge-gateway-service/target/codebridge-gateway-service-3.2.0.jar
-
-# Docker Service
-java -jar codebridge-docker-service/target/codebridge-docker-service-0.0.1-SNAPSHOT.jar
-
-# GitLab Service
-java -jar codebridge-gitlab-service/target/codebridge-gitlab-service-0.0.1-SNAPSHOT.jar
-
-# Documentation Service
-java -jar codebridge-documentation-service/target/codebridge-documentation-service-0.0.1-SNAPSHOT.jar
-
-# Server Service
-java -jar codebridge-server-service/target/codebridge-server-service-0.0.1-SNAPSHOT.jar
-```
-
-### Environment Variables
-
-Each service can be configured using environment variables:
-
-```bash
-# Database Configuration
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/codebridge
-SPRING_DATASOURCE_USERNAME=codebridge
-SPRING_DATASOURCE_PASSWORD=codebridge
-
-# Redis Configuration
-SPRING_REDIS_HOST=localhost
-SPRING_REDIS_PORT=6379
-
-# Profile
-SPRING_PROFILES_ACTIVE=prod
-```
-
-## 🗄️ Database Setup
-
-The PostgreSQL database is automatically initialized with:
-
-- **codebridge_git** - Git operations data
-- **codebridge_docker** - Docker container data
-- **codebridge_server** - Server management data
-- **codebridge_api** - API testing data
-
-UUID extensions are enabled for all databases.
-
-## 🔍 Health Checks
-
-All services include health check endpoints:
-
-- Gateway Service: http://localhost:8080/actuator/health
-- Docker Service: http://localhost:8082/actuator/health
-- GitLab Service: http://localhost:8086/actuator/health
-- Documentation Service: http://localhost:8087/actuator/health
-- Server Service: http://localhost:8088/actuator/health
+This repository contains a microservices-based platform for code collaboration and GitLab integration. All compilation and runtime issues have been resolved, and both services are now building and running successfully with Java 21.
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Gateway       │    │   Docker        │    │   GitLab        │
-│   Service       │    │   Service       │    │   Service       │
-│   (Port 8080)   │    │   (Port 8082)   │    │   (Port 8086)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Documentation  │    │   Server        │    │   Session       │
-│   Service       │    │   Service       │    │   Service (Go)  │
-│   (Port 8087)   │    │   (Port 8088)   │    │   (Port 8083)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-┌─────────────────┐    ┌─────────────────┐
-│   DB Service    │    │   AI Service    │
-│   (Go)          │    │   (Python)      │
-│   (Port 8084)   │    │   (Port 8085)   │
-└─────────────────┘    └─────────────────┘
-         │                       │
-         └───────────────────────┘
-                 │
-    ┌─────────────────┐    ┌─────────────────┐
-    │   PostgreSQL    │    │     Redis       │
-    │   (Port 5432)   │    │   (Port 6379)   │
-    └─────────────────┘    └─────────────────┘
-```
+The platform consists of two main services:
 
-## 🔧 Development
+1. **Gateway Service** (Port 8080) - API Gateway with routing and load balancing
+2. **GitLab Service** (Port 8081) - GitLab integration and Git operations
 
-### Adding New Services
+## ✅ Fixed Issues
 
-1. Create service directory following the naming convention
-2. Add service configuration to `docker-compose.yml`
-3. Update build scripts and documentation
-4. Ensure proper health checks and logging
+### 1. Entity Builder Pattern Issues
+- **Problem**: Multiple entity classes had builder pattern inheritance issues
+- **Solution**: Replaced `@Builder` with `@SuperBuilder` in all entity classes extending `BaseEntity`
+- **Affected Classes**: `Webhook`, `Repository`, `GitProvider`, `SharedStash`, `GitCredential`
 
-### Testing
+### 2. Security Configuration Conflicts
+- **Problem**: Two conflicting security configurations causing bean definition errors
+- **Solution**: Removed duplicate `SecurityConfig.java` and streamlined `GitLabSecurityConfig.java`
+- **Development Mode**: OAuth2 temporarily disabled for easier development
+
+### 3. Service Discovery Issues
+- **Problem**: Eureka client trying to register with non-existent server
+- **Solution**: Disabled Eureka for GitLab service in development mode
+- **Configuration**: Added proper Eureka disable settings in `application.yml`
+
+### 4. MapStruct Compilation Issues
+- **Problem**: Mapper generation failures due to entity inheritance
+- **Solution**: Fixed with `@SuperBuilder` pattern and proper inheritance setup
+
+### 5. Docker Configuration
+- **Problem**: Port mismatches between application config and Dockerfile
+- **Solution**: Updated Dockerfile to match actual application ports and health check paths
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Java 21 (OpenJDK or Oracle JDK)
+- Maven 3.6+
+- Docker & Docker Compose (optional)
+- PostgreSQL (for GitLab service)
+
+### Option 1: Run with Docker Compose (Recommended)
 
 ```bash
-# Run tests for specific service
-mvn test -pl codebridge-gateway-service
+# Build and start all services
+docker compose up --build
 
-# Run all tests
+# Or run in detached mode
+docker compose up --build -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+```
+
+This will start:
+- Gateway Service on http://localhost:8080
+- GitLab Service on http://localhost:8081
+- PostgreSQL database on localhost:5432
+
+### Option 2: Run Services Individually
+
+#### 1. Start PostgreSQL Database
+```bash
+# Using Docker
+docker run -d \
+  --name postgres-codebridge \
+  -e POSTGRES_DB=codebridge_git \
+  -e POSTGRES_USER=codebridge \
+  -e POSTGRES_PASSWORD=codebridge \
+  -p 5432:5432 \
+  postgres:15-alpine
+
+# Or install PostgreSQL locally and create the database
+```
+
+#### 2. Build and Run Gateway Service
+```bash
+cd codebridge-gateway-service
+mvn clean package -DskipTests
+java -jar target/codebridge-gateway-service-3.2.0.jar
+```
+
+#### 3. Build and Run GitLab Service
+```bash
+cd codebridge-gitlab-service
+mvn clean package -DskipTests
+java -jar target/codebridge-gitlab-service-0.0.1-SNAPSHOT.jar
+```
+
+## 🔧 Configuration
+
+### Gateway Service
+- **Port**: 8080
+- **Health Check**: http://localhost:8080/actuator/health
+- **Eureka**: Enabled (connects to service registry)
+
+### GitLab Service
+- **Port**: 8081
+- **Context Path**: `/api/gitlab`
+- **Health Check**: http://localhost:8081/api/gitlab/actuator/health
+- **Database**: PostgreSQL (codebridge_git)
+- **Eureka**: Disabled for development
+
+## 📊 Service Endpoints
+
+### Gateway Service
+- Health: `GET http://localhost:8080/actuator/health`
+- Routes: Configured to proxy requests to backend services
+
+### GitLab Service
+- Health: `GET http://localhost:8081/api/gitlab/actuator/health`
+- API Docs: `GET http://localhost:8081/api/gitlab/swagger-ui.html`
+- GitLab API: Various endpoints under `/api/gitlab/`
+
+## 🛠️ Development
+
+### Building Services
+```bash
+# Build all services
+mvn clean package -DskipTests
+
+# Build specific service
+cd codebridge-gateway-service
+mvn clean package -DskipTests
+```
+
+### Running Tests
+```bash
+# Run tests for all services
+mvn test
+
+# Run tests for specific service
+cd codebridge-gitlab-service
 mvn test
 ```
 
-## 📝 Features
+### Development Profiles
+Both services are configured with `dev` profile by default, which includes:
+- Debug logging for application packages
+- Relaxed security settings
+- Local database connections
 
-- **GitLab Integration** - Repository management, CI/CD pipelines
-- **Docker Management** - Container lifecycle, image management
-- **API Testing** - REST API testing and validation
-- **Server Session Management** - Secure server access without credential sharing
-- **AI Database Agent** - Natural language to SQL query conversion
-- **Team Collaboration** - Shared access and team management
-- **Documentation** - Integrated documentation management
+## 🐳 Docker
 
-## 🤝 Contributing
+### Individual Service Images
+```bash
+# Build Gateway Service image
+cd codebridge-gateway-service
+docker build -t codebridge-gateway .
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+# Build GitLab Service image
+cd codebridge-gitlab-service
+docker build -t codebridge-gitlab .
+```
 
-## 📄 License
+### Docker Compose Services
+The `docker-compose.yml` includes:
+- **codebridge-gateway**: Gateway service with health checks
+- **codebridge-gitlab**: GitLab service with database dependency
+- **postgres**: PostgreSQL database with persistent storage
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Troubleshooting
+## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **Java Version Mismatch**: Ensure Java 21 is installed and active
-2. **Port Conflicts**: Check if ports are already in use
-3. **Docker Issues**: Ensure Docker daemon is running
-4. **Database Connection**: Verify PostgreSQL is running and accessible
+1. **Port Already in Use**
+   ```bash
+   # Check what's using the port
+   lsof -i :8080
+   lsof -i :8081
+   
+   # Kill the process or change port in application.yml
+   ```
 
-### Logs
+2. **Database Connection Issues**
+   ```bash
+   # Ensure PostgreSQL is running
+   docker ps | grep postgres
+   
+   # Check database connectivity
+   psql -h localhost -U codebridge -d codebridge_git
+   ```
 
-Check service logs for detailed error information:
+3. **Java Version Issues**
+   ```bash
+   # Verify Java 21 is being used
+   java -version
+   echo $JAVA_HOME
+   
+   # Set JAVA_HOME if needed
+   export JAVA_HOME=/path/to/jdk-21
+   ```
 
-```bash
-# Docker logs
-docker-compose logs [service-name]
+### Build Warnings
+Some build warnings are expected and don't affect functionality:
+- `@SuperBuilder` warnings about initializing expressions
+- `Field 'log' already exists` warnings from Lombok
 
-# Application logs
-tail -f logs/application.log
-```
+## 📝 API Documentation
 
-For more help, please check the documentation or create an issue in the repository.
+Once services are running:
+- Gateway Service: http://localhost:8080/actuator/health
+- GitLab Service API Docs: http://localhost:8081/api/gitlab/swagger-ui.html
+
+## 🤝 Contributing
+
+1. Ensure Java 21 is installed
+2. Run `mvn clean package` to verify builds
+3. Test services individually before Docker deployment
+4. Follow existing code patterns and security configurations
+
+## 📄 License
+
+[Add your license information here]
+
+---
+
+**Note**: This setup is configured for development. For production deployment, ensure proper security configurations, database credentials, and service discovery setup.
 
