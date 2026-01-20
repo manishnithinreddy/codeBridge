@@ -2,32 +2,33 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    
     <groupId>com.codebridge</groupId>
-    <artifactId>codebridge-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>codebridge-platform</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>CodeBridge Parent</name>
-    <description>Parent project for CodeBridge microservices platform</description>
-    
+    <name>CodeBridge Platform</name>
+    <description>CodeBridge Platform - A comprehensive cloud development environment</description>
+
     <modules>
-        <module>codebridge-user-management-service</module>
+        <module>codebridge-usermanagement-service</module>
         <module>codebridge-docker-service</module>
         <module>codebridge-server-service</module>
         <module>codebridge-api-test-service</module>
         <module>codebridge-gateway</module>
-        <module>codebridge-security-service</module>
-        <module>codebridge-auth-gateway</module>
         <module>codebridge-core</module>
-        <module>codebridge-webhook-service</module>
         <module>codebridge-gitlab-service</module>
+        <module>codebridge-ai-db-agent-service</module>
+        <module>codebridge-session-service</module>
+        <module>codebridge-events-service</module>
+        <module>codebridge-identity-service</module>
+        <module>codebridge-organization-service</module>
+        <module>codebridge-admin-service</module>
     </modules>
     
     <properties>
@@ -37,10 +38,16 @@
         <jjwt.version>0.11.5</jjwt.version>
         <springdoc-openapi.version>2.1.0</springdoc-openapi.version>
     </properties>
-    
+
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Cloud -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -48,8 +55,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
-            <!-- JWT -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
@@ -67,8 +72,6 @@
                 <version>${jjwt.version}</version>
                 <scope>runtime</scope>
             </dependency>
-            
-            <!-- Swagger/OpenAPI -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -76,23 +79,22 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    
+
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <configuration>
-                        <excludes>
-                            <exclude>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok</artifactId>
-                            </exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>
+
