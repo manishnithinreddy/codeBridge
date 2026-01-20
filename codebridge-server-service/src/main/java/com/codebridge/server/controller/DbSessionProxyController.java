@@ -109,6 +109,7 @@ public class DbSessionProxyController {
 
     @PostMapping("/{sessionToken}/release")
     public ResponseEntity<?> releaseDbSession(@PathVariable String sessionToken, HttpServletRequest request) {
+        // this commit is for code rabbit testing remove later
         HttpHeaders headers = new HttpHeaders();
         String userJwt = extractJwtFromRequest(request);
         if (userJwt != null) {
