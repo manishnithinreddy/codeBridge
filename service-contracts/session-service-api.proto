@@ -1,0 +1,233 @@
+syntax = "proto3";
+
+package com.codebridge.session.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.codebridge.session.grpc";
+option java_outer_classname = "SessionServiceProto";
+option go_package = "github.com/codebridge/session/grpc";
+
+// Session Service API
+service SessionService {
+  // Create a new session
+  rpc CreateSession(CreateSessionRequest) returns (SessionResponse) {}
+  
+  // Get session details
+  rpc GetSession(SessionRequest) returns (SessionResponse) {}
+  
+  // List active sessions
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {}
+  
+  // Terminate a session
+  rpc TerminateSession(SessionRequest) returns (TerminateSessionResponse) {}
+  
+  // Stream session activity
+  rpc StreamSessionActivity(SessionRequest) returns (stream SessionActivityEvent) {}
+  
+  // Send command to session
+  rpc SendCommand(SessionCommandRequest) returns (SessionCommandResponse) {}
+  
+  // Resize session terminal
+  rpc ResizeTerminal(ResizeTerminalRequest) returns (ResizeTerminalResponse) {}
+  
+  // Get session metrics
+  rpc GetSessionMetrics(SessionMetricsRequest) returns (SessionMetricsResponse) {}
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
+}
+
+// Request to create a new session
+message CreateSessionRequest {
+  string user_id = 1;
+  string server_id = 2;
+  SessionType session_type = 3;
+  SessionOptions options = 4;
+  map<string, string> metadata = 5;
+}
+
+// Session types
+enum SessionType {
+  SSH = 0;
+  SFTP = 1;
+  TERMINAL = 2;
+}
+
+// Session options
+message SessionOptions {
+  string username = 1;
+  AuthMethod auth_method = 2;
+  string key_id = 3;
+  string password = 4;
+  string initial_directory = 5;
+  int32 terminal_width = 6;
+  int32 terminal_height = 7;
+  int32 timeout_seconds = 8;
+  bool record_session = 9;
+  map<string, string> environment_variables = 10;
+}
+
+// Authentication methods
+enum AuthMethod {
+  PASSWORD = 0;
+  PUBLIC_KEY = 1;
+  CERTIFICATE = 2;
+}
+
+// Request for a specific session
+message SessionRequest {
+  string session_id = 1;
+}
+
+// Response with session details
+message SessionResponse {
+  string session_id = 1;
+  string user_id = 2;
+  string server_id = 3;
+  SessionType session_type = 4;
+  SessionState state = 5;
+  int64 created_at = 6;
+  int64 last_activity_at = 7;
+  string connection_info = 8;
+  map<string, string> metadata = 9;
+}
+
+// Session states
+enum SessionState {
+  INITIALIZING = 0;
+  CONNECTED = 1;
+  DISCONNECTED = 2;
+  TERMINATED = 3;
+  ERROR = 4;
+}
+
+// Request to list sessions
+message ListSessionsRequest {
+  string user_id = 1;
+  string server_id = 2;
+  SessionType session_type = 3;
+  SessionState state = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+// Response with session list
+message ListSessionsResponse {
+  repeated SessionResponse sessions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Response to terminating a session
+message TerminateSessionResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Session activity event
+message SessionActivityEvent {
+  string session_id = 1;
+  EventType event_type = 2;
+  int64 timestamp = 3;
+  bytes data = 4;
+  string message = 5;
+}
+
+// Event types
+enum EventType {
+  CONNECT = 0;
+  DISCONNECT = 1;
+  DATA = 2;
+  COMMAND = 3;
+  ERROR = 4;
+  STATE_CHANGE = 5;
+}
+
+// Request to send a command to a session
+message SessionCommandRequest {
+  string session_id = 1;
+  string command = 2;
+  bool run_as_background = 3;
+  int32 timeout_seconds = 4;
+}
+
+// Response to a session command
+message SessionCommandResponse {
+  string session_id = 1;
+  bool success = 2;
+  int32 exit_code = 3;
+  string stdout = 4;
+  string stderr = 5;
+  int64 execution_time_ms = 6;
+}
+
+// Request to resize a terminal
+message ResizeTerminalRequest {
+  string session_id = 1;
+  int32 width = 2;
+  int32 height = 3;
+}
+
+// Response to resizing a terminal
+message ResizeTerminalResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Request for session metrics
+message SessionMetricsRequest {
+  string session_id = 1;
+  repeated MetricType metrics = 2;
+  int64 start_time = 3;
+  int64 end_time = 4;
+  int32 resolution_seconds = 5;
+}
+
+// Metric types
+enum MetricType {
+  BYTES_SENT = 0;
+  BYTES_RECEIVED = 1;
+  COMMANDS_EXECUTED = 2;
+  CPU_USAGE = 3;
+  MEMORY_USAGE = 4;
+  LATENCY = 5;
+}
+
+// Response with session metrics
+message SessionMetricsResponse {
+  string session_id = 1;
+  map<string, MetricSeries> metrics = 2;
+}
+
+// Metric series
+message MetricSeries {
+  MetricType metric_type = 1;
+  repeated MetricPoint points = 2;
+  string unit = 3;
+}
+
+// Metric point
+message MetricPoint {
+  int64 timestamp = 1;
+  double value = 2;
+}
+
+// Health check request
+message HealthCheckRequest {
+  // Empty
+}
+
+// Health check response
+message HealthCheckResponse {
+  Status status = 1;
+  string version = 2;
+  map<string, string> details = 3;
+  
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+}
+

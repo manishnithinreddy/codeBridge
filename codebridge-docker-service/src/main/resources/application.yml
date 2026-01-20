@@ -1,43 +1,36 @@
 server:
-  port: 8084
+  port: 8082
   servlet:
-    context-path: /
+    context-path: /api/docker
 
 spring:
   application:
     name: codebridge-docker-service
+  profiles:
+    active: dev
 
-# OpenAPI configuration
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: method
-    tagsSorter: alpha
-    docExpansion: none
-    filter: true
-    displayRequestDuration: true
+docker:
+  api:
+    host: unix:///var/run/docker.sock
+    connect-timeout: 5000
+    read-timeout: 30000
+    write-timeout: 10000
+  auth:
+    token-expiration: 86400000
 
-# Logging configuration
 logging:
   level:
     root: INFO
     com.codebridge: DEBUG
     org.springframework.web: INFO
-    org.springframework.security: INFO
 
-# Docker service configuration
-docker:
-  connection:
-    timeout: 30000
-    socket-timeout: 30000
-  registry:
-    default-auth-type: basic
-    verify-ssl: true
-  context:
-    default-endpoint-type: docker
-  container:
-    log-tail-lines: 100
-    log-stream-timeout: 3600000
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    disable-swagger-default-url: true
+  packages-to-scan: com.codebridge.docker.controller
 

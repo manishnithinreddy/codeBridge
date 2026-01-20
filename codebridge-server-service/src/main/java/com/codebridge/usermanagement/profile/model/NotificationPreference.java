@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Represents a user's notification preferences for a specific event type.
+ * Model class representing a user's notification preferences for a specific event type.
  */
 public class NotificationPreference {
     private UUID id;
@@ -17,11 +17,26 @@ public class NotificationPreference {
     private String customChannel;
     private Map<String, Object> customChannelConfig;
 
-    // Constructors
+    /**
+     * Default constructor.
+     */
     public NotificationPreference() {
+        // Default constructor
+        this.id = UUID.randomUUID();
+        this.emailEnabled = true;
+        this.pushEnabled = true;
+        this.inAppEnabled = true;
+        this.slackEnabled = false;
     }
 
+    /**
+     * Constructor with userId and eventType.
+     *
+     * @param userId the user ID
+     * @param eventType the event type
+     */
     public NotificationPreference(UUID userId, String eventType) {
+        this.id = UUID.randomUUID();
         this.userId = userId;
         this.eventType = eventType;
         // Default to all channels enabled
@@ -29,9 +44,29 @@ public class NotificationPreference {
         this.pushEnabled = true;
         this.inAppEnabled = true;
         this.slackEnabled = false;
+        this.customChannel = null;
+        this.customChannelConfig = null;
     }
 
-    // Getters and Setters
+    /**
+     * Constructor with status.
+     *
+     * @param status the status (e.g., "enabled", "disabled")
+     */
+    public NotificationPreference(String status) {
+        this.id = UUID.randomUUID();
+        this.userId = UUID.randomUUID(); // Dummy user ID
+        this.eventType = "DEFAULT";
+        // Set channels based on status
+        boolean enabled = "enabled".equalsIgnoreCase(status);
+        this.emailEnabled = enabled;
+        this.pushEnabled = enabled;
+        this.inAppEnabled = enabled;
+        this.slackEnabled = false;
+        this.customChannel = null;
+        this.customChannelConfig = null;
+    }
+
     public UUID getId() {
         return id;
     }

@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package com.codebridge.featureflag;
+
+option java_multiple_files = true;
+option java_package = "com.codebridge.featureflag.proto";
+option java_outer_classname = "FeatureFlagProto";
+
+// Service definition for the Feature Flag service
+service FeatureFlagService {
+  // Get a feature flag value
+  rpc GetFeatureFlag (FeatureFlagRequest) returns (FeatureFlagResponse) {}
+  
+  // Stream feature flag updates
+  rpc StreamFeatureFlags (FeatureFlagStreamRequest) returns (stream FeatureFlagResponse) {}
+}
+
+// Request to get a feature flag
+message FeatureFlagRequest {
+  string flag_key = 1;
+  string context_id = 2;
+  map<string, string> attributes = 3;
+}
+
+// Request to stream feature flag updates
+message FeatureFlagStreamRequest {
+  repeated string flag_keys = 1;
+  string context_id = 2;
+  map<string, string> attributes = 3;
+}
+
+// Response containing a feature flag value
+message FeatureFlagResponse {
+  string flag_key = 1;
+  oneof value {
+    bool bool_value = 2;
+    string string_value = 3;
+    int32 int_value = 4;
+    double double_value = 5;
+    JsonValue json_value = 6;
+  }
+  string variation = 7;
+  string reason = 8;
+}
+
+// JSON value representation
+message JsonValue {
+  string json_string = 1;
+}
+

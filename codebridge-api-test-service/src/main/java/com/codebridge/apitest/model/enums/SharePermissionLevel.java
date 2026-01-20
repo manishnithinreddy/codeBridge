@@ -1,7 +1,9 @@
 package com.codebridge.apitest.model.enums;
 
 public enum SharePermissionLevel {
-    VIEW_ONLY,    // Can view project, collections, tests (read-only)
-    CAN_EXECUTE,  // VIEW_ONLY + can execute tests/collections
-    CAN_EDIT      // VIEW_ONLY + CAN_EXECUTE + can edit project/collections/tests, manage collections within project
+    CAN_VIEW,     // Can view project, collections, tests (read-only)
+    VIEW_ONLY,    // Alias for CAN_VIEW (for backward compatibility)
+    CAN_EXECUTE,  // CAN_VIEW + can execute tests/collections
+    CAN_EDIT      // CAN_VIEW + CAN_EXECUTE + can edit project/collections/tests, manage collections within project
 }
+

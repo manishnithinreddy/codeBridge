@@ -1,32 +1,87 @@
-spring:
-  application:
-    name: user-management-service
-  datasource:
-    url: jdbc:postgresql://localhost:5432/codebridge_user_management
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-    show-sql: true
-
 server:
   port: 8080
   servlet:
-    context-path: /
+    context-path: /api
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 20000
 
-jwt:
-  secret: ${JWT_SECRET:codebridge-user-management-service-secret-key-for-jwt-token-generation}
-  expiration: 86400000 # 24 hours in milliseconds
+spring:
+  application:
+    name: codebridge-scalability-ha
+  
+  # Database configuration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:codebridge}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+  
+  # Redis configuration
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:}
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+  
+  # Session configuration
+  session:
+    store-type: ${SPRING_SESSION_STORE_TYPE:redis}
+    timeout: 30m
+    redis:
+      namespace: codebridge:session
+    jdbc:
+      initialize-schema: always
+      schema: classpath:org/springframework/session/jdbc/schema-postgresql.sql
+      table-name: SPRING_SESSION
+  
+  # Cache configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-null-values: false
+  
+  # Cloud configuration
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+    discovery:
+      enabled: true
+    config:
+      enabled: false
 
-session:
-  expiration: 1440 # 24 hours in minutes
+# Eureka configuration
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    metadata-map:
+      weight: 100
 
+# Management endpoints
 management:
   endpoints:
     web:
@@ -35,12 +90,121 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
 
-logging:
-  level:
-    root: INFO
-    com.codebridge: DEBUG
-    org.springframework.web: INFO
-    org.springframework.security: INFO
-    org.hibernate: INFO
+# Resilience4j configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      default:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+  bulkhead:
+    instances:
+      default:
+        maxConcurrentCalls: 25
+        maxWaitDuration: 0ms
 
+# Hazelcast configuration
+hazelcast:
+  network:
+    join:
+      multicast:
+        enabled: true
+      kubernetes:
+        enabled: false
+    port:
+      auto-increment: true
+      port: 5701
+  map:
+    default:
+      backup-count: 1
+      read-backup-data: true
+      eviction:
+        eviction-policy: LRU
+        max-size-policy: PER_NODE
+        size: 10000
+
+# CodeBridge Scalability Configuration
+codebridge:
+  scalability:
+    # Session configuration
+    session:
+      store-type: ${CODEBRIDGE_SESSION_STORE_TYPE:redis}
+      cookie:
+        secure: true
+        http-only: true
+        same-site: lax
+        max-age: 1800
+    
+    # Load balancing configuration
+    load-balancing:
+      strategy: ${CODEBRIDGE_LOAD_BALANCING_STRATEGY:round-robin}
+      sticky-sessions: ${CODEBRIDGE_LOAD_BALANCING_STICKY_SESSIONS:true}
+      health-check-interval-seconds: 30
+    
+    # Auto-scaling configuration
+    auto-scaling:
+      enabled: ${CODEBRIDGE_AUTO_SCALING_ENABLED:true}
+      cpu-threshold: 70
+      memory-threshold: 80
+      min-instances: 2
+      max-instances: 10
+      scale-up-cooldown-seconds: 300
+      scale-down-cooldown-seconds: 600
+    
+    # Data resilience configuration
+    data-resilience:
+      replication:
+        enabled: ${CODEBRIDGE_REPLICATION_ENABLED:true}
+        read-from-replicas: true
+        consistency-level: QUORUM
+      backup:
+        enabled: ${CODEBRIDGE_BACKUP_ENABLED:true}
+        schedule: "0 0 2 * * ?"
+        retention-days: 30
+        verify: true
+      partitioning:
+        enabled: ${CODEBRIDGE_PARTITIONING_ENABLED:true}
+        strategy: hash
+        shard-count: 4
+    
+    # Rate limiting configuration
+    rate-limiting:
+      enabled: ${CODEBRIDGE_RATE_LIMITING_ENABLED:true}
+      default-limit: 100
+      default-duration: 60
+    
+    # Idempotency configuration
+    idempotency:
+      enabled: ${CODEBRIDGE_IDEMPOTENCY_ENABLED:true}
+      header-name: X-Idempotency-Key
+      storage-type: redis
+      expiration-hours: 24

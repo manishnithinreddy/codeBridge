@@ -2,10 +2,13 @@ package com.codebridge.apitest.util;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.encrypt.Encryptors;
-import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.stereotype.Component;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.Base64;
 
 /**
  * JPA converter that automatically encrypts/decrypts sensitive string values
@@ -15,25 +18,41 @@ import org.springframework.stereotype.Component;
 @Component
 public class EncryptedStringConverter implements AttributeConverter<String, String> {
 
-    private final TextEncryptor encryptor;
+    private static final String ALGORITHM = "AES/ECB/PKCS5Padding";
+    private static final String KEY = "CodeBridgeApiKey"; // 16 characters for AES-128
 
-    public EncryptedStringConverter(
-            @Value("${codebridge.encryption.password:defaultEncryptionPassword}") String password,
-            @Value("${codebridge.encryption.salt:5c0d3br1dg3}") String salt) {
-        // Use Spring's Encryptors utility to create a secure text encryptor
-        this.encryptor = Encryptors.text(password, salt);
+    private final Key secretKey;
+
+    public EncryptedStringConverter() {
+        this.secretKey = new SecretKeySpec(KEY.getBytes(StandardCharsets.UTF_8), "AES");
     }
 
     @Override
     public String convertToDatabaseColumn(String attribute) {
-        // Encrypt the value before storing in the database
-        return attribute != null ? encryptor.encrypt(attribute) : null;
+        if (attribute == null) {
+            return null;
+        }
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            return Base64.getEncoder().encodeToString(cipher.doFinal(attribute.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting data", e);
+        }
     }
 
     @Override
     public String convertToEntityAttribute(String dbData) {
-        // Decrypt the value when reading from the database
-        return dbData != null ? encryptor.decrypt(dbData) : null;
+        if (dbData == null) {
+            return null;
+        }
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            return new String(cipher.doFinal(Base64.getDecoder().decode(dbData)), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new RuntimeException("Error decrypting data", e);
+        }
     }
 }
 

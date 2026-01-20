@@ -1,5 +1,7 @@
 package com.codebridge.core.exception;
 
+import com.codebridge.common.exception.ErrorResponse;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -35,4 +37,3 @@ public class ValidationErrorResponse extends ErrorResponse {
         this.errors = errors;
     }
 }
-

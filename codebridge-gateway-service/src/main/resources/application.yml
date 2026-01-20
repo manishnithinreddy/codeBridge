@@ -1,0 +1,102 @@
+spring:
+  application:
+    name: codebridge-gateway-service
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: monitoring-service
+          uri: lb://codebridge-monitoring-service
+          predicates:
+            - Path=/monitoring/**
+          filters:
+            - StripPrefix=1
+        - id: server-service
+          uri: lb://codebridge-server-service
+          predicates:
+            - Path=/server/**
+          filters:
+            - StripPrefix=1
+        - id: session-service
+          uri: lb://codebridge-session-service
+          predicates:
+            - Path=/session/**
+          filters:
+            - StripPrefix=1
+        - id: ai-db-agent-service
+          uri: lb://codebridge-ai-db-agent-service
+          predicates:
+            - Path=/db/**
+          filters:
+            - StripPrefix=1
+
+server:
+  port: 8080
+
+# Eureka Server Configuration
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://localhost:8080/eureka/
+  server:
+    wait-time-in-ms-when-sync-empty: 5
+    enable-self-preservation: false
+
+# Security Configuration
+security:
+  jwt:
+    secret-key: ${JWT_SECRET:codebridge-secret-key-for-jwt-token-generation-and-validation}
+    expiration-time: 86400000 # 24 hours in milliseconds
+  allowed-origins: http://localhost:3000,http://localhost:8080
+
+# Rate Limiting
+rate-limiting:
+  enabled: true
+  default-limit: 100
+  default-refresh-period: 60
+  ip-based: true
+
+# Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+    com.codebridge: DEBUG
+

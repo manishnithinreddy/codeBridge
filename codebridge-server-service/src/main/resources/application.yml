@@ -6,6 +6,12 @@ spring:
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -13,6 +19,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc.batch_size: 30
+        order_inserts: true
+        order_updates: true
     show-sql: false
   flyway:
     enabled: true
@@ -26,11 +35,24 @@ spring:
         jwt:
           issuer-uri: http://localhost:8080/auth/realms/codebridge
           jwk-set-uri: http://localhost:8080/auth/realms/codebridge/protocol/openid-connect/certs
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterAccess=600s
 
 server:
   port: 8083
   servlet:
     context-path: /api/server
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 10000
+    accept-count: 100
 
 eureka:
   client:
@@ -47,6 +69,13 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
 
 logging:
   level:
@@ -94,3 +123,29 @@ codebridge:
       exchange-name: "codebridge.activitylog.exchange"
       queue-name: "codebridge.activitylog.queue"
       routing-key: "codebridge.activitylog.routingkey"
+  ratelimit:
+    capacity: 100
+    refill-tokens: 10
+    refill-duration: 1
+    cache-expiry: 3600
+  resilience:
+    circuitbreaker:
+      failure-rate-threshold: 50
+      slow-call-rate-threshold: 50
+      slow-call-duration-threshold: 2000
+      permitted-calls-in-half-open-state: 10
+      sliding-window-size: 100
+      minimum-number-of-calls: 10
+      wait-duration-in-open-state: 60000
+  async:
+    core-pool-size: 5
+    max-pool-size: 10
+    queue-capacity: 25
+    thread-name-prefix: Server-Async-
+  compression:
+    enabled: true
+    min-response-size: 2048
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  tracing:
+    enabled: true
+

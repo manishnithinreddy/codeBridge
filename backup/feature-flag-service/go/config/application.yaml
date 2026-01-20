@@ -1,0 +1,28 @@
+server:
+  port: 8090
+  context-path: /feature-flag
+
+redis:
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:}
+  database: ${REDIS_DATABASE:0}
+  timeout: 2000
+  pool:
+    max-active: 8
+    max-idle: 8
+    min-idle: 2
+    max-wait: -1
+
+grpc:
+  server:
+    port: 9090
+
+feature-flag:
+  cache:
+    ttl-seconds: 60
+  defaults:
+    namespace: default
+  pubsub:
+    channel: feature-flag-updates
+

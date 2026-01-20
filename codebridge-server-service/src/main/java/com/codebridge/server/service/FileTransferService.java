@@ -49,7 +49,7 @@ public class FileTransferService {
     }
 
     // Helper to validate token and authorize - throws exceptions on failure
-    private UUID validateTokenAndAuthorize(UUID serverId, String sessionToken) {
+    protected UUID validateTokenAndAuthorize(UUID serverId, String sessionToken) {
         Claims claims = jwtUtil.extractAllClaims(sessionToken);
         UUID platformUserIdFromToken = UUID.fromString(claims.getSubject());
         UUID resourceIdFromToken = UUID.fromString(claims.get("resourceId", String.class));
@@ -360,4 +360,3 @@ public class FileTransferService {
         }
     }
 }
-

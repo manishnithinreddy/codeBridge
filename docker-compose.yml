@@ -1,153 +1,182 @@
 version: '3.8'
 
 services:
-  # Discovery Service
-  discovery-service:
-    image: codebridge/discovery-service:latest
-    container_name: discovery-service
-    ports:
-      - "8761:8761"
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-
-  # API Gateway
-  api-gateway:
-    image: codebridge/api-gateway:latest
-    container_name: api-gateway
+  # Gateway Service
+  gateway-service:
+    build:
+      context: ./codebridge-gateway-service
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    depends_on:
-      - discovery-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
     networks:
       - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
 
-  # Databases
+  # GitLab Service
+  gitlab-service:
+    build:
+      context: ./codebridge-gitlab-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # Docker Service
+  docker-service:
+    build:
+      context: ./codebridge-docker-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # Session Service (Go implementation)
+  session-service:
+    build:
+      context: ./session-service/go-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - ENVIRONMENT=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  # DB Service (Go implementation)
+  db-service:
+    build:
+      context: ./db-service/go-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - ENVIRONMENT=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # AI Service (Python implementation)
+  ai-service:
+    build:
+      context: ./ai-service/python-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - ENVIRONMENT=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - db-service
+
+  # Documentation Service
+  documentation-service:
+    build:
+      context: ./codebridge-documentation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # Monitoring Service
+  monitoring-service:
+    build:
+      context: ./codebridge-monitoring-service
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # Teams Service
+  teams-service:
+    build:
+      context: ./codebridge-teams-service
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # Identity Platform
+  identity-platform:
+    build:
+      context: ./codebridge-identity-platform
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+
+  # PostgreSQL for persistent storage
   postgres:
-    image: postgres:14-alpine
-    container_name: postgres
+    image: postgres:15-alpine
     ports:
       - "5432:5432"
-    networks:
-      - codebridge-network
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_MULTIPLE_DATABASES=codebridge_identity,codebridge_organization,codebridge_events,codebridge_gitlab,codebridge_docker,codebridge_server,codebridge_api_test
+      - POSTGRES_USER=codebridge
+      - POSTGRES_PASSWORD=codebridge
+      - POSTGRES_MULTIPLE_DATABASES=codebridge,codebridge_docs,codebridge_teams,codebridge_identity
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
-
-  # Core Services
-  gitlab-service:
-    image: codebridge/gitlab-service:latest
-    container_name: gitlab-service
-    depends_on:
-      - discovery-service
-      - postgres
     networks:
       - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_gitlab
-
-  docker-service:
-    image: codebridge/docker-service:latest
-    container_name: docker-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_docker
-
-  server-service:
-    image: codebridge/server-service:latest
-    container_name: server-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_server
-
-  api-test-service:
-    image: codebridge/api-test-service:latest
-    container_name: api-test-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_api_test
-
-  # Consolidated Services
-  identity-service:
-    image: codebridge/identity-service:latest
-    container_name: identity-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_identity
-      - JWT_SECRET=your-secret-key
-
-  organization-service:
-    image: codebridge/organization-service:latest
-    container_name: organization-service
-    depends_on:
-      - discovery-service
-      - postgres
-      - identity-service
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_organization
-
-  events-service:
-    image: codebridge/events-service:latest
-    container_name: events-service
-    depends_on:
-      - discovery-service
-      - postgres
-    networks:
-      - codebridge-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_URI=http://discovery-service:8761/eureka
-      - DB_HOST=postgres
-      - DB_NAME=codebridge_events
+    restart: unless-stopped
 
 networks:
   codebridge-network:
     driver: bridge
 
 volumes:
+  redis-data:
   postgres-data:
-

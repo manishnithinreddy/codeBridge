@@ -1,0 +1,48 @@
+server:
+  port: 8090
+  servlet:
+    context-path: /feature-flag
+
+spring:
+  application:
+    name: feature-flag-service
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
+    timeout: 2000
+    jedis:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+
+grpc:
+  server:
+    port: 9090
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+feature-flag:
+  cache:
+    ttl-seconds: 60
+  defaults:
+    namespace: default
+  pubsub:
+    channel: feature-flag-updates
+
