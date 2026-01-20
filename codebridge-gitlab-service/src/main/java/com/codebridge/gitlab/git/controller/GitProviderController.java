@@ -1,8 +1,8 @@
-package com.codebridge.git.controller;
+package com.codebridge.gitlab.git.controller;
 
-import com.codebridge.git.dto.GitProviderDto;
-import com.codebridge.git.model.GitProvider.ProviderType;
-import com.codebridge.git.service.GitProviderService;
+import com.codebridge.gitlab.git.dto.GitProviderDto;
+import com.codebridge.gitlab.git.model.GitProvider.ProviderType;
+import com.codebridge.gitlab.git.service.GitProviderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

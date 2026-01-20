@@ -1,12 +1,12 @@
-package com.codebridge.git.service.impl;
+package com.codebridge.gitlab.git.service.impl;
 
-import com.codebridge.git.dto.GitProviderDto;
+import com.codebridge.gitlab.git.dto.GitProviderDto;
 import com.codebridge.git.exception.ResourceNotFoundException;
-import com.codebridge.git.mapper.GitProviderMapper;
-import com.codebridge.git.model.GitProvider;
-import com.codebridge.git.model.GitProvider.ProviderType;
-import com.codebridge.git.repository.GitProviderRepository;
-import com.codebridge.git.service.GitProviderService;
+import com.codebridge.gitlab.git.mapper.GitProviderMapper;
+import com.codebridge.gitlab.git.model.GitProvider;
+import com.codebridge.gitlab.git.model.GitProvider.ProviderType;
+import com.codebridge.gitlab.git.repository.GitProviderRepository;
+import com.codebridge.gitlab.git.service.GitProviderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

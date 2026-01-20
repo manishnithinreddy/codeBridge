@@ -1,15 +1,18 @@
-FROM golang:1.20-alpine AS builder
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Copy go.mod and go.sum files
-COPY go.mod go.sum* ./
+# Copy go.mod file
+COPY go.mod ./
 
-# Download dependencies
+# Download dependencies and create go.sum
 RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Tidy up dependencies to match actual usage
+RUN go mod tidy
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o db-service ./cmd/server
@@ -33,4 +36,3 @@ EXPOSE 8081
 
 # Run the application
 CMD ["./db-service"]
-

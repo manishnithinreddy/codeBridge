@@ -1,28 +1,209 @@
-version: '3.8'
-
 services:
-  gitlab-service:
+  # Gateway Service
+  gateway-service:
     build:
-      context: ./codebridge-gitlab-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-gateway-service/Dockerfile
     ports:
-      - "8081:8081"
+      - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge
+      - SPRING_DATASOURCE_USERNAME=codebridge
+      - SPRING_DATASOURCE_PASSWORD=codebridge
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
     networks:
       - codebridge-network
     restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
 
+  # Docker Service
   docker-service:
     build:
-      context: ./codebridge-docker-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: codebridge-docker-service/Dockerfile
     ports:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge
+      - SPRING_DATASOURCE_USERNAME=codebridge
+      - SPRING_DATASOURCE_PASSWORD=codebridge
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  # GitLab Service
+  gitlab-service:
+    build:
+      context: .
+      dockerfile: codebridge-gitlab-service/Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge
+      - SPRING_DATASOURCE_USERNAME=codebridge
+      - SPRING_DATASOURCE_PASSWORD=codebridge
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  # Documentation Service
+  documentation-service:
+    build:
+      context: .
+      dockerfile: codebridge-documentation-service/Dockerfile
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge
+      - SPRING_DATASOURCE_USERNAME=codebridge
+      - SPRING_DATASOURCE_PASSWORD=codebridge
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  # Server Service
+  server-service:
+    build:
+      context: .
+      dockerfile: codebridge-server-service/Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge
+      - SPRING_DATASOURCE_USERNAME=codebridge
+      - SPRING_DATASOURCE_PASSWORD=codebridge
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  # Teams Service
+  teams-service:
+    build:
+      context: .
+      dockerfile: codebridge-teams-service/Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/codebridge
+      - SPRING_DATASOURCE_USERNAME=codebridge
+      - SPRING_DATASOURCE_PASSWORD=codebridge
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+
+  # Session Service (Go implementation)
+  session-service:
+    build:
+      context: ./session-service/go-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8080"
+    environment:
+      - ENVIRONMENT=prod
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  # DB Service (Go implementation)
+  db-service:
+    build:
+      context: ./db-service/go-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8081"
+    environment:
+      - ENVIRONMENT=prod
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=codebridge
+      - POSTGRES_PASSWORD=codebridge
+      - POSTGRES_DB=codebridge
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # AI Service (Python implementation)
+  ai-service:
+    build:
+      context: ./ai-service/python-implementation
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8082"
+    environment:
+      - ENVIRONMENT=prod
+      - DATABASE_URL=postgresql://codebridge:codebridge@postgres:5432/codebridge
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - codebridge-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for persistent storage
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=codebridge
+      - POSTGRES_PASSWORD=codebridge
+      - POSTGRES_DB=codebridge
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - codebridge-network
     restart: unless-stopped
@@ -31,3 +212,6 @@ networks:
   codebridge-network:
     driver: bridge
 
+volumes:
+  redis-data:
+  postgres-data:

@@ -3,15 +3,15 @@ package com.codebridge.gitlab.git.repository;
 import com.codebridge.gitlab.git.model.Repository;
 import com.codebridge.gitlab.git.model.SharedStash;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Repository interface for accessing SharedStash entities.
  */
-@Repository
-public interface SharedStashRepository extends JpaRepository<SharedStash, Long> {
+@org.springframework.stereotype.Repository
+public interface SharedStashRepository extends JpaRepository<SharedStash, UUID> {
 
     /**
      * Find all shared stashes for a specific repository.
@@ -39,4 +39,3 @@ public interface SharedStashRepository extends JpaRepository<SharedStash, Long> 
      */
     boolean existsByStashHashAndRepository(String stashHash, Repository repository);
 }
-

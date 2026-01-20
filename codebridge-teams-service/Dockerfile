@@ -1,19 +1,26 @@
-FROM eclipse-temurin:17-jdk-alpine as build
-WORKDIR /workspace/app
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY src src
+WORKDIR /app
 
-RUN ./mvnw install -DskipTests
-RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+# Copy parent pom.xml first (required for dependency resolution)
+COPY pom.xml ./parent-pom.xml
 
-FROM eclipse-temurin:17-jre-alpine
-VOLUME /tmp
-ARG DEPENDENCY=/workspace/app/target/dependency
-COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
-COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
-COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","com.codebridge.teams.TeamsServiceApplication"]
+# Copy service pom.xml and source
+COPY codebridge-teams-service/pom.xml .
+COPY codebridge-teams-service/src ./src
 
+# Build the application
+RUN mvn clean package -DskipTests
+
+FROM openjdk:21-jre-slim
+
+WORKDIR /app
+
+# Copy the JAR file from the builder stage
+COPY --from=builder /app/target/codebridge-teams-service-3.2.0.jar app.jar
+
+# Expose port
+EXPOSE 8088
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -20,5 +20,14 @@ public class AuthenticationRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
-}
 
+    // Manual getter for username field
+    public String getUsername() {
+        return username;
+    }
+
+    // Manual getter for password field
+    public String getPassword() {
+        return password;
+    }
+}

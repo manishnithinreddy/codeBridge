@@ -1,4 +1,4 @@
-package com.codebridge.gateway.controller;
+package com.codebridge.gateway.api;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -71,12 +71,21 @@ public class ApiDocsController {
      * @param serviceId The service ID
      * @return The API documentation
      */
+    @SuppressWarnings("unchecked")
     private Mono<Map<String, Object>> getServiceApiDocs(String serviceId) {
         return webClientBuilder.build()
                 .get()
                 .uri("http://" + serviceId + "/v3/api-docs")
                 .retrieve()
                 .bodyToMono(Map.class)
+                .map(response -> {
+                    // Explicitly cast the response to Map<String, Object>
+                    Map<String, Object> typedResponse = new HashMap<>();
+                    for (Object key : response.keySet()) {
+                        typedResponse.put(key.toString(), response.get(key));
+                    }
+                    return typedResponse;
+                })
                 .onErrorResume(e -> {
                     Map<String, Object> error = new HashMap<>();
                     error.put("error", "Failed to retrieve API docs for " + serviceId);

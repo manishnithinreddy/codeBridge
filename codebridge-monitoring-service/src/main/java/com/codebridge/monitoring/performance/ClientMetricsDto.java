@@ -48,4 +48,3 @@ public class ClientMetricsDto {
     // Custom metrics
     private Map<String, Double> customMetrics;
 }
-

@@ -6,6 +6,7 @@ import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.exception.DockerException;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.SearchItem;
+import com.github.dockerjava.core.command.PullImageResultCallback;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +22,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,16 +48,13 @@ class DockerImageServiceImplTest {
     private RemoveImageCmd removeImageCmd;
 
     @Mock
-    private HistoryCmd historyCmd;
+    private InspectImageCmd historyCmd;
 
     @Mock
     private SearchImagesCmd searchImagesCmd;
 
     @Mock
     private PullImageResultCallback pullImageResultCallback;
-
-    @Mock
-    private PushImageResultCallback pushImageResultCallback;
 
     @InjectMocks
     private DockerImageServiceImpl dockerImageService;
@@ -214,7 +213,6 @@ class DockerImageServiceImplTest {
         when(searchItem1.getName()).thenReturn("image1");
         when(searchItem1.getDescription()).thenReturn("description1");
         when(searchItem1.isOfficial()).thenReturn(true);
-        when(searchItem1.isAutomated()).thenReturn(false);
         when(searchItem1.getStarCount()).thenReturn(100);
         
         SearchItem searchItem2 = mock(SearchItem.class);
@@ -233,7 +231,6 @@ class DockerImageServiceImplTest {
         assertEquals("image1", result.get(0).get("name"));
         assertEquals("description1", result.get(0).get("description"));
         assertEquals(true, result.get(0).get("official"));
-        assertEquals(false, result.get(0).get("automated"));
         assertEquals(100, result.get(0).get("starCount"));
         assertEquals("image2", result.get(1).get("name"));
         verify(searchImagesCmd).withLimit(10);

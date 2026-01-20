@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * Represents Docker container information.
+ * Model class for Docker container information.
  */
 @Data
 @NoArgsConstructor
@@ -25,9 +25,8 @@ public class ContainerInfo {
     private String status;
     private Map<String, String> ports;
     private Map<String, String> labels;
-    private Map<String, String> mounts;
-    private String networkMode;
     private Map<String, Object> networkSettings;
-    private Map<String, String> hostConfig;
+    private String networkMode;
+    private Map<String, Object> mounts;
 }
 

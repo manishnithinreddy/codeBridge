@@ -108,5 +108,49 @@ public class Role {
         
         return allPermissions;
     }
-}
 
+    // Manual getter for name field (Lombok might not be generating properly)
+    public String getName() {
+        return name;
+    }
+
+    // Manual getter for description field
+    public String getDescription() {
+        return description;
+    }
+
+    // Manual setter for parent field
+    public void setParent(Role parent) {
+        this.parent = parent;
+    }
+
+    // Manual getter for id field
+    public Long getId() {
+        return id;
+    }
+
+    // Manual getter for parent field
+    public Role getParent() {
+        return parent;
+    }
+
+    // Manual getter for permissions field
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    // Manual setter for id field
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    // Manual setter for description field
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    // Manual setter for name field
+    public void setName(String name) {
+        this.name = name;
+    }
+}

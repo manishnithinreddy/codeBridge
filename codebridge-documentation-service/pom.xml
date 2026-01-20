@@ -5,28 +5,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.0</version>
-        <relativePath/>
+        <groupId>com.codebridge</groupId>
+        <artifactId>codebridge-platform</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../parent-pom.xml</relativePath>
     </parent>
 
-    <groupId>com.codebridge</groupId>
     <artifactId>codebridge-documentation-service</artifactId>
-    <version>1.0.0</version>
     <name>CodeBridge Documentation Service</name>
     <description>API Documentation and Developer Experience Service for CodeBridge</description>
 
     <properties>
-        <java.version>21</java.version>
-        <spring-cloud.version>2022.0.3</spring-cloud.version>
-        <springdoc-openapi.version>2.1.0</springdoc-openapi.version>
-        <swagger-parser.version>2.1.12</swagger-parser.version>
-        <swagger-codegen.version>3.0.36</swagger-codegen.version>
-        <openapi-generator.version>6.6.0</openapi-generator.version>
         <asciidoctor.version>2.5.7</asciidoctor.version>
         <commonmark.version>0.21.0</commonmark.version>
         <jgit.version>6.5.0.202303070854-r</jgit.version>
+        <commons-io.version>2.11.0</commons-io.version>
     </properties>
 
     <dependencies>
@@ -86,18 +79,13 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>${springdoc-openapi.version}</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser</artifactId>
             <version>${swagger-parser.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.swagger.codegen.v3</groupId>
-            <artifactId>swagger-codegen-core</artifactId>
-            <version>${swagger-codegen.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>openapi-generator-core</artifactId>
@@ -133,6 +121,12 @@
             <version>${jgit.version}</version>
         </dependency>
 
+        <!-- CodeBridge Common -->
+        <dependency>
+            <groupId>com.codebridge</groupId>
+            <artifactId>codebridge-common</artifactId>
+        </dependency>
+
         <!-- Utilities -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -150,7 +144,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.11.0</version>
+            <version>${commons-io.version}</version>
         </dependency>
 
         <!-- Testing -->
@@ -166,18 +160,6 @@
         </dependency>
     </dependencies>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <build>
         <plugins>
             <plugin>
@@ -192,6 +174,28 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>swagger-io</id>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
+        </repository>
+    </repositories>
 </project>

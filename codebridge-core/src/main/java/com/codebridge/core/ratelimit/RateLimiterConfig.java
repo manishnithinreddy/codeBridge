@@ -3,9 +3,11 @@ package com.codebridge.core.ratelimit;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
+import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.Refill;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import io.github.bucket4j.grid.jcache.JCacheProxyManager;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,8 +44,8 @@ public class RateLimiterConfig {
      *
      * @return The cache manager
      */
-    @Bean
-    public CacheManager cacheManager() {
+    @Bean(name = "jcacheCacheManager")
+    public CacheManager jcacheCacheManager() {
         return Caching.getCachingProvider().getCacheManager();
     }
 
@@ -54,7 +56,7 @@ public class RateLimiterConfig {
      * @return The cache
      */
     @Bean
-    public Cache<String, byte[]> rateLimitCache(CacheManager cacheManager) {
+    public Cache<String, byte[]> rateLimitCache(@Qualifier("jcacheCacheManager") CacheManager cacheManager) {
         MutableConfiguration<String, byte[]> config = new MutableConfiguration<String, byte[]>()
                 .setTypes(String.class, byte[].class)
                 .setStoreByValue(false)
@@ -93,7 +95,9 @@ public class RateLimiterConfig {
      * @return The bucket
      */
     public Bucket resolveBucket(ProxyManager<String> proxyManager, Bandwidth bandwidth, String key) {
-        return proxyManager.builder().build(key, () -> bandwidth);
+        BucketConfiguration configuration = BucketConfiguration.builder()
+                .addLimit(bandwidth)
+                .build();
+        return proxyManager.builder().build(key, () -> configuration);
     }
 }
-

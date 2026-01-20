@@ -2,23 +2,22 @@ package com.codebridge.monitoring;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Main application class for the CodeBridge Monitoring Service.
- * This service combines functionality from:
- * - Performance Service
- * - Platform Operations
- * - Scalability and High Availability
+ * This consolidated service combines the functionality of the previous
+ * Monitoring Service and Performance Service.
  */
 @SpringBootApplication
-@EnableDiscoveryClient
-@EnableFeignClients
 @EnableScheduling
-@EnableAsync
+@ComponentScan(basePackages = {
+    "com.codebridge.monitoring",
+    "com.codebridge.monitoring.performance",
+    "com.codebridge.monitoring.platform",
+    "com.codebridge.monitoring.scalability"
+})
 public class MonitoringServiceApplication {
 
     public static void main(String[] args) {

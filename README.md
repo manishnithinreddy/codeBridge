@@ -1,117 +1,259 @@
-# CodeBridge GitLab and Docker Services
+# CodeBridge Platform
 
-This repository contains two microservices for the CodeBridge platform:
+CodeBridge is a cross-platform plugin ecosystem that integrates daily-use tools and features directly into your IDE, reducing context switching and improving developer productivity.
 
-1. **GitLab Service**: A RESTful API for interacting with GitLab, allowing users to manage projects, pipelines, and jobs.
-2. **Docker Service**: A RESTful API for interacting with Docker, allowing users to manage containers, images, and registries.
+## 🚀 Services Overview
 
-## Technology Stack
+The CodeBridge platform consists of multiple microservices:
 
-- Java 21
-- Spring Boot 3.2.0
-- Spring Cloud 2023.0.0
-- Docker Java Client 3.3.3
-- JWT for security
-- RESTful API design
-- Lombok for boilerplate reduction
-- SLF4J for logging
+### Java Services (Spring Boot)
+- **Gateway Service** (Port 8080) - API Gateway and routing
+- **Docker Service** (Port 8082) - Docker container management
+- **GitLab Service** (Port 8086) - GitLab integration and Git operations
+- **Documentation Service** (Port 8087) - Documentation management
+- **Server Service** (Port 8088) - Server management and SSH access
 
-## Services
+### Go Services
+- **Session Service** (Port 8083) - Session management
+- **DB Service** (Port 8084) - Database operations
 
-### GitLab Service
+### Python Services
+- **AI Service** (Port 8085) - AI-powered database query conversion
 
-The GitLab Service provides the following features:
+### Infrastructure
+- **PostgreSQL** (Port 5432) - Primary database
+- **Redis** (Port 6379) - Caching and session storage
 
-- Authentication with GitLab personal access tokens
-- Project management (list, get, create, archive/unarchive)
-- Pipeline management (list, get, create, cancel, retry)
-- Job management (list, get, logs)
-- JWT-based security
-- Comprehensive error handling
-- Swagger/OpenAPI documentation
+## 📋 Prerequisites
 
-For more details, see the [GitLab Service README](codebridge-gitlab-service/README.md).
+- **Java 21** (OpenJDK or Oracle JDK)
+- **Maven 3.8+**
+- **Docker & Docker Compose**
+- **Go 1.19+** (for Go services)
+- **Python 3.9+** (for AI service)
 
-### Docker Service
+## 🛠️ Building the Project
 
-The Docker Service provides the following features:
+### Quick Build
 
-- Authentication with Docker Registry
-- Container management (list, get, create, start, stop, restart, logs, stats)
-- Image management (list, get, pull, push, build, tag, remove)
-- JWT-based security
-- Comprehensive error handling
-- Swagger/OpenAPI documentation
+Use the provided build script to compile all Java services:
 
-For more details, see the [Docker Service README](codebridge-docker-service/README.md).
+```bash
+chmod +x build-services.sh
+./build-services.sh
+```
 
-## Getting Started
+### Manual Build
 
-### Prerequisites
+1. **Set Java Version** (using SDKMAN):
+```bash
+sdk use java 21.0.5-tem
+```
 
-- Java 21 or higher
-- Maven 3.8.0 or higher
-- Docker (required for Docker Service functionality)
+2. **Build Core Services**:
+```bash
+mvn clean compile -DskipTests -pl codebridge-common,codebridge-core,codebridge-security,codebridge-gateway-service,codebridge-gitlab-service,codebridge-docker-service,codebridge-documentation-service,codebridge-server-service
+```
 
-### Running with Docker Compose
+3. **Package JAR Files**:
+```bash
+mvn clean package -DskipTests -Dmaven.test.skip=true -pl codebridge-common,codebridge-core,codebridge-security,codebridge-gateway-service,codebridge-gitlab-service,codebridge-docker-service,codebridge-documentation-service,codebridge-server-service
+```
 
-The easiest way to run both services is using Docker Compose:
+## 🐳 Running with Docker
+
+### Start All Services
 
 ```bash
 docker-compose up -d
 ```
 
-This will build and start both services:
-
-- GitLab Service: http://localhost:8081/api/gitlab
-- Docker Service: http://localhost:8082/api/docker
-
-### Building and Running Manually
-
-To build and run the services manually:
-
-#### GitLab Service
+### Start Specific Services
 
 ```bash
-cd codebridge-gitlab-service
-mvn clean package
-java -jar target/codebridge-gitlab-service-0.0.1-SNAPSHOT.jar
+# Start only infrastructure
+docker-compose up -d postgres redis
+
+# Start Java services
+docker-compose up -d gateway-service docker-service gitlab-service documentation-service server-service
+
+# Start Go services
+docker-compose up -d session-service db-service
+
+# Start Python services
+docker-compose up -d ai-service
 ```
 
-#### Docker Service
+### View Logs
 
 ```bash
-cd codebridge-docker-service
-mvn clean package
-java -jar target/codebridge-docker-service-0.0.1-SNAPSHOT.jar
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f gateway-service
 ```
 
-## API Documentation
-
-Each service provides Swagger/OpenAPI documentation:
-
-- GitLab Service: http://localhost:8081/api/gitlab/swagger-ui.html
-- Docker Service: http://localhost:8082/api/docker/swagger-ui.html
-
-## Testing
-
-Each service includes unit tests and integration tests. To run the tests:
+### Stop Services
 
 ```bash
-# GitLab Service
-cd codebridge-gitlab-service
-mvn test
+docker-compose down
+```
+
+## 🔧 Running Individual Services
+
+### Java Services
+
+```bash
+# Gateway Service
+java -jar codebridge-gateway-service/target/codebridge-gateway-service-3.2.0.jar
 
 # Docker Service
-cd codebridge-docker-service
+java -jar codebridge-docker-service/target/codebridge-docker-service-0.0.1-SNAPSHOT.jar
+
+# GitLab Service
+java -jar codebridge-gitlab-service/target/codebridge-gitlab-service-0.0.1-SNAPSHOT.jar
+
+# Documentation Service
+java -jar codebridge-documentation-service/target/codebridge-documentation-service-0.0.1-SNAPSHOT.jar
+
+# Server Service
+java -jar codebridge-server-service/target/codebridge-server-service-0.0.1-SNAPSHOT.jar
+```
+
+### Environment Variables
+
+Each service can be configured using environment variables:
+
+```bash
+# Database Configuration
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/codebridge
+SPRING_DATASOURCE_USERNAME=codebridge
+SPRING_DATASOURCE_PASSWORD=codebridge
+
+# Redis Configuration
+SPRING_REDIS_HOST=localhost
+SPRING_REDIS_PORT=6379
+
+# Profile
+SPRING_PROFILES_ACTIVE=prod
+```
+
+## 🗄️ Database Setup
+
+The PostgreSQL database is automatically initialized with:
+
+- **codebridge_git** - Git operations data
+- **codebridge_docker** - Docker container data
+- **codebridge_server** - Server management data
+- **codebridge_api** - API testing data
+
+UUID extensions are enabled for all databases.
+
+## 🔍 Health Checks
+
+All services include health check endpoints:
+
+- Gateway Service: http://localhost:8080/actuator/health
+- Docker Service: http://localhost:8082/actuator/health
+- GitLab Service: http://localhost:8086/actuator/health
+- Documentation Service: http://localhost:8087/actuator/health
+- Server Service: http://localhost:8088/actuator/health
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Gateway       │    │   Docker        │    │   GitLab        │
+│   Service       │    │   Service       │    │   Service       │
+│   (Port 8080)   │    │   (Port 8082)   │    │   (Port 8086)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Documentation  │    │   Server        │    │   Session       │
+│   Service       │    │   Service       │    │   Service (Go)  │
+│   (Port 8087)   │    │   (Port 8088)   │    │   (Port 8083)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+┌─────────────────┐    ┌─────────────────┐
+│   DB Service    │    │   AI Service    │
+│   (Go)          │    │   (Python)      │
+│   (Port 8084)   │    │   (Port 8085)   │
+└─────────────────┘    └─────────────────┘
+         │                       │
+         └───────────────────────┘
+                 │
+    ┌─────────────────┐    ┌─────────────────┐
+    │   PostgreSQL    │    │     Redis       │
+    │   (Port 5432)   │    │   (Port 6379)   │
+    └─────────────────┘    └─────────────────┘
+```
+
+## 🔧 Development
+
+### Adding New Services
+
+1. Create service directory following the naming convention
+2. Add service configuration to `docker-compose.yml`
+3. Update build scripts and documentation
+4. Ensure proper health checks and logging
+
+### Testing
+
+```bash
+# Run tests for specific service
+mvn test -pl codebridge-gateway-service
+
+# Run all tests
 mvn test
 ```
 
-## CI/CD
+## 📝 Features
 
-Each service includes a GitHub Actions workflow for CI/CD. The workflows build the services, run tests, and publish Docker images to DockerHub.
+- **GitLab Integration** - Repository management, CI/CD pipelines
+- **Docker Management** - Container lifecycle, image management
+- **API Testing** - REST API testing and validation
+- **Server Session Management** - Secure server access without credential sharing
+- **AI Database Agent** - Natural language to SQL query conversion
+- **Team Collaboration** - Shared access and team management
+- **Documentation** - Integrated documentation management
 
-## License
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+1. **Java Version Mismatch**: Ensure Java 21 is installed and active
+2. **Port Conflicts**: Check if ports are already in use
+3. **Docker Issues**: Ensure Docker daemon is running
+4. **Database Connection**: Verify PostgreSQL is running and accessible
+
+### Logs
+
+Check service logs for detailed error information:
+
+```bash
+# Docker logs
+docker-compose logs [service-name]
+
+# Application logs
+tail -f logs/application.log
+```
+
+For more help, please check the documentation or create an issue in the repository.
 

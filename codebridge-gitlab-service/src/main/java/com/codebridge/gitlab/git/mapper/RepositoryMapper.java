@@ -1,8 +1,8 @@
-package com.codebridge.git.mapper;
+package com.codebridge.gitlab.git.mapper;
 
-import com.codebridge.git.dto.RepositoryDto;
-import com.codebridge.git.model.GitProvider;
-import com.codebridge.git.model.Repository;
+import com.codebridge.gitlab.git.dto.RepositoryDto;
+import com.codebridge.gitlab.git.model.GitProvider;
+import com.codebridge.gitlab.git.model.Repository;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -45,4 +45,3 @@ public interface RepositoryMapper {
         return entity;
     }
 }
-

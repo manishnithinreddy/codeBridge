@@ -1,5 +1,6 @@
-package com.codebridge.git.model;
+package com.codebridge.gitlab.git.model;
 
+import com.codebridge.gitlab.git.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -101,5 +102,94 @@ public class Repository extends BaseEntity {
 
     @OneToMany(mappedBy = "repository", fetch = FetchType.LAZY)
     private Set<Webhook> webhooks = new HashSet<>();
+    
+    // Manual getters and setters in case Lombok is not working
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public GitProvider getProvider() {
+        return provider;
+    }
+    
+    public void setProvider(GitProvider provider) {
+        this.provider = provider;
+    }
+    
+    // Manual getId() and setId() methods since Lombok is not working
+    public UUID getId() {
+        return super.getId();
+    }
+    
+    public void setId(UUID id) {
+        super.setId(id);
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getRemoteUrl() {
+        return remoteUrl;
+    }
+    
+    public void setRemoteUrl(String remoteUrl) {
+        this.remoteUrl = remoteUrl;
+    }
+    
+    public String getCloneUrl() {
+        return cloneUrl;
+    }
+    
+    public void setCloneUrl(String cloneUrl) {
+        this.cloneUrl = cloneUrl;
+    }
+    
+    public String getSshUrl() {
+        return sshUrl;
+    }
+    
+    public void setSshUrl(String sshUrl) {
+        this.sshUrl = sshUrl;
+    }
+    
+    public String getWebUrl() {
+        return webUrl;
+    }
+    
+    public void setWebUrl(String webUrl) {
+        this.webUrl = webUrl;
+    }
+    
+    public String getDefaultBranch() {
+        return defaultBranch;
+    }
+    
+    public void setDefaultBranch(String defaultBranch) {
+        this.defaultBranch = defaultBranch;
+    }
+    
+    public VisibilityType getVisibility() {
+        return visibility;
+    }
+    
+    public void setVisibility(VisibilityType visibility) {
+        this.visibility = visibility;
+    }
+    
+    public Set<Webhook> getWebhooks() {
+        return webhooks;
+    }
+    
+    public void setWebhooks(Set<Webhook> webhooks) {
+        this.webhooks = webhooks;
+    }
 }
-
