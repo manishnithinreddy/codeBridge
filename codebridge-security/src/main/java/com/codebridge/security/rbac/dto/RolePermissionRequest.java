@@ -20,5 +20,13 @@ public class RolePermissionRequest {
 
     @NotNull(message = "Permission ID is required")
     private Long permissionId;
-}
 
+    // Manual getters
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public Long getPermissionId() {
+        return permissionId;
+    }
+}

@@ -1,15 +1,14 @@
-package com.codebridge.git.repository;
+package com.codebridge.gitlab.git.repository;
 
-import com.codebridge.git.model.GitCredential;
-import com.codebridge.git.model.GitProvider;
+import com.codebridge.gitlab.git.model.GitCredential;
+import com.codebridge.gitlab.git.model.GitProvider;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
+@org.springframework.stereotype.Repository
 public interface GitCredentialRepository extends JpaRepository<GitCredential, UUID> {
     
     List<GitCredential> findByUserId(UUID userId);
@@ -24,4 +23,3 @@ public interface GitCredentialRepository extends JpaRepository<GitCredential, UU
     
     Optional<GitCredential> findByTeamIdAndProviderAndIsDefault(UUID teamId, GitProvider provider, boolean isDefault);
 }
-

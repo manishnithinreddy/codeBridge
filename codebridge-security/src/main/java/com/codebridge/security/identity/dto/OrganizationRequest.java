@@ -1,4 +1,4 @@
-package com.codebridge.identity.platform.dto;
+package com.codebridge.security.identity.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,5 +22,24 @@ public class OrganizationRequest {
     private String logoUrl;
     
     private String websiteUrl;
-}
 
+    // Manual getter for name field
+    public String getName() {
+        return name;
+    }
+
+    // Manual getter for description field
+    public String getDescription() {
+        return description;
+    }
+
+    // Manual getter for logoUrl field
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    // Manual getter for websiteUrl field
+    public String getWebsiteUrl() {
+        return websiteUrl;
+    }
+}

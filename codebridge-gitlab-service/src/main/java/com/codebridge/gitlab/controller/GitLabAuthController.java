@@ -5,6 +5,8 @@ import com.codebridge.gitlab.model.AuthResponse;
 import com.codebridge.gitlab.service.GitLabAuthService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class GitLabAuthController {
 
+    private static final Logger log = LoggerFactory.getLogger(GitLabAuthController.class);
+    
     private final GitLabAuthService gitLabAuthService;
 
     public GitLabAuthController(GitLabAuthService gitLabAuthService) {
@@ -38,4 +42,3 @@ public class GitLabAuthController {
         return ResponseEntity.ok(response);
     }
 }
-

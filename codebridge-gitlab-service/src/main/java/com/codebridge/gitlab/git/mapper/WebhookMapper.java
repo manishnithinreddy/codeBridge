@@ -1,8 +1,8 @@
-package com.codebridge.git.mapper;
+package com.codebridge.gitlab.git.mapper;
 
-import com.codebridge.git.dto.WebhookDto;
-import com.codebridge.git.model.Repository;
-import com.codebridge.git.model.Webhook;
+import com.codebridge.gitlab.git.dto.WebhookDto;
+import com.codebridge.gitlab.git.model.Repository;
+import com.codebridge.gitlab.git.model.Webhook;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

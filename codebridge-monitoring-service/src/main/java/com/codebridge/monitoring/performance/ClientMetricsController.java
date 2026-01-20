@@ -1,7 +1,7 @@
-package com.codebridge.performance.controller;
+package com.codebridge.monitoring.performance.controller;
 
-import com.codebridge.performance.collector.PerformanceMetricsCollector;
-import com.codebridge.performance.dto.ClientMetricsDto;
+import com.codebridge.monitoring.performance.collector.PerformanceMetricsCollector;
+import com.codebridge.monitoring.performance.dto.ClientMetricsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -146,4 +146,3 @@ public class ClientMetricsController {
         }
     }
 }
-

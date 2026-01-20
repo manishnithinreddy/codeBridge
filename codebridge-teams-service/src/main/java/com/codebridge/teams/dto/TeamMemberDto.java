@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Data Transfer Object for Team Member information.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,7 +19,8 @@ public class TeamMemberDto {
     private Long userId;
     private String username;
     private String email;
-    private String fullName;
+    private String firstName;
+    private String lastName;
     private String role;
     private LocalDateTime joinedAt;
 }

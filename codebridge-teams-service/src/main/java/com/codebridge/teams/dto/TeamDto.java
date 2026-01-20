@@ -6,8 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
+/**
+ * Data Transfer Object for Team information.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,9 +19,8 @@ public class TeamDto {
     private String name;
     private String description;
     private Long organizationId;
-    private Long parentTeamId;
-    private List<TeamDto> childTeams;
-    private boolean active;
+    private String organizationName;
+    private int memberCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

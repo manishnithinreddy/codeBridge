@@ -1,4 +1,4 @@
-package com.codebridge.identity.platform.dto;
+package com.codebridge.security.identity.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -34,4 +34,3 @@ public class SignupRequest {
     
     private Set<String> roles;
 }
-

@@ -87,5 +87,78 @@ public class Permission {
     public static String createPermissionName(ResourceType resourceType, ActionType action) {
         return resourceType.name() + "_" + action.name();
     }
-}
 
+    // Manual getter for id field
+    public Long getId() {
+        return id;
+    }
+
+    // Manual getter for name field
+    public String getName() {
+        return name;
+    }
+
+    // Manual getter for description field
+    public String getDescription() {
+        return description;
+    }
+
+    // Manual getter for resourceType field
+    public ResourceType getResourceType() {
+        return resourceType;
+    }
+
+    // Manual getter for action field
+    public ActionType getAction() {
+        return action;
+    }
+
+    // Manual builder method
+    public static PermissionBuilder builder() {
+        return new PermissionBuilder();
+    }
+
+    // Manual builder class
+    public static class PermissionBuilder {
+        private Long id;
+        private String name;
+        private String description;
+        private ResourceType resourceType;
+        private ActionType action;
+
+        public PermissionBuilder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public PermissionBuilder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public PermissionBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public PermissionBuilder resourceType(ResourceType resourceType) {
+            this.resourceType = resourceType;
+            return this;
+        }
+
+        public PermissionBuilder action(ActionType action) {
+            this.action = action;
+            return this;
+        }
+
+        public Permission build() {
+            Permission permission = new Permission();
+            permission.id = this.id;
+            permission.name = this.name;
+            permission.description = this.description;
+            permission.resourceType = this.resourceType;
+            permission.action = this.action;
+            return permission;
+        }
+    }
+}

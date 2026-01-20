@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST controller for shared stash operations.
@@ -39,6 +42,8 @@ import java.util.List;
 @Tag(name = "Shared Stashes", description = "API for managing shared Git stashes")
 public class SharedStashController {
 
+    private static final Logger log = LoggerFactory.getLogger(SharedStashController.class);
+    
     private final SharedStashService sharedStashService;
     private final SharedStashMapper sharedStashMapper;
 
@@ -99,7 +104,7 @@ public class SharedStashController {
     )
     public ResponseEntity<List<SharedStashDTO>> listSharedStashes(
             @Parameter(description = "Repository ID", required = true)
-            @RequestParam Long repositoryId) {
+            @RequestParam UUID repositoryId) {
         
         log.debug("Listing shared stashes for repository: {}", repositoryId);
         
@@ -129,7 +134,7 @@ public class SharedStashController {
     )
     public ResponseEntity<SharedStashDTO> getSharedStash(
             @Parameter(description = "Shared stash ID", required = true)
-            @PathVariable Long id) {
+            @PathVariable UUID id) {
         
         log.debug("Getting shared stash with ID: {}", id);
         
@@ -155,7 +160,7 @@ public class SharedStashController {
     )
     public ResponseEntity<Void> deleteSharedStash(
             @Parameter(description = "Shared stash ID", required = true)
-            @PathVariable Long id) {
+            @PathVariable UUID id) {
         
         log.debug("Deleting shared stash with ID: {}", id);
         
@@ -164,4 +169,3 @@ public class SharedStashController {
         return ResponseEntity.noContent().build();
     }
 }
-

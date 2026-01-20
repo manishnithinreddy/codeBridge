@@ -24,16 +24,16 @@ public class SharedStashMapper {
             return null;
         }
         
-        return SharedStashDTO.builder()
-                .id(sharedStash.getId())
-                .stashHash(sharedStash.getStashHash())
-                .repositoryId(sharedStash.getRepository().getId())
-                .repositoryName(sharedStash.getRepository().getName())
-                .sharedBy(sharedStash.getSharedBy())
-                .sharedAt(sharedStash.getSharedAt())
-                .description(sharedStash.getDescription())
-                .branch(sharedStash.getBranch())
-                .build();
+        SharedStashDTO dto = new SharedStashDTO();
+        dto.setId(sharedStash.getId());
+        dto.setStashHash(sharedStash.getStashHash());
+        dto.setRepositoryId(sharedStash.getRepository().getId());
+        dto.setRepositoryName(sharedStash.getRepository().getName());
+        dto.setSharedBy(sharedStash.getSharedBy());
+        dto.setSharedAt(sharedStash.getSharedAt());
+        dto.setDescription(sharedStash.getDescription());
+        dto.setBranch(sharedStash.getBranch());
+        return dto;
     }
     
     /**
@@ -52,4 +52,3 @@ public class SharedStashMapper {
                 .collect(Collectors.toList());
     }
 }
-

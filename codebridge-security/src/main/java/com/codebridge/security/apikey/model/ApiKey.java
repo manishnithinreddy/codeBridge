@@ -122,5 +122,220 @@ public class ApiKey {
         this.lastUsed = LocalDateTime.now();
         this.usageCount++;
     }
-}
 
+    // Manual getters for fields that Lombok might not be generating properly
+    public LocalDateTime getRevokedAt() {
+        return revokedAt;
+    }
+
+    public Long getRevokedBy() {
+        return revokedBy;
+    }
+
+    public String getRevocationReason() {
+        return revocationReason;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public Set<String> getScopes() {
+        return scopes;
+    }
+
+    public Set<String> getIpRestrictions() {
+        return ipRestrictions;
+    }
+
+    public long getUsageCount() {
+        return usageCount;
+    }
+
+    public Integer getRateLimit() {
+        return rateLimit;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public LocalDateTime getLastUsed() {
+        return lastUsed;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public LocalDateTime getExpirationDate() {
+        return expirationDate;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getKeyPrefix() {
+        return keyPrefix;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setIpRestrictions(Set<String> ipRestrictions) {
+        this.ipRestrictions = ipRestrictions;
+    }
+
+    public void setRateLimit(Integer rateLimit) {
+        this.rateLimit = rateLimit;
+    }
+
+    public void setScopes(Set<String> scopes) {
+        this.scopes = scopes;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getKeyHash() {
+        return keyHash;
+    }
+
+    public void setKeyHash(String keyHash) {
+        this.keyHash = keyHash;
+    }
+
+    public String getSalt() {
+        return salt;
+    }
+
+    // Manual builder method
+    public static ApiKeyBuilder builder() {
+        return new ApiKeyBuilder();
+    }
+
+    // Manual builder class
+    public static class ApiKeyBuilder {
+        private Long id;
+        private String name;
+        private String keyHash;
+        private String salt;
+        private String keyPrefix;
+        private Long userId;
+        private LocalDateTime expirationDate;
+        private boolean enabled = true;
+        private LocalDateTime lastUsed;
+        private long usageCount = 0;
+        private Integer rateLimit;
+        private Set<String> scopes = new HashSet<>();
+        private Set<String> ipRestrictions = new HashSet<>();
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+
+        public ApiKeyBuilder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public ApiKeyBuilder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public ApiKeyBuilder keyHash(String keyHash) {
+            this.keyHash = keyHash;
+            return this;
+        }
+
+        public ApiKeyBuilder salt(String salt) {
+            this.salt = salt;
+            return this;
+        }
+
+        public ApiKeyBuilder keyPrefix(String keyPrefix) {
+            this.keyPrefix = keyPrefix;
+            return this;
+        }
+
+        public ApiKeyBuilder userId(Long userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public ApiKeyBuilder expirationDate(LocalDateTime expirationDate) {
+            this.expirationDate = expirationDate;
+            return this;
+        }
+
+        public ApiKeyBuilder enabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public ApiKeyBuilder lastUsed(LocalDateTime lastUsed) {
+            this.lastUsed = lastUsed;
+            return this;
+        }
+
+        public ApiKeyBuilder usageCount(long usageCount) {
+            this.usageCount = usageCount;
+            return this;
+        }
+
+        public ApiKeyBuilder rateLimit(Integer rateLimit) {
+            this.rateLimit = rateLimit;
+            return this;
+        }
+
+        public ApiKeyBuilder scopes(Set<String> scopes) {
+            this.scopes = scopes;
+            return this;
+        }
+
+        public ApiKeyBuilder ipRestrictions(Set<String> ipRestrictions) {
+            this.ipRestrictions = ipRestrictions;
+            return this;
+        }
+
+        public ApiKeyBuilder createdAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public ApiKeyBuilder updatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public ApiKey build() {
+            ApiKey apiKey = new ApiKey();
+            apiKey.id = this.id;
+            apiKey.name = this.name;
+            apiKey.keyHash = this.keyHash;
+            apiKey.salt = this.salt;
+            apiKey.keyPrefix = this.keyPrefix;
+            apiKey.userId = this.userId;
+            apiKey.expirationDate = this.expirationDate;
+            apiKey.enabled = this.enabled;
+            apiKey.lastUsed = this.lastUsed;
+            apiKey.usageCount = this.usageCount;
+            apiKey.rateLimit = this.rateLimit;
+            apiKey.scopes = this.scopes;
+            apiKey.ipRestrictions = this.ipRestrictions;
+            apiKey.createdAt = this.createdAt;
+            apiKey.updatedAt = this.updatedAt;
+            return apiKey;
+        }
+    }
+}

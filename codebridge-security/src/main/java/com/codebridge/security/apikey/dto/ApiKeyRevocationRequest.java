@@ -17,5 +17,9 @@ public class ApiKeyRevocationRequest {
 
     @NotBlank(message = "Revocation reason is required")
     private String reason;
-}
 
+    // Manual getter for reason field
+    public String getReason() {
+        return reason;
+    }
+}

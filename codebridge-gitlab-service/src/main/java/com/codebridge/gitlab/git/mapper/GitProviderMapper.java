@@ -1,7 +1,7 @@
-package com.codebridge.git.mapper;
+package com.codebridge.gitlab.git.mapper;
 
-import com.codebridge.git.dto.GitProviderDto;
-import com.codebridge.git.model.GitProvider;
+import com.codebridge.gitlab.git.dto.GitProviderDto;
+import com.codebridge.gitlab.git.model.GitProvider;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

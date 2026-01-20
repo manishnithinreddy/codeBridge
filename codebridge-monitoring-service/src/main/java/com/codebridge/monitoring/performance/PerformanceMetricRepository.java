@@ -154,5 +154,104 @@ public interface PerformanceMetricRepository extends JpaRepository<PerformanceMe
      * @return the number of deleted metrics
      */
     long deleteByTimestampBefore(Instant timestamp);
-}
 
+    /**
+     * Find distinct service and metric name pairs.
+     *
+     * @return list of service and metric name pairs
+     */
+    @Query("SELECT DISTINCT m.serviceName, m.metricName FROM PerformanceMetric m")
+    List<Object[]> findDistinctServiceAndMetricNames();
+
+    /**
+     * Find slow endpoints based on response time threshold.
+     *
+     * @param serviceName the service name
+     * @param metricName the metric name
+     * @param threshold the response time threshold
+     * @param startTime the start time
+     * @param endTime the end time
+     * @return list of slow endpoints with their average response times
+     */
+    @Query("SELECT m.serviceName, m.metricName, AVG(m.value) as avgResponseTime " +
+           "FROM PerformanceMetric m WHERE m.serviceName = :serviceName " +
+           "AND m.metricName = :metricName AND m.value > :threshold " +
+           "AND m.timestamp BETWEEN :startTime AND :endTime " +
+           "GROUP BY m.serviceName, m.metricName " +
+           "ORDER BY avgResponseTime DESC")
+    List<Object[]> findSlowEndpoints(
+            @Param("serviceName") String serviceName,
+            @Param("metricName") String metricName,
+            @Param("threshold") double threshold,
+            @Param("startTime") Instant startTime,
+            @Param("endTime") Instant endTime);
+
+    /**
+     * Find slow query types for database optimization.
+     *
+     * @param serviceName the service name
+     * @param metricName the metric name
+     * @param startTime the start time
+     * @param endTime the end time
+     * @return list of slow query types with their metrics
+     */
+    @Query("SELECT m.serviceName, m.metricName, COUNT(m) as queryCount, AVG(m.value) as avgTime " +
+           "FROM PerformanceMetric m WHERE m.serviceName = :serviceName " +
+           "AND m.metricName = :metricName " +
+           "AND m.timestamp BETWEEN :startTime AND :endTime " +
+           "GROUP BY m.serviceName, m.metricName " +
+           "ORDER BY avgTime DESC")
+    List<Object[]> findSlowQueryTypes(
+            @Param("serviceName") String serviceName,
+            @Param("metricName") String metricName,
+            @Param("startTime") Instant startTime,
+            @Param("endTime") Instant endTime);
+
+    /**
+     * Find frequent endpoints based on request count threshold.
+     *
+     * @param serviceName the service name
+     * @param metricName the metric name
+     * @param minRequestCount minimum request count threshold
+     * @param startTime the start time
+     * @param endTime the end time
+     * @return list of frequent endpoints with their request counts
+     */
+    @Query("SELECT m.serviceName, m.metricName, SUM(m.value) as totalRequests " +
+           "FROM PerformanceMetric m WHERE m.serviceName = :serviceName " +
+           "AND m.metricName = :metricName " +
+           "AND m.timestamp BETWEEN :startTime AND :endTime " +
+           "GROUP BY m.serviceName, m.metricName " +
+           "HAVING SUM(m.value) > :minRequestCount " +
+           "ORDER BY totalRequests DESC")
+    List<Object[]> findFrequentEndpoints(
+            @Param("serviceName") String serviceName,
+            @Param("metricName") String metricName,
+            @Param("minRequestCount") int minRequestCount,
+            @Param("startTime") Instant startTime,
+            @Param("endTime") Instant endTime);
+
+    /**
+     * Find endpoints with high error rates.
+     *
+     * @param serviceName the service name
+     * @param metricName the metric name
+     * @param errorRateThreshold minimum error rate threshold
+     * @param startTime the start time
+     * @param endTime the end time
+     * @return list of endpoints with high error rates
+     */
+    @Query("SELECT m.serviceName, m.metricName, AVG(m.value) as avgErrorRate " +
+           "FROM PerformanceMetric m WHERE m.serviceName = :serviceName " +
+           "AND m.metricName = :metricName " +
+           "AND m.timestamp BETWEEN :startTime AND :endTime " +
+           "GROUP BY m.serviceName, m.metricName " +
+           "HAVING AVG(m.value) > :errorRateThreshold " +
+           "ORDER BY avgErrorRate DESC")
+    List<Object[]> findHighErrorRateEndpoints(
+            @Param("serviceName") String serviceName,
+            @Param("metricName") String metricName,
+            @Param("errorRateThreshold") double errorRateThreshold,
+            @Param("startTime") Instant startTime,
+            @Param("endTime") Instant endTime);
+}

@@ -85,10 +85,10 @@ public class AnomalyDetectionService {
         // Get historical data for training
         Instant now = Instant.now();
         Instant trainingStart = now.minusSeconds(trainingPeriodDays * 24 * 60 * 60);
-        Instant evaluationStart = now.minusMinutes(15);
+        Instant evaluationStart = now.minusSeconds(15 * 60);
         
-        List<PerformanceMetric> trainingData = metricRepository.findByServiceNameAndMetricNameAndTimestampBetween(
-                serviceName, metricName, trainingStart, evaluationStart, MetricType.GAUGE);
+        List<PerformanceMetric> trainingData = metricRepository.findByServiceNameAndMetricNameAndMetricTypeAndTimestampBetween(
+                serviceName, metricName, MetricType.GAUGE, trainingStart, evaluationStart);
         
         if (trainingData.size() < minDataPoints) {
             log.debug("Not enough data points for anomaly detection for {}.{}: {} (min: {})",
@@ -108,8 +108,8 @@ public class AnomalyDetectionService {
         double lowerThreshold = mean - (sensitivity * stdDev);
         
         // Get recent data for evaluation
-        List<PerformanceMetric> recentData = metricRepository.findByServiceNameAndMetricNameAndTimestampBetween(
-                serviceName, metricName, evaluationStart, now, MetricType.GAUGE);
+        List<PerformanceMetric> recentData = metricRepository.findByServiceNameAndMetricNameAndMetricTypeAndTimestampBetween(
+                serviceName, metricName, MetricType.GAUGE, evaluationStart, now);
         
         // Check for anomalies
         List<PerformanceMetric> anomalies = new ArrayList<>();
@@ -338,4 +338,3 @@ public class AnomalyDetectionService {
         return result;
     }
 }
-

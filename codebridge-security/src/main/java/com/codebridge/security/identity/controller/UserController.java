@@ -1,8 +1,8 @@
-package com.codebridge.identity.platform.controller;
+package com.codebridge.security.identity.controller;
 
-import com.codebridge.identity.platform.dto.UserDto;
-import com.codebridge.identity.platform.dto.UserUpdateRequest;
-import com.codebridge.identity.platform.service.UserService;
+import com.codebridge.security.identity.dto.UserDto;
+import com.codebridge.security.identity.dto.UserUpdateRequest;
+import com.codebridge.security.identity.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -83,4 +83,3 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 }
-

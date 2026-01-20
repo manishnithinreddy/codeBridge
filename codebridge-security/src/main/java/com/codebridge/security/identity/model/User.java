@@ -1,4 +1,4 @@
-package com.codebridge.identity.platform.model;
+package com.codebridge.security.identity.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -92,5 +92,49 @@ public class User {
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
-}
 
+    // Manual getter for organizations field
+    public Set<Organization> getOrganizations() {
+        return organizations;
+    }
+
+    // Manual getter for id field
+    public Long getId() {
+        return id;
+    }
+
+    // Manual getter for username field
+    public String getUsername() {
+        return username;
+    }
+
+    // Manual getter for email field
+    public String getEmail() {
+        return email;
+    }
+
+    // Manual getter for firstName field
+    public String getFirstName() {
+        return firstName;
+    }
+
+    // Manual getter for lastName field
+    public String getLastName() {
+        return lastName;
+    }
+
+    // Manual getter for enabled field (isActive)
+    public boolean isActive() {
+        return enabled;
+    }
+
+    // Manual getter for createdAt field
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    // Manual getter for updatedAt field
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+}

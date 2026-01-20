@@ -1,6 +1,6 @@
-package com.codebridge.git.dto;
+package com.codebridge.gitlab.git.dto;
 
-import com.codebridge.git.model.GitCredential.CredentialType;
+import com.codebridge.gitlab.git.model.GitCredential.CredentialType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

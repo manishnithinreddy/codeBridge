@@ -12,7 +12,7 @@ import java.util.Map;
  * Integration hook for database verification operations in the API Test Service.
  * Provides methods for validating database connections and executing queries.
  */
-@Component
+@Component("integrationDatabaseVerificationHook")
 public class DatabaseVerificationHook extends AbstractIntegrationHook {
 
     private static final String NAME = "database-verification";
@@ -169,4 +169,3 @@ public class DatabaseVerificationHook extends AbstractIntegrationHook {
         return true;
     }
 }
-

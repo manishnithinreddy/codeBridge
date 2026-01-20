@@ -63,10 +63,13 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -79,6 +82,8 @@ import java.util.concurrent.Executors;
  */
 @Service
 public class ApiTestService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ApiTestService.class);
 
     private final ApiTestRepository apiTestRepository;
     private final TestResultRepository testResultRepository;
@@ -264,7 +269,6 @@ public class ApiTestService {
         TestResult testResult = new TestResult();
         testResult.setId(UUID.randomUUID());
         testResult.setTestId(test.getId());
-        testResult.setUserId(userId);
         
         try {
             // Execute pre-request script if present
@@ -353,9 +357,13 @@ public class ApiTestService {
             
             // Execute post-request script if present
             if (test.getPostRequestScript() != null && !test.getPostRequestScript().isEmpty()) {
+                final int finalStatusCode = statusCode;
+                final String finalResponseBody = responseBody;
+                final Map<String, String> finalResponseHeaders = responseHeaders;
+                
                 CompletableFuture<Void> scriptFuture = CompletableFuture.runAsync(() -> {
                     try {
-                        executeScript(test.getPostRequestScript(), statusCode, responseBody, responseHeaders);
+                        executeScript(test.getPostRequestScript(), finalStatusCode, finalResponseBody, finalResponseHeaders);
                     } catch (Exception e) {
                         throw new TestExecutionException("Error executing post-request script: " + e.getMessage(), e);
                     }
